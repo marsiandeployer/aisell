@@ -582,3 +582,55 @@ gh issue list --repo "$REPO" --state all --limit 200 \
 - [Invoice Generator](https://simpledashboard.wpmix.net/showcases/invoice-generator/)
 - [Lead Tracker](https://simpledashboard.wpmix.net/showcases/lead-tracker/)
 - [Project Kanban](https://simpledashboard.wpmix.net/showcases/project-kanban/)
+
+## Self-Test (после генерации index.html)
+
+После создания или обновления index.html **всегда запускай эту проверку**. Прочитай файл и проверь каждый пункт. Если что-то не проходит — исправь немедленно.
+
+```
+Проверка 1: SDK авторизации
+✓ <script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script> перед </body>
+✓ Нет самописных login-форм, /login роутов, fetch('/api/auth/login')
+✓ Нет Google OAuth / Firebase Auth / Auth0 подключений вручную
+
+Проверка 2: SPA архитектура
+✓ Есть функция navigateTo (hash-based роутинг)
+✓ Есть объект pages с минимум 2 страницами
+✓ Sidebar с навигацией (nav-link или data-page)
+✓ <div id="mainContent"> для контента
+✓ Нет модальных окон (modal) — только отдельные страницы
+
+Проверка 3: i18n
+✓ Есть объект _s с ключами en и ru
+✓ Есть функция tt(key)
+✓ Все видимые строки используют ${tt('key')} (не хардкод)
+✓ Есть toggleLang() и кнопка переключения
+✓ _isRuBrowser определяется через navigator.language
+
+Проверка 4: CDN
+✓ <script src="https://cdn.tailwindcss.com"></script>
+✓ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+✓ Нет других внешних зависимостей (кроме SDK)
+
+Проверка 5: Структура
+✓ KPI карточки с трендами (↑/↓ или +/-%)
+✓ Минимум 2 графика Chart.js
+✓ Данные генерируются динамически (JIT), не захардкожены
+✓ Responsive layout (работает на мобильных)
+```
+
+Формат вывода после проверки:
+```
+✅ SDK auth — ok
+✅ SPA routing — ok (3 pages: overview, sales, analytics)
+✅ i18n — ok (42 keys EN, 42 keys RU)
+✅ CDN — ok (Tailwind + Chart.js)
+✅ Structure — ok (4 KPI cards, 3 charts)
+```
+
+Если есть ошибки:
+```
+❌ i18n — FAIL: 3 хардкоженные строки найдены (строки 145, 203, 289)
+→ Исправляю...
+✅ i18n — ok после исправления
+```

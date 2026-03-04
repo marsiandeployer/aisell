@@ -6156,8 +6156,8 @@ async function main(): Promise<void> {
 
       // --- Load or generate guest keypair ---
       let chatSettings = loadChatSettings(user.userId);
-      if (!chatSettings.ownerAddress) {
-        // Guest not yet registered in PG — generate keypair and register
+      if (!chatSettings.ownerAddress || !chatSettings.ownerPrivateKey) {
+        // Guest not yet registered in PG (or private key missing) — generate keypair and register
         let wallet: import('ethers').HDNodeWallet;
         try {
           wallet = ethers.Wallet.createRandom();
