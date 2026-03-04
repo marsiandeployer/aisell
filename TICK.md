@@ -738,3 +738,52 @@ else:
     print('No anomalies detected.')
 "
 ```
+
+---
+
+## 8. Documentation Review (aisell)
+
+Проверь актуальность ключевых документов проекта:
+
+```bash
+python3 -c "
+import os, re
+from datetime import datetime
+
+docs = {
+    'CLAUDE.md': '/root/aisell/CLAUDE.md',
+    'README.md': '/root/aisell/README.md',
+    'ARCHITECTURE.md': '/root/aisell/ARCHITECTURE.md',
+    'AUTH-FLOWS.md': '/root/aisell/AUTH-FLOWS.md',
+    'products/README.md': '/root/aisell/products/README.md',
+}
+
+print('=== Documentation Review ===')
+for name, path in docs.items():
+    if not os.path.exists(path):
+        print(f'  ❌ {name}: NOT FOUND')
+        continue
+    mtime = datetime.fromtimestamp(os.path.getmtime(path))
+    age = (datetime.now() - mtime).days
+    with open(path) as f:
+        content = f.read()
+    lines = content.count('\n')
+    # Check for TBD/TODO
+    tbds = len(re.findall(r'\bTBD\b|\bTODO\b', content, re.IGNORECASE))
+    flag = '⚠️ ' if age > 30 or tbds > 0 else '✅'
+    notes = []
+    if age > 30:
+        notes.append(f'{age}d old')
+    if tbds > 0:
+        notes.append(f'{tbds} TBD/TODO')
+    note_str = f' ({', '.join(notes)})' if notes else ''
+    print(f'  {flag} {name}: {lines} lines, modified {mtime.strftime(\"%Y-%m-%d\")}{note_str}')
+"
+```
+
+**Что проверять вручную:**
+- Список продуктов в CLAUDE.md и ARCHITECTURE.md совпадает с реальными `products/` папками
+- Порты и домены в README.md совпадают с `ecosystem.config.js` и nginx конфигами
+- Moltbook API URL актуален (base: `https://www.moltbook.com/api/v1/`)
+- Chrome Extension примеры содержат `--short-name` флаг
+- SimpleCrypto webchat URL: `https://simplecrypto.wpmix.net` (порт 8096)

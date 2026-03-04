@@ -10,6 +10,7 @@ Monorepo **Noxon Digital Factory** — AI-конструкторы для соз
 2. **products/** — продукты серии Simple* (конфигурации на botplatform):
    - **SimpleSite** — AI конструктор простых сайтов
    - **SimpleDashboard** — AI конструктор бизнес-дашбордов
+   - **SimpleCrypto** — AI конфигуратор white-label крипто-кошелька (MCW)
 3. **bananzabot/** — конструктор Telegram-ботов + web-админка + E2E тесты диалогов
 4. **extensions/webchat-sidebar/** — Chrome Extension для webchat в сайдбаре
 
@@ -141,13 +142,16 @@ cd /root/aisell/noxonbot && REMOTE_SSH_HOST=root@62.109.14.209 python3 tests/tes
 cd /root/aisell/extensions/webchat-sidebar
 
 # RU версия (Noxon)
-node build.js --name "Noxon Sidebar" --url "https://claudeboxbot.habab.ru"
+node build.js --name "Noxon Sidebar" --short-name "Noxon" --url "https://clodeboxbot.habab.ru"
 
 # EN версия (Coderbox)
-node build.js --name "Coderbox Sidebar" --url "https://coderbox.wpmix.net"
+node build.js --name "Coderbox Sidebar" --short-name "Coderbox" --url "https://coderbox.wpmix.net"
 
 # SimpleDashboard
-node build.js --name "SimpleDashboard" --url "https://simpledashboard.wpmix.net"
+node build.js --name "SimpleDashboard" --short-name "SimpleDashboard" --url "https://simpledashboard.wpmix.net"
+
+# SimpleCrypto
+node build.js --name "SimpleCrypto" --short-name "SimpleCrypto" --url "https://simplecrypto.wpmix.net"
 ```
 
 ## 🌐 Домены и эндпоинты
@@ -156,6 +160,7 @@ node build.js --name "SimpleDashboard" --url "https://simpledashboard.wpmix.net"
 - `https://clodeboxbot.habab.ru` - RU webchat (noxonbot)
 - `https://coderbox.wpmix.net` - EN webchat (coderbox)
 - `https://simpledashboard.wpmix.net` - SimpleDashboard webchat
+- `https://simplecrypto.wpmix.net` - SimpleCrypto webchat
 - `https://d{USERID}.wpmix.net` - Пользовательские дашборды/сайты
 - `https://clodeboxbot.habab.ru/admin` - Админка (IP whitelist + Basic Auth)
 - `https://clodeboxbot.habab.ru/extension` - Extension landing page
@@ -164,6 +169,7 @@ node build.js --name "SimpleDashboard" --url "https://simpledashboard.wpmix.net"
 - `http://localhost:8091` - RU webchat (noxonbot)
 - `http://localhost:8092` - EN webchat (coderbox)
 - `http://localhost:8094` - SimpleDashboard webchat
+- `http://localhost:8096` - SimpleCrypto webchat
 - `http://localhost:3182/admin` - Bananzabot admin
 - `http://localhost:8889/admin` - Noxonbot admin
 
@@ -193,5 +199,5 @@ node build.js --name "SimpleDashboard" --url "https://simpledashboard.wpmix.net"
 
 ---
 
-**Последнее обновление:** 2026-02-18
-**Версия:** 1.0
+**Последнее обновление:** 2026-03-04
+**Версия:** 1.1

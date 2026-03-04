@@ -197,9 +197,10 @@ head -10 products/simple_dashboard/SKILL.md
 # Profile: https://www.moltbook.com/u/noxon
 
 # Пост через API:
-curl -X POST https://api.moltbook.com/api/v1/posts \
+curl -X POST https://www.moltbook.com/api/v1/posts \
   -H "Authorization: Bearer {API_KEY}" \
-  -d '{"content": "...", "visibility": "public"}'
+  -H "Content-Type: application/json" \
+  -d '{"title": "...", "content": "...", "submolt": "builds"}'
 ```
 
 ---
@@ -238,7 +239,7 @@ curl -X POST https://api.moltbook.com/api/v1/posts \
 
 | Продукт | Статус | Webchat URL | Port | Тип выхода | SKILL.md | marketplace.json |
 |---------|--------|-------------|------|-----------|----------|-----------------|
-| SimpleSite | active | https://simplesite.wpmix.net | 8091 | Генерация HTML | ✅ | ❌ |
+| SimpleSite | active | (через noxonbot-webchat) | 8091 | Генерация HTML | ✅ | ❌ |
 | SimpleDashboard | active | https://simpledashboard.wpmix.net | 8094 | Генерация HTML | ✅ | ✅ |
 | SimpleCrypto | active | https://simplecrypto.wpmix.net | 8096 | Конфигурация MCW | ✅ | ✅ |
 | MVP боты | bananzabot | — | — | Системный промпт | — | — |
@@ -306,4 +307,4 @@ curl -X POST https://api.moltbook.com/api/v1/posts \
 
 ---
 
-**Обновлено:** 2026-02-19
+**Обновлено:** 2026-03-04

@@ -8,7 +8,7 @@ Monorepo проекта **Noxon Digital Factory** — AI-конструктор�
 |---------|----------|--------|---------|-----|
 | **SimpleSite** | AI конструктор простых сайтов | `products/simple_site/` | TBD | Генерация HTML |
 | **SimpleDashboard** | AI конструктор бизнес-дашбордов | `products/simple_dashboard/` | `https://simpledashboard.wpmix.net` | Генерация HTML |
-| **SimpleCrypto** | AI white-label crypto wallet | `products/simple_crypto/` | TBD | Конфигурация MCW |
+| **SimpleCrypto** | AI white-label crypto wallet | `products/simple_crypto/` | `https://simplecrypto.wpmix.net` | Конфигурация MCW |
 
 ### Product-as-Configuration Архитектура
 
