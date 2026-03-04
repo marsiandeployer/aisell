@@ -1,0 +1,12 @@
+{
+  "name": "SimpleCrypto",
+  "version": "1.0.0",
+  "description": "Configure and deploy white-label crypto wallets based on MultiCurrencyWallet (MCW). Generates ready-to-use erc20tokens.js + variables.css config files. Supports BNB Chain, Ethereum, Polygon. Custom tokens, commission fees, brand colors — no npm build needed.",
+  "author": "Noxon Digital Factory",
+  "homepage": "https://simpledashboard.wpmix.net",
+  "tags": ["crypto", "wallet", "bnb-chain", "defi", "white-label", "web3", "mcw", "erc20", "bep20"],
+  "install": "Copy products/simple_crypto/ to ~/.claude/skills/simplecrypto/",
+  "screenshots": [
+    { "path": "showcases/mcw-wallet/demo.html", "caption": "BNB Chain White-Label Wallet" }
+  ]
+}
