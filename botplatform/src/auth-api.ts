@@ -283,20 +283,57 @@ app.post('/api/auth/register', requireInternalApiKey, async (req, res) => {
     // Normalize address to checksummed format
     const normalizedAddress = ethers.getAddress(address);
 
-    // Step 1: Insert user
-    const userResult = await pool.query(
-      'INSERT INTO users (address, email, private_key) VALUES ($1, $2, $3) ON CONFLICT (email) DO NOTHING RETURNING id',
-      [normalizedAddress, email, privateKey]
+    // Step 1: Upsert user — update keypair if email already exists
+    // (happens when owner re-registers via Google login after extension-generated keypair)
+    const oldUserResult = await pool.query(
+      'SELECT address FROM users WHERE email = $1',
+      [email]
     );
+    const oldAddress = oldUserResult.rows.length > 0 ? (oldUserResult.rows[0].address as string) : null;
 
-    if (userResult.rows.length === 0) {
-      // Email already exists (ON CONFLICT hit)
-      res.status(409).json({
-        error: 'Email already registered',
-        message: 'Напишите в support@onout.org', // cyrillic-ok
-      });
-      return;
+    if (oldAddress && oldAddress.toLowerCase() !== normalizedAddress.toLowerCase()) {
+      // Address changed — migrate via transaction (FK: dashboards.owner_address → users.address)
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        // 1) Insert new user with temp email (avoid email unique conflict)
+        const tempEmail = `_migrating_${Date.now()}@temp`;
+        await client.query(
+          'INSERT INTO users (address, email, private_key) VALUES ($1, $2, $3)',
+          [normalizedAddress, tempEmail, privateKey]
+        );
+        // 2) Move FK references from old address to new
+        await client.query(
+          'UPDATE dashboards SET owner_address = $1 WHERE owner_address = $2',
+          [normalizedAddress, oldAddress]
+        );
+        await client.query(
+          'UPDATE dashboard_access SET address = $1 WHERE address = $2',
+          [normalizedAddress, oldAddress]
+        );
+        // 3) Delete old user (no more FK refs)
+        await client.query('DELETE FROM users WHERE address = $1', [oldAddress]);
+        // 4) Set real email on new user
+        await client.query(
+          'UPDATE users SET email = $1 WHERE address = $2',
+          [email, normalizedAddress]
+        );
+        await client.query('COMMIT');
+        console.log(`[auth-api] Migrated keypair: ${oldAddress} → ${normalizedAddress} for email=${email}`);
+      } catch (txErr) {
+        await client.query('ROLLBACK');
+        throw txErr;
+      } finally {
+        client.release();
+      }
+    } else if (!oldAddress) {
+      // New user — simple insert
+      await pool.query(
+        'INSERT INTO users (address, email, private_key) VALUES ($1, $2, $3)',
+        [normalizedAddress, email, privateKey]
+      );
     }
+    // else: same address, nothing to update in users
 
     // Step 2: Insert dashboard
     await pool.query(
