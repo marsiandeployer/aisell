@@ -9,43 +9,61 @@ tags: [dashboard, analytics, business, chartjs, tailwind, visualization, spa, i1
 
 ## Система авторизации
 
-**НЕ добавляй Google OAuth / Firebase Auth / Auth0 / JWT / email+password форму самостоятельно в index.html.**
+**НЕ реализуй авторизацию вручную в index.html. Платформа управляет auth автоматически.**
 
-Платформа использует **Web3 keypair auth** (Ethereum подпись). Это НЕ email+password. Auth API принимает `{ signature, challenge, dashboardId }`, а не `{ email, password }` — такой запрос вернёт ошибку 400.
+### Что уже встроено (не нужно кодить)
 
-### Кто управляет авторизацией
+**Вход в SimpleDashboard** (simpledashboard.wpmix.net):
+- Email + имя — `/api/auth/claim`
+- Google Sign-In — `/api/auth/google`
 
-**Авторизация владельца дашборда** управляется Chrome Extension платформы автоматически:
-- Extension генерирует Ethereum keypair при первом входе
-- Платформа регистрирует ключ на сервере
-- Логин происходит через подпись challenge (`/api/auth/login` принимает `{ signature, challenge, dashboardId }`)
+**Доступ к дашборду** (d{USERID}.wpmix.net) — три варианта:
 
-Ты **не должен** реализовывать этот flow в index.html — он уже встроен в платформу.
+| Сценарий | Как получить |
+|----------|-------------|
+| Владелец с телефона/без Extension | Попросить в чате «пришли magic link» → получает ссылку на 24ч |
+| Поделиться с гостем | Попросить «пришли invite link» → гость входит через Google OAuth |
+| Публичный дашборд | По умолчанию — никакой auth не нужен |
 
-### Когда пользователь просит «добавить авторизацию» или «логин»
+Auth widget автоматически встраивается платформой в защищённые дашборды — ничего добавлять не нужно.
 
-Уточни, что именно он имеет в виду:
+### Что делать когда пользователь просит «добавить авторизацию»
 
-**Сценарий A: Защитить дашборд от посторонних** — авторизация уже работает через Extension. Скажи пользователю об этом, ничего не добавляй в код.
+1. **«Защити дашборд» / «только для меня»** → объясни: платформа уже защищает через Extension + Magic Link. Код не нужен.
 
-**Сценарий B: Создать форму входа/регистрации для посетителей** — статический index.html не может хранить пароли и аккаунты (нет backend). Предложи альтернативы:
-- Простая защита паролем через `localStorage` (один общий пароль)
-- Объясни ограничение и предложи добавить backend (выходит за рамки одного index.html)
+2. **«Пусть другие тоже видят» / «поделись с командой»** → объясни: используй Invite Link из чата. Гости войдут через Google. Кода в index.html не нужно.
 
-```javascript
-// ✅ ПРАВИЛЬНО для сценария B: простая password-gate через localStorage
-const PASS = 'your-secret'; // пользователь меняет на свой
-function checkAccess() {
-  if (localStorage.getItem('access') === PASS) return true;
-  const entered = prompt('Введите пароль:');
-  if (entered === PASS) { localStorage.setItem('access', PASS); return true; }
-  return false;
-}
-```
+3. **«Пусть пользователи регаются на моём дашборде / клубе»** → это работает через Invite Link:
+   - Попросить в чате «пришли invite link» → получит ссылку вида `https://d{USERID}.wpmix.net?invite=...`
+   - Ссылка **бессрочная и без лимита использований** — как Google Docs "у кого есть ссылка"
+   - Каждый кто переходит по ней — входит через Google Sign-In и попадает в базу платформы
+   - Auth widget встраивается автоматически, код в index.html не нужен
+   - Ссылку можно отозвать через «пришли новый invite link»
 
-**НЕ делай:**
-- `fetch('/api/auth/login', { body: JSON.stringify({ email, password }) })` — этот endpoint принимает Ethereum подпись, не пароль, вернёт 400
-- Не реализовывай регистрацию пользователей — `/api/auth/register` требует серверный API-ключ, недоступен из браузера
+### Запрещено
+
+- `fetch('/api/auth/login', { body: JSON.stringify({ email, password }) })` — этот endpoint принимает Ethereum подпись, вернёт 400
+- Добавлять Google OAuth / Firebase Auth / Auth0 вручную
+- Реализовывать регистрацию пользователей — `/api/auth/register` серверный, закрыт от браузера
+
+## Showcases (готовые примеры)
+
+Когда пользователь просит «сделай как ...» или «повтори showcase» — прочитай `SKILL.md` нужного showcase для полного контекста.
+
+| Showcase | Описание | Страницы |
+|----------|---------|----------|
+| [`construction-crm`](showcases/construction-crm/SKILL.md) | CRM строительной компании — 8 статусов, 15 ролей, автозадачи | 7 |
+| [`sales-analytics-utm`](showcases/sales-analytics-utm/SKILL.md) | Аналитика продаж курсов с UTM-трекингом | 4 |
+| [`funnel-analytics`](showcases/funnel-analytics/SKILL.md) | Воронка продаж — от рекламы до оплат, ROI | 4 |
+| [`client-report`](showcases/client-report/SKILL.md) | Отчёт для клиента — ТЗ, спринты, PDF-экспорт | 4 |
+| [`invoice-generator`](showcases/invoice-generator/SKILL.md) | Генератор счетов — 5 стран, PDF | 3 |
+| [`lead-tracker`](showcases/lead-tracker/SKILL.md) | Трекер лидов — pipeline, CRM | 4 |
+| [`project-kanban`](showcases/project-kanban/SKILL.md) | Kanban-доска — задачи, проекты, календарь | 4 |
+
+**Как использовать:**
+1. Прочитай `showcases/{slug}/SKILL.md` — там описание, промпт для воспроизведения, ключевые особенности
+2. Используй промпт из секции "Как воспроизвести" как основу
+3. Адаптируй под данные и бизнес-контекст пользователя
 
 ## Безопасность
 
