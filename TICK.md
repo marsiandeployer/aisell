@@ -383,6 +383,66 @@ else:
 
 ---
 
+## 4.5. Feedback Log — комментарии к 👎
+
+Прочитай лог фидбеков с комментариями. Лог хранится в `botplatform/data/webchat/feedback_log.jsonl` — каждая строка JSON с полями `at`, `userId`, `messageId`, `type`, `comment`, `messagePreview`.
+
+```bash
+python3 -c "
+import json, os
+from datetime import datetime, timezone, timedelta
+
+log_path = '/root/aisell/botplatform/data/webchat/feedback_log.jsonl'
+if not os.path.exists(log_path):
+    print('=== Feedback Log ===')
+    print('feedback_log.jsonl not found (no feedback yet)')
+else:
+    entries = []
+    with open(log_path) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    pass
+
+    now = datetime.now(timezone.utc)
+    week_ago = now - timedelta(days=7)
+
+    all_down = [e for e in entries if e.get('type') == 'thumbs_down']
+    all_up   = [e for e in entries if e.get('type') == 'thumbs_up']
+    with_comment = [e for e in all_down if e.get('comment')]
+    recent_down  = [e for e in all_down if datetime.fromisoformat(e['at'].replace('Z','+00:00')) > week_ago]
+
+    print('=== Feedback Log ===')
+    print(f'Total: {len(entries)} entries ({len(all_up)} 👍 / {len(all_down)} 👎)')
+    print(f'👎 with comment: {len(with_comment)} / {len(all_down)}')
+    print(f'👎 last 7 days: {len(recent_down)}')
+
+    if with_comment:
+        print()
+        print('--- 👎 Комментарии (последние 10) ---')
+        for e in with_comment[-10:]:
+            ts = e.get('at','')[:10]
+            uid = e.get('userId','?')
+            comment = e.get('comment','')
+            preview = e.get('messagePreview','')[:80].replace(chr(10),' ')
+            print(f'  [{ts}] user={uid}')
+            print(f'    Ответ: {preview}')
+            print(f'    Комментарий: {comment}')
+    else:
+        print()
+        print('  Комментариев к 👎 ещё нет')
+"
+```
+
+**Что делать если есть комментарии:**
+- Паттерны ошибок → открыть соответствующий чат и проверить что пошло не так
+- Частые жалобы на одно и то же → создать задачу на исправление промпта или логики
+
+---
+
 ## 5. Onboarding Pipeline (botplatform)
 
 Прочитай состояния и лиды онбординга:
