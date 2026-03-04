@@ -368,7 +368,7 @@ async function integrationTests() {
   }
 
   // Generate test wallets and data
-  const wallet1 = ethers.Wallet.createRandom();
+  let wallet1 = ethers.Wallet.createRandom();
   const wallet2 = ethers.Wallet.createRandom();
   const email1 = testEmail('owner');
   const email2 = testEmail('shared');
@@ -407,7 +407,7 @@ async function integrationTests() {
     );
   }
 
-  // integration: POST /api/auth/register duplicate email -> 409
+  // integration: POST /api/auth/register duplicate email -> 201 (upsert: keypair updated)
   {
     const dupWallet = ethers.Wallet.createRandom();
     const res = await httpRequest(`${AUTH_API_BASE}/api/auth/register`, {
@@ -417,10 +417,12 @@ async function integrationTests() {
         address: dupWallet.address,
         email: email1, // same email
         privateKey: dupWallet.privateKey,
-        dashboardId: `test-dup-${testId}`,
+        dashboardId,
       }),
     });
-    assert(res.status === 409, 'integration: POST /api/auth/register duplicate email -> 409');
+    assert(res.status === 201, 'integration: POST /api/auth/register duplicate email -> 201 (upsert)');
+    // After upsert, the active keypair is dupWallet — update wallet1 for subsequent tests
+    wallet1 = dupWallet;
   }
 
   // --- login ---
