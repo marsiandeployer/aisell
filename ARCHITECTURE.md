@@ -173,6 +173,35 @@ node build.js --name "SimpleSite" --url "https://clodeboxbot.habab.ru"
 
 **Важно:** Extension — это интерфейс, не продукт. Один код, разные URL для разных продуктов.
 
+### 4d. Claude Skills Marketplace (skillsmp.com)
+
+Автоматически при публикации репозитория на GitHub с 2+ звёздами.
+
+Требования к продукту:
+- `products/{name}/SKILL.md` — AI инструкции с YAML frontmatter (`name`, `description`, `version`, `tags`)
+- `products/{name}/marketplace.json` — метаданные (name, version, description, tags, screenshots)
+
+```bash
+# Проверить что SKILL.md имеет frontmatter
+head -10 products/simple_dashboard/SKILL.md
+```
+
+### 4e. Moltbook AI Agents Network
+
+Платформа для AI агентов (BNB Chain hackathon).
+
+```bash
+# Credentials: ~/.config/moltbook/credentials.json
+# Agent: "noxon" (claimed, active)
+# API key: moltbook_sk_...
+# Profile: https://www.moltbook.com/u/noxon
+
+# Пост через API:
+curl -X POST https://api.moltbook.com/api/v1/posts \
+  -H "Authorization: Bearer {API_KEY}" \
+  -d '{"content": "...", "visibility": "public"}'
+```
+
 ---
 
 ## Интерфейсы vs Продукты
@@ -207,11 +236,17 @@ node build.js --name "SimpleSite" --url "https://clodeboxbot.habab.ru"
 
 ## Текущие продукты
 
-| Продукт | Статус | Webchat URL | Port | Telegram |
-|---------|--------|-------------|------|----------|
-| SimpleSite | active | https://simplesite.wpmix.net | 8091 | @noxonbot |
-| SimpleDashboard | dev | https://simpledashboard.wpmix.net | 8092 | @coderboxbot |
-| MVP боты | bananzabot | — | — | разные |
+| Продукт | Статус | Webchat URL | Port | Тип выхода | SKILL.md | marketplace.json |
+|---------|--------|-------------|------|-----------|----------|-----------------|
+| SimpleSite | active | https://simplesite.wpmix.net | 8091 | Генерация HTML | ✅ | ❌ |
+| SimpleDashboard | active | https://simpledashboard.wpmix.net | 8094 | Генерация HTML | ✅ | ✅ |
+| SimpleCrypto | dev | TBD | 8096 | Конфигурация MCW | ✅ | ✅ |
+| MVP боты | bananzabot | — | — | Системный промпт | — | — |
+
+**SimpleCrypto** отличается от остальных:
+- Не генерирует HTML — конфигурирует MCW (MultiCurrencyWallet, `/root/MultiCurrencyWallet/build-mainnet/`)
+- Выход: `erc20tokens.js` + `variables.css` + `DEPLOY.md`
+- Базируется на: https://github.com/swaponline/MultiCurrencyWallet
 
 **Правило именования:** Продукты поднимаются на `{product_name}.wpmix.net`
 
@@ -221,13 +256,22 @@ node build.js --name "SimpleSite" --url "https://clodeboxbot.habab.ru"
 
 - [ ] 1. `/demand-research "ключевые слова"`
 - [ ] 2. Создать MVP в bananzabot (опционально)
-- [ ] 3. Создать `products/simple_{name}.yaml`
-- [ ] 4. Заполнить showcases в YAML
-- [ ] 5. `tsx render_showcase.ts --product {name} --all`
-- [ ] 6. Создать иконки 16/32/48/128px
-- [ ] 7. Опубликовать на habab.ru (B2B)
-- [ ] 8. Написать SEO-статьи
-- [ ] 9. Собрать Extension и опубликовать в Chrome Web Store
+- [ ] 3. Создать папку `products/simple_{name}/`
+- [ ] 4. Написать `SKILL.md` с YAML frontmatter (публичный, с instr для Claude)
+- [ ] 5. Написать `CLAUDE.md` (полная версия для разработчиков, gitignored)
+- [ ] 6. Написать `marketplace.json` (для skillsmp.com)
+- [ ] 7. Создать `product.yaml` (метаданные продукта, gitignored)
+- [ ] 8. Создать `showcases/` с demo.html + config.yaml
+- [ ] 9. Создать иконки 16/32/48/128px
+- [ ] 10. Опубликовать на habab.ru (B2B) — `/habab-create-product-page`
+- [ ] 11. Написать SEO-статьи — `/habab-seo-article-writer`
+- [ ] 12. Собрать Extension и опубликовать в Chrome Web Store
+
+**Для SimpleCrypto-типа продуктов (конфигурация внешнего app):**
+- [ ] Определить базовый app (например MCW для кошелька)
+- [ ] Задокументировать config API (window.buildOptions, CSS variables)
+- [ ] Создать примеры конфигурации в SKILL.md
+- [ ] Написать DEPLOY.md template
 
 ---
 
