@@ -154,7 +154,7 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && DASHBOARD_ORIGIN_RE.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Max-Age', '86400');
   }
@@ -514,6 +514,139 @@ app.get('/api/auth/access-list', requireInternalApiKey, async (req, res) => {
     res.json({ emails });
   } catch (err) {
     console.error('[auth-api] Access-list PG error:', (err as Error).message);
+    res.status(503).json({ error: 'Service temporarily unavailable' });
+  }
+});
+
+// ─── Admin Endpoints (JWT-authenticated, owner-only) ────────────
+
+/**
+ * Verify JWT from Authorization header and check dashboard ownership.
+ * Returns { address, dashboardId } on success, null on failure.
+ */
+async function verifyOwnerJwt(
+  req: express.Request,
+  res: express.Response,
+  dashboardId: string
+): Promise<{ address: string; dashboardId: string } | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return null;
+  }
+  const token = authHeader.split(' ')[1];
+  let payload: { address?: string; dashboardId?: string };
+  try {
+    payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as { address?: string; dashboardId?: string };
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return null;
+  }
+  if (!payload.address || !payload.dashboardId) {
+    res.status(401).json({ error: 'Invalid token payload' });
+    return null;
+  }
+  // Verify caller is the dashboard owner
+  try {
+    const result = await pool.query(
+      'SELECT owner_address FROM dashboards WHERE dashboard_id = $1',
+      [dashboardId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Dashboard not found' });
+      return null;
+    }
+    const ownerAddress = ethers.getAddress(result.rows[0].owner_address as string);
+    const callerAddress = ethers.getAddress(payload.address);
+    if (ownerAddress !== callerAddress) {
+      res.status(403).json({ error: 'Forbidden: only dashboard owner can access admin endpoints' });
+      return null;
+    }
+    return { address: callerAddress, dashboardId };
+  } catch (err) {
+    console.error('[auth-api] Admin owner check PG error:', (err as Error).message);
+    res.status(503).json({ error: 'Service temporarily unavailable' });
+    return null;
+  }
+}
+
+/**
+ * GET /api/auth/admin/users?dashboardId=dXXX
+ * Returns list of users with access to the dashboard.
+ * Requires: JWT from dashboard owner.
+ */
+app.get('/api/auth/admin/users', async (req, res) => {
+  const dashboardId = typeof req.query.dashboardId === 'string' ? req.query.dashboardId : '';
+  if (!dashboardId) {
+    res.status(400).json({ error: 'dashboardId query parameter is required' });
+    return;
+  }
+
+  const owner = await verifyOwnerJwt(req, res, dashboardId);
+  if (!owner) return;
+
+  try {
+    const result = await pool.query(
+      'SELECT u.email, u.address, da.created_at FROM dashboard_access da JOIN users u ON u.address = da.address WHERE da.dashboard_id = $1 ORDER BY da.created_at',
+      [dashboardId]
+    );
+    const users = result.rows.map(r => ({
+      email: r.email as string,
+      address: r.address as string,
+      createdAt: r.created_at as string,
+      isOwner: ethers.getAddress(r.address as string) === owner.address,
+    }));
+    res.json({ users });
+  } catch (err) {
+    console.error('[auth-api] Admin users PG error:', (err as Error).message);
+    res.status(503).json({ error: 'Service temporarily unavailable' });
+  }
+});
+
+/**
+ * DELETE /api/auth/admin/access
+ * Revokes a user's access to the dashboard.
+ * Body: { email, dashboardId }
+ * Requires: JWT from dashboard owner.
+ */
+app.delete('/api/auth/admin/access', async (req, res) => {
+  const { email, dashboardId } = req.body;
+  if (!dashboardId || typeof dashboardId !== 'string') {
+    res.status(400).json({ error: 'dashboardId is required' });
+    return;
+  }
+  if (!email || typeof email !== 'string') {
+    res.status(400).json({ error: 'email is required' });
+    return;
+  }
+
+  const owner = await verifyOwnerJwt(req, res, dashboardId);
+  if (!owner) return;
+
+  try {
+    // Find the user by email
+    const userResult = await pool.query('SELECT address FROM users WHERE email = $1', [email]);
+    if (userResult.rows.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const targetAddress = ethers.getAddress(userResult.rows[0].address as string);
+
+    // Cannot revoke own access (owner)
+    if (targetAddress === owner.address) {
+      res.status(400).json({ error: 'Cannot revoke owner access' });
+      return;
+    }
+
+    await pool.query(
+      'DELETE FROM dashboard_access WHERE dashboard_id = $1 AND address = $2',
+      [dashboardId, targetAddress]
+    );
+
+    console.log(`[auth-api] Admin revoke: owner=${owner.address} revoked ${email} (${targetAddress}) from ${dashboardId}`);
+    res.json({ revoked: true, email });
+  } catch (err) {
+    console.error('[auth-api] Admin revoke PG error:', (err as Error).message);
     res.status(503).json({ error: 'Service temporarily unavailable' });
   }
 });

@@ -577,16 +577,17 @@ function ensureUnprotectedIndexHtml() {
 }
 
 async function test_auth_widget_present_on_protected_dashboard() {
-  section('Test 10: auth_widget_present_on_protected_dashboard — protected dashboard HTML contains id="auth-widget-loader"');
+  section('Test 10: auth_widget_present_on_protected_dashboard — server does NOT inject auth-widget-loader (SDK handles auth)');
 
   ensureProtectedIndexHtml();
 
   const res = await fetchHtml('/', PROTECTED_USER_ID);
 
   assert(res.status === 200, `Status is 200 (got ${res.status})`);
+  // Auth widget is no longer server-injected — SDK handles it client-side
   assert(
-    res.body.includes('id="auth-widget-loader"'),
-    `HTML contains id="auth-widget-loader" (got first 200 chars: ${res.body.slice(0, 200)})`
+    !res.body.includes('id="auth-widget-loader"'),
+    `HTML does NOT contain server-injected auth-widget-loader`
   );
 }
 
@@ -604,23 +605,29 @@ async function test_auth_widget_absent_on_unprotected_dashboard() {
   );
 }
 
-async function test_nonce_embedded_in_html() {
-  section('Test 12: nonce_embedded_in_html — protected dashboard HTML contains window.__OAUTH_NONCE__');
+async function test_nonce_not_embedded_in_html() {
+  section('Test 12: nonce_not_embedded_in_html — server does NOT inject nonce in HTML (SDK fetches /api/auth/nonce)');
 
   ensureProtectedIndexHtml();
 
   const res = await fetchHtml('/', PROTECTED_USER_ID);
 
   assert(res.status === 200, `Status is 200 (got ${res.status})`);
+  // Nonce is no longer server-injected — SDK calls GET /api/auth/nonce at runtime
   assert(
-    res.body.includes('window.__OAUTH_NONCE__'),
-    `HTML contains window.__OAUTH_NONCE__ (not found in response)`
+    !res.body.includes('window.__OAUTH_NONCE__'),
+    `HTML does NOT contain server-injected window.__OAUTH_NONCE__`
   );
-  // Nonce should be a 32-char hex string (16 bytes)
-  const nonceMatch = res.body.match(/window\.__OAUTH_NONCE__\s*=\s*["']([0-9a-f]+)["']/);
+
+  // Verify /api/auth/nonce endpoint returns a valid nonce
+  const nonceRes = await httpRequest(`${WEBCHAT_BASE}/api/auth/nonce`, {
+    method: 'GET',
+    headers: { Host: `d${PROTECTED_USER_ID}.wpmix.net` },
+  });
+  assert(nonceRes.status === 200, `GET /api/auth/nonce returns 200 (got ${nonceRes.status})`);
   assert(
-    nonceMatch && nonceMatch[1].length === 32,
-    `Nonce is 32-char hex string (got: ${nonceMatch ? nonceMatch[1] : 'no match'})`
+    typeof nonceRes.body.nonce === 'string' && /^[0-9a-f]{32}$/.test(nonceRes.body.nonce),
+    `Nonce is 32-char hex string (got: ${nonceRes.body.nonce})`
   );
 }
 
@@ -646,32 +653,30 @@ async function test_no_webchat_links_in_dashboard_html() {
   );
 }
 
-async function test_error_no_access_overlay_present() {
-  section('Test 14: error_no_access_overlay_present — GET /?error=no_access on protected dashboard returns data-overlay="no-access"');
+async function test_auth_config_endpoint() {
+  section('Test 14: auth_config_endpoint — GET /api/auth/config on protected dashboard returns authEnabled: true');
 
-  ensureProtectedIndexHtml();
-
-  const res = await fetchHtml('/?error=no_access', PROTECTED_USER_ID);
+  const res = await httpRequest(`${WEBCHAT_BASE}/api/auth/config`, {
+    method: 'GET',
+    headers: { Host: `d${PROTECTED_USER_ID}.wpmix.net` },
+  });
 
   assert(res.status === 200, `Status is 200 (got ${res.status})`);
-  assert(
-    res.body.includes('data-overlay="no-access"'),
-    `HTML contains data-overlay="no-access" (not found in response)`
-  );
+  assert(res.body.authEnabled === true, `authEnabled is true (got ${res.body.authEnabled})`);
+  assert(typeof res.body.googleClientId === 'string' && res.body.googleClientId.length > 0, `googleClientId is a non-empty string`);
+  assert(typeof res.body.oauthCallbackUrl === 'string' && res.body.oauthCallbackUrl.includes('google-dashboard-callback'), `oauthCallbackUrl contains google-dashboard-callback`);
 }
 
-async function test_error_service_unavailable_overlay_present() {
-  section('Test 15: error_service_unavailable_overlay_present — GET /?error=service_unavailable on protected dashboard returns data-overlay="service-unavailable"');
+async function test_auth_config_unprotected() {
+  section('Test 15: auth_config_unprotected — GET /api/auth/config on unprotected dashboard returns authEnabled: false');
 
-  ensureProtectedIndexHtml();
-
-  const res = await fetchHtml('/?error=service_unavailable', PROTECTED_USER_ID);
+  const res = await httpRequest(`${WEBCHAT_BASE}/api/auth/config`, {
+    method: 'GET',
+    headers: { Host: `d${UNPROTECTED_USER_ID}.wpmix.net` },
+  });
 
   assert(res.status === 200, `Status is 200 (got ${res.status})`);
-  assert(
-    res.body.includes('data-overlay="service-unavailable"'),
-    `HTML contains data-overlay="service-unavailable" (not found in response)`
-  );
+  assert(res.body.authEnabled === false, `authEnabled is false (got ${res.body.authEnabled})`);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -704,15 +709,15 @@ async function main() {
     process.exit(1);
   }
 
-  log('\n=== Task 9: Auth widget script injection ===\n', COLORS.YELLOW);
+  log('\n=== Auth SDK (client-side auth replaces server injection) ===\n', COLORS.YELLOW);
 
   try {
     await test_auth_widget_present_on_protected_dashboard();
     await test_auth_widget_absent_on_unprotected_dashboard();
-    await test_nonce_embedded_in_html();
+    await test_nonce_not_embedded_in_html();
     await test_no_webchat_links_in_dashboard_html();
-    await test_error_no_access_overlay_present();
-    await test_error_service_unavailable_overlay_present();
+    await test_auth_config_endpoint();
+    await test_auth_config_unprotected();
   } catch (err) {
     log(`\n[ERROR] Unexpected error: ${err.message}`, COLORS.RED);
     log(err.stack, COLORS.RED);

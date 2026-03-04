@@ -592,6 +592,244 @@ async function signChallenge(privateKey: string, dashboardId: string): Promise<{
   return { challenge, signature };
 }
 
+/**
+ * Returns the client-side Auth SDK JS code.
+ * Served at GET /sdk/auth.js on simpledashboard.wpmix.net.
+ * Dashboards include: <script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+ */
+function getAuthSdkJs(): string {
+  return `(function(){
+  "use strict";
+  // --- SimpleDashboard Auth SDK ---
+
+  var dashboardId = (function(){
+    var m = location.hostname.match(/^(d\\d+)\\./);
+    return m ? m[1] : null;
+  })();
+  if (!dashboardId) { console.warn('[SD] Not a dashboard host'); return; }
+
+  var AUTH_API = 'https://simpledashboard.wpmix.net';
+  var JWT_KEY = 'dashboard_jwt';
+
+  function getJwt() { try { return sessionStorage.getItem(JWT_KEY); } catch(e) { return null; } }
+  function setJwt(t) { try { sessionStorage.setItem(JWT_KEY, t); } catch(e) {} }
+  function removeJwt() { try { sessionStorage.removeItem(JWT_KEY); } catch(e) {} }
+
+  function parseJwt(t) {
+    if (!t) return null;
+    try { return JSON.parse(atob(t.split('.')[1])); } catch(e) { return null; }
+  }
+
+  function isExpired(payload) {
+    if (!payload || !payload.exp) return true;
+    return Date.now() / 1000 > payload.exp - 30;
+  }
+
+  function authHeaders() {
+    var t = getJwt();
+    return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  }
+
+  // --- Overlay ---
+  function createOverlay() {
+    if (document.getElementById('sd-auth-overlay')) return;
+    var ov = document.createElement('div');
+    ov.id = 'sd-auth-overlay';
+    ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<div style="text-align:center;max-width:400px;">'
+      + '<div id="sd-ov-auth" style="display:none;"><p style="font-size:18px;margin-bottom:16px;">Sign in to access this dashboard</p>'
+      + '<button id="sd-google-btn" style="display:inline-block;padding:12px 24px;background:#4285F4;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">Sign in with Google</button></div>'
+      + '<div id="sd-ov-denied" style="display:none;"><p style="font-size:18px;">Access denied. You do not have permission to view this dashboard.</p></div>'
+      + '<div id="sd-ov-error" style="display:none;"><p style="font-size:18px;">Authentication service is temporarily unavailable. Please try again later.</p></div>'
+      + '<div id="sd-ov-loading" style="display:none;"><p style="font-size:16px;color:#666;">Checking authentication...</p></div>'
+      + '</div>';
+    document.body.appendChild(ov);
+  }
+
+  function showPanel(name) {
+    createOverlay();
+    var ov = document.getElementById('sd-auth-overlay');
+    if (!ov) return;
+    ov.style.display = 'flex';
+    ['sd-ov-auth','sd-ov-denied','sd-ov-error','sd-ov-loading'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    var target = document.getElementById('sd-ov-' + name);
+    if (target) target.style.display = 'block';
+  }
+
+  function hideOverlay() {
+    var ov = document.getElementById('sd-auth-overlay');
+    if (ov) ov.style.display = 'none';
+  }
+
+  // --- Magic Link handling ---
+  function handleMagicLink() {
+    var params = new URLSearchParams(location.search);
+    var ml = params.get('ml');
+    if (!ml) return false;
+    fetch('/api/auth/ml?token=' + encodeURIComponent(ml))
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('ml_failed'); })
+      .then(function(d) {
+        setJwt(d.jwt);
+        history.replaceState({}, '', location.pathname);
+        hideOverlay();
+        fireEvent();
+      })
+      .catch(function() {});
+    return true;
+  }
+
+  // --- Google OAuth ---
+  function startGoogleAuth() {
+    fetch('/api/auth/nonce')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('nonce_failed'); })
+      .then(function(d) {
+        var invite = '';
+        try { invite = sessionStorage.getItem('guestInviteToken') || ''; } catch(e) {}
+        try { sessionStorage.removeItem('guestInviteToken'); } catch(e) {}
+        var state = btoa(JSON.stringify({ redirect_to: location.hostname, invite: invite, nonce: d.nonce }));
+
+        fetch('/api/auth/config')
+          .then(function(r) { return r.ok ? r.json() : Promise.reject('config_failed'); })
+          .then(function(cfg) {
+            var clientId = cfg.googleClientId;
+            var redirectUri = cfg.oauthCallbackUrl;
+            var url = 'https://accounts.google.com/o/oauth2/v2/auth'
+              + '?client_id=' + encodeURIComponent(clientId)
+              + '&redirect_uri=' + encodeURIComponent(redirectUri)
+              + '&scope=' + encodeURIComponent('openid email profile')
+              + '&response_type=code'
+              + '&state=' + encodeURIComponent(state);
+            location.href = url;
+          })
+          .catch(function() { showPanel('error'); });
+      })
+      .catch(function() { showPanel('error'); });
+  }
+
+  // --- Event dispatch ---
+  function fireEvent() {
+    try { document.dispatchEvent(new CustomEvent('sd:auth')); } catch(e) {}
+  }
+
+  // --- SD API object ---
+  var SD = {
+    getUser: function() {
+      var payload = parseJwt(getJwt());
+      if (!payload || isExpired(payload)) return null;
+      return { email: payload.email || '', name: payload.name || '', address: payload.address || '', dashboardId: payload.dashboardId || dashboardId };
+    },
+    isOwner: function() {
+      var payload = parseJwt(getJwt());
+      if (!payload) return false;
+      // Owner check: JWT dashboardId matches and address matches dashboard owner
+      return !!payload.address && payload.dashboardId === dashboardId;
+    },
+    logout: function() {
+      removeJwt();
+      location.reload();
+    },
+    data: {
+      get: function(collection) {
+        return fetch('/api/data/' + encodeURIComponent(collection), { headers: authHeaders() }).then(function(r) { return r.json(); });
+      },
+      post: function(collection, item) {
+        return fetch('/api/data/' + encodeURIComponent(collection), { method: 'POST', headers: authHeaders(), body: JSON.stringify(item) }).then(function(r) { return r.json(); });
+      },
+      put: function(collection, id, item) {
+        return fetch('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { method: 'PUT', headers: authHeaders(), body: JSON.stringify(item) }).then(function(r) { return r.json(); });
+      },
+      del: function(collection, id) {
+        return fetch('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { method: 'DELETE', headers: authHeaders() }).then(function(r) { return r.json(); });
+      }
+    },
+    admin: {
+      getUsers: function() {
+        return fetch(AUTH_API + '/api/auth/admin/users?dashboardId=' + encodeURIComponent(dashboardId), { headers: authHeaders() }).then(function(r) { return r.json(); });
+      },
+      revokeAccess: function(email) {
+        return fetch(AUTH_API + '/api/auth/admin/access', { method: 'DELETE', headers: authHeaders(), body: JSON.stringify({ email: email, dashboardId: dashboardId }) }).then(function(r) { return r.json(); });
+      }
+    }
+  };
+
+  window.SD = SD;
+
+  // --- Init ---
+  function init() {
+    // Handle error params from OAuth redirect
+    var params = new URLSearchParams(location.search);
+    var error = params.get('error');
+    if (error === 'no_access') { showPanel('denied'); return; }
+    if (error === 'service_unavailable' || error === 'auth_failed') { showPanel('error'); return; }
+
+    // Save invite token
+    var invite = params.get('invite');
+    if (invite) { try { sessionStorage.setItem('guestInviteToken', invite); } catch(e) {} }
+
+    // Handle magic link
+    if (handleMagicLink()) return;
+
+    // Check existing JWT
+    var payload = parseJwt(getJwt());
+    if (payload && !isExpired(payload)) {
+      fireEvent();
+      return;
+    }
+
+    // Fetch auth config
+    fetch('/api/auth/config')
+      .then(function(r) { return r.ok ? r.json() : Promise.reject('config_failed'); })
+      .then(function(cfg) {
+        if (!cfg.authEnabled) {
+          fireEvent();
+          return;
+        }
+
+        // Auth is required — show loading, try silent auto-auth
+        showPanel('loading');
+
+        var statusUrl = AUTH_API + '/api/auth/invite/status?dashboardId=' + dashboardId;
+        fetch(statusUrl, { credentials: 'include' })
+          .then(function(r) { return r.ok ? r.json() : Promise.reject('status_failed'); })
+          .then(function(data) {
+            if (data && data.mlToken) {
+              location.href = location.origin + '?ml=' + data.mlToken;
+            } else {
+              showPanel('auth');
+              wireGoogleButton();
+            }
+          })
+          .catch(function() {
+            showPanel('auth');
+            wireGoogleButton();
+          });
+      })
+      .catch(function() {
+        // Config fetch failed — show content anyway (degraded mode)
+        fireEvent();
+      });
+  }
+
+  function wireGoogleButton() {
+    var btn = document.getElementById('sd-google-btn');
+    if (btn) {
+      btn.addEventListener('click', function() { startGoogleAuth(); });
+    }
+  }
+
+  // Run on DOMContentLoaded or immediately if already loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+`;
+}
+
 function cleanupExpired<T extends { expiresAt: string }>(items: T[]): T[] {
   const now = Date.now();
   return items.filter((item) => {
@@ -2026,7 +2264,10 @@ function renderAppHtml(): string {
           document.getElementById('loginStatus').classList.add('error');
           return;
         }
-        // Успешная авторизация - перезагрузить страницу
+        // Успешная авторизация - сохранить pendingText и перезагрузить страницу
+        if (pendingText) {
+          try { sessionStorage.setItem('webchat_pending_text', pendingText); } catch(_e) {}
+        }
         window.location.reload();
       } catch (e) {
         document.getElementById('loginStatus').textContent = '⚠️ Network error';
@@ -3615,6 +3856,14 @@ function renderAppHtml(): string {
 	      setupMenu();
 	      setupExtensionMode();
         setupIntroOverlay();
+	      // Restore pendingText after Google auth reload
+	      try {
+	        var savedPending = sessionStorage.getItem('webchat_pending_text');
+	        if (savedPending) {
+	          sessionStorage.removeItem('webchat_pending_text');
+	          pendingText = savedPending;
+	        }
+	      } catch(_e) {}
 	      const ok = await loadMeAndHistory();
 	      if (ok) {
 	        // Always keep a slow polling loop as a safety net for flaky SSE/proxies.
@@ -3622,6 +3871,28 @@ function renderAppHtml(): string {
 	        setupSse();
 	        // If SSE never becomes healthy (broken proxy), polling will keep the chat live.
 	        setTimeout(() => { if (!sseHealthy) ensureFastPolling(); }, 2500);
+	        // Send restored pendingText after auth
+	        if (pendingText) {
+	          var restoredText = pendingText;
+	          pendingText = null;
+	          input.value = '';
+	          autoResizeTextarea();
+	          try {
+	            var sendResp = await fetch('/api/message', {
+	              method: 'POST',
+	              headers: { 'Content-Type': 'application/json' },
+	              body: JSON.stringify({ text: restoredText }),
+	            });
+	            if (!sendResp.ok) {
+	              var sendData = null;
+	              try { sendData = await sendResp.json(); } catch (_e2) {}
+	              var sendErr = (sendData && sendData.error) ? sendData.error : ('Request failed (' + sendResp.status + ')');
+	              showLocalSystem('⚠️ ' + sendErr);
+	            }
+	            await pollOnce();
+	            scrollToBottom();
+	          } catch(_e3) {}
+	        }
 	      } else {
 	        await renderGuest();
 	      }
@@ -4203,6 +4474,33 @@ async function main(): Promise<void> {
       return;
     }
 
+    // --- Auth config: GET /api/auth/config ---
+    // SDK calls this to check if auth is enabled for this dashboard
+    if (req.path === '/api/auth/config' && req.method === 'GET') {
+      const configSettings = loadChatSettings(parseInt(userId, 10));
+      if (configSettings.ownerAddress) {
+        const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+        const oauthCallbackUrl = process.env.GOOGLE_OAUTH_REDIRECT_URI ||
+          'https://simpledashboard.wpmix.net/api/auth/google-dashboard-callback';
+        res.json({ authEnabled: true, googleClientId, oauthCallbackUrl });
+      } else {
+        res.json({ authEnabled: false });
+      }
+      return;
+    }
+
+    // --- Auth nonce: GET /api/auth/nonce ---
+    // SDK calls this before redirecting to Google OAuth
+    if (req.path === '/api/auth/nonce' && req.method === 'GET') {
+      const nonce = crypto.randomBytes(16).toString('hex');
+      oauthNonces.set(nonce, {
+        dashboardId: `d${userId}`,
+        expires: Date.now() + 10 * 60 * 1000,
+      });
+      res.json({ nonce });
+      return;
+    }
+
     // Serve static files from user folder
     const requestedPath = req.path === '/' ? 'index.html' : req.path.slice(1);
     const filepath = path.join(userFolder, requestedPath);
@@ -4225,174 +4523,20 @@ async function main(): Promise<void> {
       return;
     }
 
-    // CHANGE: Load chatSettings to check ownerAddress for auth widget injection (Task 9)
-    // WHY: Protected dashboards (ownerAddress set) get auth widget + nonce;
-    //      unprotected dashboards get only the magic-link script.
-    const chatSettings = loadChatSettings(parseInt(userId, 10));
-
-    // Add CSP header for HTML files: browser fetch() only to same origin
+    // Add CSP header for HTML files: browser fetch() only to same origin + SDK host
     // External APIs must go through /api/fetch proxy (SSRF-protected)
     if (requestedPath.endsWith('.html') || requestedPath.endsWith('.htm') || requestedPath === 'index.html') {
-      // CHANGE: Add simpledashboard.wpmix.net to connect-src for auth widget CORS fetch (Task 9)
-      const connectSrc = chatSettings.ownerAddress
-        ? "'self' https://simpledashboard.wpmix.net"
-        : "'self'";
       res.set('Content-Security-Policy',
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' cdn.tailwindcss.com cdn.jsdelivr.net; " +
-        `connect-src ${connectSrc}; ` +
+        "script-src 'self' 'unsafe-inline' cdn.tailwindcss.com cdn.jsdelivr.net simpledashboard.wpmix.net; " +
+        "connect-src 'self' https://simpledashboard.wpmix.net; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https:; " +
         "font-src 'self' data:"
       );
     }
 
-    // Serve the file — for HTML files inject magic link handler script
-    if (filepath.endsWith('.html') || filepath.endsWith('.htm')) {
-      try {
-        const html = fs.readFileSync(filepath, 'utf8');
-        // Script checks ?ml=TOKEN param, calls /api/auth/ml, stores jwt, removes blur/overlay
-        const script = `<script>
-(function(){var p=new URLSearchParams(location.search),ml=p.get('ml');if(!ml)return;
-fetch('/api/auth/ml?token='+encodeURIComponent(ml)).then(function(r){return r.ok?r.json():Promise.reject();})
-.then(function(d){sessionStorage.setItem('dashboard_jwt',d.jwt);
-var c=document.getElementById('authDataContainer');
-if(c){c.style.filter='';c.style.pointerEvents='auto';c.style.userSelect='auto';}
-var o=document.getElementById('authOverlay');if(o)o.style.display='none';
-history.replaceState({},'',location.pathname);}).catch(function(){});})();
-</script>`;
-
-        // CHANGE: Auth widget injection for protected dashboards (Task 9)
-        // WHY: Inject auth widget script only when chatSettings.ownerAddress is set.
-        //      The widget handles guest auth (Google OAuth button, invite/status auto-auth,
-        //      error overlays for no-access/service-unavailable).
-        let authWidgetScript = '';
-        if (chatSettings.ownerAddress) {
-          const oauthNonce = crypto.randomBytes(16).toString('hex');
-
-          // Store nonce in session for CSRF validation by OAuth callback (Task 6)
-          const cookies = parseCookieHeader(req.headers.cookie);
-          const sessionId = cookies['webchat_session'];
-          if (sessionId) {
-            const sessions = cleanupExpired(readSessions());
-            const session = sessions.find((s) => s.sessionId === sessionId);
-            if (session) {
-              session.oauthNonce = oauthNonce;
-              writeSessions(sessions);
-            }
-          }
-
-          authWidgetScript = `<script>window.__OAUTH_NONCE__ = "${oauthNonce}";</script>
-<script id="auth-widget-loader">
-(function(){
-  // Exit immediately if already authenticated
-  if(sessionStorage.getItem('dashboard_jwt'))return;
-
-  var dashboardId = 'd${userId}';
-  var ownerAddress = '${chatSettings.ownerAddress}';
-  var oauthNonce = window.__OAUTH_NONCE__;
-
-  // Save invite token from URL if present
-  var params = new URLSearchParams(location.search);
-  var inviteToken = params.get('invite');
-  if(inviteToken) sessionStorage.setItem('guestInviteToken', inviteToken);
-
-  // Inject authOverlay if not already present in the document
-  if(!document.getElementById('authOverlay')){
-    var overlay = document.createElement('div');
-    overlay.id = 'authOverlay';
-    overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.85);z-index:1000;';
-    overlay.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:400px;">'
-      + '<div data-overlay="no-access" style="display:none;"><p style="font-size:18px;">Access denied. You do not have permission to view this dashboard.</p></div>'
-      + '<div data-overlay="service-unavailable" style="display:none;"><p style="font-size:18px;">Authentication service is temporarily unavailable. Please try again later.</p></div>'
-      + '<div data-overlay="auth-widget" style="display:none;">'
-      + '<p style="font-size:18px;margin-bottom:16px;">Sign in to access this dashboard</p>'
-      + '<button id="googleOAuthBtn" style="display:inline-block;padding:12px 24px;background:#4285F4;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">Sign in with Google</button>'
-      + '</div>'
-      + '</div>';
-    document.body.appendChild(overlay);
-  }
-
-  function showOverlay(name){
-    var ov = document.getElementById('authOverlay');
-    if(!ov) return;
-    ov.style.display = 'block';
-    ov.querySelectorAll('[data-overlay]').forEach(function(el){ el.style.display = 'none'; });
-    var target = ov.querySelector('[data-overlay="' + name + '"]');
-    if(target) target.style.display = 'block';
-  }
-
-  // Handle error query params from OAuth callback redirects
-  var errorParam = params.get('error');
-  if(errorParam === 'no_access'){ showOverlay('no-access'); return; }
-  if(errorParam === 'service_unavailable'){ showOverlay('service-unavailable'); return; }
-
-  // Disable OAuth button during status check
-  var oauthBtn = document.getElementById('googleOAuthBtn');
-  if(oauthBtn) oauthBtn.disabled = true;
-
-  // Try silent auto-auth via invite/status endpoint
-  var statusUrl = 'https://simpledashboard.wpmix.net/api/auth/invite/status?dashboardId=' + dashboardId;
-  var statusDone = false;
-  var statusTimeout = setTimeout(function(){
-    if(statusDone) return;
-    statusDone = true;
-    if(oauthBtn) oauthBtn.disabled = false;
-    if(ownerAddress) showOverlay('auth-widget');
-  }, 10000);
-
-  fetch(statusUrl, {credentials:'include'}).then(function(r){
-    if(statusDone) return;
-    statusDone = true;
-    clearTimeout(statusTimeout);
-    if(r.ok) return r.json();
-    throw new Error('not ok');
-  }).then(function(data){
-    if(data && data.mlToken){
-      location.href = location.origin + '?ml=' + data.mlToken;
-    } else {
-      if(oauthBtn) oauthBtn.disabled = false;
-      if(ownerAddress) showOverlay('auth-widget');
-    }
-  }).catch(function(){
-    if(statusDone) return;
-    statusDone = true;
-    clearTimeout(statusTimeout);
-    if(oauthBtn) oauthBtn.disabled = false;
-    if(ownerAddress) showOverlay('auth-widget');
-  });
-
-  // Wire up Google OAuth button
-  if(oauthBtn){
-    oauthBtn.addEventListener('click', function(){
-      var invite = sessionStorage.getItem('guestInviteToken') || '';
-      var state = btoa(JSON.stringify({redirect_to: location.hostname, invite: invite, nonce: oauthNonce}));
-      sessionStorage.removeItem('guestInviteToken');
-      var clientId = '531979133429-b20qi1v15bgoq724tfk808lr1u3a1ev2';
-      var redirectUri = 'https://simpledashboard.wpmix.net/api/auth/google-dashboard-callback';
-      var url = 'https://accounts.google.com/o/oauth2/v2/auth'
-        + '?client_id=' + encodeURIComponent(clientId)
-        + '&redirect_uri=' + encodeURIComponent(redirectUri)
-        + '&scope=' + encodeURIComponent('openid email profile')
-        + '&response_type=code'
-        + '&state=' + encodeURIComponent(state);
-      location.href = url;
-    });
-  }
-})();
-</script>`;
-        }
-
-        const injected = html.includes('</body>')
-          ? html.replace('</body>', script + authWidgetScript + '</body>')
-          : html + script + authWidgetScript;
-        res.set('Content-Type', 'text/html; charset=utf-8');
-        res.send(injected);
-      } catch {
-        res.sendFile(filepath); // fallback if read fails
-      }
-      return;
-    }
+    // Serve static files directly — auth is handled by SDK (auth.js) included in dashboard HTML
     res.sendFile(filepath);
   });
 
@@ -4508,6 +4652,9 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
 
   // In-memory storage for invite tokens (no TTL — persist indefinitely until deleted)
   const inviteTokens = new Map<string, string>(); // dashboardUserId → token
+
+  // In-memory storage for OAuth nonces (TTL 10 min, used by SDK auth flow)
+  const oauthNonces = new Map<string, { dashboardId: string; expires: number }>();
   // Hydrate invite tokens from disk (survive process restarts).
   for (const record of readInvites()) {
     inviteTokens.set(record.dashboardUserId, record.token);
@@ -4547,6 +4694,9 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     }
     for (const [k, v] of magicLinkTokens) {
       if (v.expires < now) magicLinkTokens.delete(k);
+    }
+    for (const [k, v] of oauthNonces) {
+      if (v.expires < now) oauthNonces.delete(k);
     }
   }, 60 * 1000);
   sweepTimer.unref?.();
@@ -5222,6 +5372,16 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     })(req, res, next);
   });
 
+  // --- SDK Auth JS ---
+  // Serves the client-side auth SDK for dashboards.
+  // Dashboards include <script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+  app.get('/sdk/auth.js', (_req, res) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(getAuthSdkJs());
+  });
+
   app.get('/extension-panel-shared.js', (_req, res) => {
     if (!fs.existsSync(EXTENSION_PANEL_SHARED_JS_PATH)) {
       res.status(404).type('text/plain; charset=utf-8').send('Not Found');
@@ -5875,18 +6035,26 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     const codeRaw = typeof req.query['code'] === 'string' ? req.query['code'] : '';
 
     try {
-      // --- Validate CSRF nonce against session ---
+      // --- Validate CSRF nonce against session or oauthNonces Map ---
       const testSecret = process.env.GOOGLE_AUTH_TEST_SECRET;
       const isTestNonce = testSecret && nonce === 'test-nonce';
       if (!isTestNonce) {
-        const cookies = parseCookieHeader(req.headers.cookie);
-        const sid = cookies['webchat_session'];
-        const sessions = cleanupExpired(readSessions());
-        const session = sessions.find((s) => s.sessionId === sid);
-        const sessionNonce = session?.oauthNonce;
-        if (!nonce || !sessionNonce || nonce !== sessionNonce) {
-          res.redirect(302, `${safeRedirectBase}?error=auth_failed`);
-          return;
+        // Check oauthNonces Map first (SDK auth flow)
+        const mapEntry = nonce ? oauthNonces.get(nonce) : undefined;
+        if (mapEntry && mapEntry.expires > Date.now()) {
+          // Valid nonce from SDK — consume it
+          oauthNonces.delete(nonce);
+        } else {
+          // Fallback: check session-based nonce (legacy server-injection flow)
+          const cookies = parseCookieHeader(req.headers.cookie);
+          const sid = cookies['webchat_session'];
+          const sessions = cleanupExpired(readSessions());
+          const session = sessions.find((s) => s.sessionId === sid);
+          const sessionNonce = session?.oauthNonce;
+          if (!nonce || !sessionNonce || nonce !== sessionNonce) {
+            res.redirect(302, `${safeRedirectBase}?error=auth_failed`);
+            return;
+          }
         }
       }
       // NOTE: test bypass — if GOOGLE_AUTH_TEST_SECRET is set and state.nonce === 'test-nonce',

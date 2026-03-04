@@ -9,7 +9,21 @@ tags: [dashboard, analytics, business, chartjs, tailwind, visualization, spa, i1
 
 ## Система авторизации
 
-**НЕ реализуй авторизацию вручную в index.html. Платформа управляет auth автоматически.**
+**НЕ реализуй авторизацию вручную в index.html. Авторизация управляется через SDK.**
+
+### Подключение SDK
+
+Добавь перед `</body>` в index.html:
+```html
+<script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+```
+
+SDK автоматически:
+1. Проверяет, включена ли авторизация для дашборда
+2. Показывает overlay с кнопкой "Sign in with Google" если юзер не залогинен
+3. Обрабатывает magic-link и invite-link токены из URL
+4. Сохраняет JWT в `sessionStorage` под ключом `dashboard_jwt`
+5. Экспортирует `window.SD` — API для работы с авторизацией и данными
 
 ### Что уже встроено (не нужно кодить)
 
@@ -25,7 +39,45 @@ tags: [dashboard, analytics, business, chartjs, tailwind, visualization, spa, i1
 | Поделиться с гостем | Попросить «пришли invite link» → гость входит через Google OAuth |
 | Публичный дашборд | По умолчанию — никакой auth не нужен |
 
-Auth widget автоматически встраивается платформой в защищённые дашборды — ничего добавлять не нужно.
+**Твой index.html НЕ должен содержать никаких экранов логина, кнопок "/login", форм авторизации.**
+
+### SDK API (`window.SD`)
+
+```javascript
+SD.getUser()                    // → { email, name, address, dashboardId } или null
+SD.isOwner()                    // → true если JWT.address === ownerAddress
+SD.logout()                     // → clear JWT, reload
+
+SD.data.get(collection)         // → GET /api/data/{collection} с JWT
+SD.data.post(collection, item)  // → POST
+SD.data.put(collection, id, item) // → PUT
+SD.data.del(collection, id)     // → DELETE
+
+SD.admin.getUsers()             // → список авторизованных юзеров (только для owner)
+SD.admin.revokeAccess(email)    // → отозвать доступ (только для owner)
+```
+
+### Готовый код для header с юзером и кнопкой выхода
+
+```html
+<!-- В header добавь блок юзера (hidden по умолчанию) -->
+<div id="hdr-user-block" class="hidden flex items-center gap-4">
+  <span id="hdr-user" class="text-sm text-white/30 max-w-[180px] truncate"></span>
+  <button id="btn-logout" class="text-sm text-white/30 hover:text-white/70 transition-colors"></button>
+</div>
+```
+
+```javascript
+/* После подключения SDK — слушаем событие sd:auth */
+document.addEventListener('sd:auth', function() {
+  var user = SD.getUser();
+  if (user) {
+    document.getElementById('hdr-user').textContent = user.name || user.email;
+    document.getElementById('hdr-user-block').classList.remove('hidden');
+  }
+});
+document.getElementById('btn-logout').onclick = function() { SD.logout(); };
+```
 
 ### Что делать когда пользователь просит «добавить авторизацию»
 
@@ -37,14 +89,17 @@ Auth widget автоматически встраивается платформ
    - Попросить в чате «пришли invite link» → получит ссылку вида `https://d{USERID}.wpmix.net?invite=...`
    - Ссылка **бессрочная и без лимита использований** — как Google Docs "у кого есть ссылка"
    - Каждый кто переходит по ней — входит через Google Sign-In и попадает в базу платформы
-   - Auth widget встраивается автоматически, код в index.html не нужен
+   - SDK показывает overlay автоматически
    - Ссылку можно отозвать через «пришли новый invite link»
 
 ### Запрещено
 
+- Создавать свой экран логина, login-форму, кнопку "/login"
 - `fetch('/api/auth/login', { body: JSON.stringify({ email, password }) })` — этот endpoint принимает Ethereum подпись, вернёт 400
 - Добавлять Google OAuth / Firebase Auth / Auth0 вручную
 - Реализовывать регистрацию пользователей — `/api/auth/register` серверный, закрыт от браузера
+- `fetch('/api/me')` — не работает на d*.wpmix.net (нет такого роута)
+- `window.location.href = '/login'` или `'/logout'` — нет таких роутов на d*.wpmix.net
 
 ## Showcases (готовые примеры)
 

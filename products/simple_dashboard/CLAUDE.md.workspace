@@ -15,5 +15,43 @@ Key rules (summary):
 - Always save as `index.html` (never dashboard.html, report.html, etc.)
 - Single-file SPA: Tailwind CSS + Chart.js via CDN only
 - Use `tt()` for i18n (EN default, RU if browser language starts with ru)
-- Auth: платформа управляет авторизацией автоматически (Magic Link, Invite через Google, Extension).
-  НЕ реализуй auth вручную. Подробности — в SKILL.md секция "Система авторизации".
+
+## Auth — КРИТИЧЕСКИ ВАЖНО
+
+**Авторизация управляется через SDK. НЕ реализуй auth вручную.**
+
+SDK подключается одной строкой перед `</body>`:
+```html
+<script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+```
+
+SDK автоматически показывает overlay "Sign in with Google" для защищённых дашбордов.
+JWT хранится в `sessionStorage` → ключ `dashboard_jwt`.
+API доступен через `window.SD`.
+
+### ЗАПРЕЩЕНО создавать в index.html:
+- Экраны логина / login-формы / кнопки `href="/login"`
+- Google OAuth / Firebase Auth / Auth0 вручную
+- `fetch('/api/me')` — нет такого роута на d*.wpmix.net
+- `fetch('/api/auth/login')` — принимает Ethereum подпись, вернёт 400
+- `window.location.href = '/login'` или `'/logout'`
+
+### Если нужен header с именем юзера и кнопкой "Выйти":
+```html
+<div id="hdr-user-block" class="hidden flex items-center gap-4">
+  <span id="hdr-user" class="text-sm text-white/30 truncate"></span>
+  <button id="btn-logout" class="text-sm text-white/30 hover:text-white/70"></button>
+</div>
+```
+```javascript
+document.addEventListener('sd:auth', function() {
+  var user = SD.getUser();
+  if (user) {
+    document.getElementById('hdr-user').textContent = user.name || user.email;
+    document.getElementById('hdr-user-block').classList.remove('hidden');
+  }
+});
+document.getElementById('btn-logout').onclick = function() { SD.logout(); };
+```
+
+Подробнее — в SKILL.md секция "Система авторизации".
