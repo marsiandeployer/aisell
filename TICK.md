@@ -543,6 +543,115 @@ for bot, cnt in sorted(bots.items(), key=lambda x: -x[1]):
 
 ---
 
+## 6.5. Abandoned Workspace Cleanup (botplatform)
+
+Найди и удали брошенные папки пользователей SimpleDashboard — нет изменений файлов 60+ дней, нет активных сессий.
+
+```bash
+python3 -c "
+import json, os, shutil, time
+from datetime import datetime, timezone
+
+WORKSPACES_ROOT = '/root/aisell/botplatform/group_data'
+USERS_FILE = '/root/aisell/botplatform/data/webchat/users.json'
+SESSIONS_FILE = '/root/aisell/botplatform/data/webchat/sessions.json'
+CHATS_DIR = '/root/aisell/botplatform/data/webchat/chats'
+CUTOFF_DAYS = 60
+
+now = datetime.now(timezone.utc)
+now_ts = now.timestamp()
+
+# Активные сессии (незаистекшие)
+active_user_ids = set()
+if os.path.exists(SESSIONS_FILE):
+    with open(SESSIONS_FILE) as f:
+        sessions = json.load(f)
+    for s in sessions:
+        try:
+            exp = datetime.fromisoformat(s['expiresAt'].replace('Z', '+00:00'))
+            if exp > now:
+                active_user_ids.add(s['userId'])
+        except:
+            pass
+
+to_delete = []
+keep = []
+
+for d in sorted(os.listdir(WORKSPACES_ROOT)):
+    if not d.startswith('user_'):
+        continue
+    uid_str = d[len('user_'):]
+    if not uid_str.isdigit():
+        continue
+    uid = int(uid_str)
+    folder = os.path.join(WORKSPACES_ROOT, d)
+
+    # Пропустить если активная сессия
+    if uid in active_user_ids:
+        keep.append(f'  {d}: active session — skip')
+        continue
+
+    # Найти время последнего изменения любого файла в папке
+    latest_mtime = 0
+    for fname in os.listdir(folder):
+        fpath = os.path.join(folder, fname)
+        try:
+            mtime = os.path.getmtime(fpath)
+            if mtime > latest_mtime:
+                latest_mtime = mtime
+        except:
+            pass
+
+    if latest_mtime == 0:
+        # Пустая папка — только CLAUDE.md
+        latest_mtime = os.path.getmtime(folder)
+
+    idle_days = (now_ts - latest_mtime) / 86400
+
+    if idle_days >= CUTOFF_DAYS:
+        to_delete.append((d, uid, idle_days))
+    else:
+        keep.append(f'  {d}: {int(idle_days)}d idle — keep')
+
+print(f'=== Abandoned Workspace Cleanup (>{CUTOFF_DAYS}d idle) ===')
+print(f'Total workspaces scanned: {len(to_delete) + len(keep)}')
+print(f'Active sessions: {len(active_user_ids)}')
+print(f'To delete: {len(to_delete)}')
+print(f'To keep: {len(keep)}')
+
+if not to_delete:
+    print('Nothing to delete.')
+else:
+    print()
+    print('Deleting:')
+    deleted = 0
+    for (d, uid, idle_days) in to_delete:
+        folder = os.path.join(WORKSPACES_ROOT, d)
+        chat_file = os.path.join(CHATS_DIR, f'{uid}.json')
+        try:
+            shutil.rmtree(folder)
+            if os.path.exists(chat_file):
+                os.remove(chat_file)
+            print(f'  ✅ Deleted {d} (idle {int(idle_days)}d)')
+            deleted += 1
+        except Exception as e:
+            print(f'  ❌ Failed {d}: {e}')
+
+    # Убрать из users.json (опционально — сохраняем email на случай повторного входа)
+    # НЕ удаляем из users.json, чтобы userId не переиспользовался
+    print(f'Deleted: {deleted}/{len(to_delete)} workspaces')
+    print('Note: users.json entries kept (userId must not be reused)')
+"
+```
+
+**Критерии удаления:**
+- Нет активных сессий (не залогинен прямо сейчас)
+- Последнее изменение файлов в папке — 60+ дней назад
+- Удаляется: папка `group_data/user_{id}/` + файл чата `chats/{id}.json`
+- НЕ удаляется: запись в `users.json` (чтобы userId не переиспользовался)
+
+---
+
 ## 7. Anomaly Detection
 
 Проверь аномалии:
