@@ -441,19 +441,26 @@ function getProductSkillMdPath(): string {
   return path.join(__dirname, `../../products/${productType}/SKILL.md`);
 }
 
-// Copy product SKILL.md as CLAUDE.md into the user workspace so Claude follows
-// product-specific rules (e.g. "always save as index.html").
+// Write a lightweight CLAUDE.md into the user workspace that references the product SKILL.md.
+// WHY: SKILL.md is a standalone skill for independent deployments. CLAUDE.md in the workspace
+// should be minimal — just user-specific data + path to SKILL.md. No duplication of 26KB content.
+// CHANGE: Use CLAUDE.md.workspace template instead of copying full SKILL.md.
 // Called once when the workspace folder is first created by webchat auth handlers.
 function maybeWriteWorkspaceClaude(userFolder: string, userId: number): void {
   const claudePath = path.join(userFolder, 'CLAUDE.md');
   if (fs.existsSync(claudePath)) return;
-  const skillMdPath = getProductSkillMdPath();
-  if (!skillMdPath || !fs.existsSync(skillMdPath)) return;
+  const productType = String(process.env.PRODUCT_TYPE || '').trim().toLowerCase();
+  if (!productType) return;
+  // Prefer CLAUDE.md.workspace template; fall back to SKILL.md for products without one.
+  const workspaceTemplatePath = path.join(__dirname, `../../products/${productType}/CLAUDE.md.workspace`);
+  const skillMdPath = path.join(__dirname, `../../products/${productType}/SKILL.md`);
+  const templatePath = fs.existsSync(workspaceTemplatePath) ? workspaceTemplatePath : (fs.existsSync(skillMdPath) ? skillMdPath : '');
+  if (!templatePath) return;
   try {
-    let content = fs.readFileSync(skillMdPath, 'utf8');
+    let content = fs.readFileSync(templatePath, 'utf8');
     content = content.replace(/\{USERID\}/g, String(userId));
     fs.writeFileSync(claudePath, content, { encoding: 'utf8', mode: 0o600 });
-    console.log(`✅ [webchat] Wrote CLAUDE.md from SKILL.md for userId=${userId}`);
+    console.log(`✅ [webchat] Wrote CLAUDE.md for userId=${userId} (from ${path.basename(templatePath)})`);
   } catch (err) {
     console.warn(`⚠️ [webchat] Failed to write CLAUDE.md for userId=${userId}:`, err);
   }

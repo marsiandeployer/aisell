@@ -1,0 +1,18 @@
+# SimpleDashboard — User Workspace
+
+**userId**: {USERID}
+**Dashboard URL**: https://d{USERID}.wpmix.net/
+
+## Product Instructions
+
+Read the full product skill for all rules, templates, and architecture:
+
+```
+/root/aisell/products/simple_dashboard/SKILL.md
+```
+
+Key rules (summary):
+- Always save as `index.html` (never dashboard.html, report.html, etc.)
+- Single-file SPA: Tailwind CSS + Chart.js via CDN only
+- Use `tt()` for i18n (EN default, RU if browser language starts with ru)
+- Do NOT add Google OAuth / Firebase Auth — use platform's Auth API `/api/auth/login`
