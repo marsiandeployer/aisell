@@ -1,17 +1,17 @@
 slug: "mcw-wallet"
-caption: "Multi-Currency Crypto Wallet"
-caption_ru: "Мультивалютный криптокошелёк"
+caption: "BNB Chain Crypto Wallet"
+caption_ru: "Крипто-кошелёк на BNB Chain"
 product: "simple_crypto"
 
-demo_url: "https://wallet.wpmix.net/"
-source_screenshot: "https://onout.org/wallet/images/screens.png"
+prompt: "Create a white-label BNB Chain crypto wallet for my DeFi project called MoonPay with purple branding"
+prompt_ru: "Создай white-label криптокошелёк на BNB Chain для моего DeFi проекта MoonPay с фиолетовым брендингом"
 
-reproduction_steps:
-  - "Purchase plugin from CodeCanyon item 23532064"
-  - "Upload ZIP to WordPress Admin → Plugins → Upload Plugin"
-  - "Activate plugin"
-  - "Add shortcode [multi-currency-wallet currencies='BTC,ETH,USDT'] to page"
-  - "Open page — wallet is live"
+tags: ["wallet", "bnb-chain", "defi", "white-label", "mcw"]
+
+description: |
+  White-label crypto wallet based on MultiCurrencyWallet (MCW).
+  BNB Chain + Ethereum, custom brand color, commission fee.
+  Generated config files: erc20tokens.js + variables.css + deploy instructions.
 
 jit_data_generation: false
 bilingual: true

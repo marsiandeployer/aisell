@@ -1,112 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SimpleCrypto — Multi-Currency Wallet</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background: #0a0a0f; font-family: system-ui, sans-serif; }
-    #walletFrame { border: none; width: 100%; height: 100%; }
-    #fallback img { max-width: 100%; border-radius: 12px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoonPay Wallet — SimpleCrypto Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --color-brand: #8B5CF6;
+    --color-brand-hover: #A78BFA;
+    --color-brand-bg: rgba(139,92,246,0.1);
+  }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0f0e17; color: #fff; }
+  .card { background: #1a1925; border: 1px solid #2a2940; border-radius: 12px; }
+  .sidebar { background: #131220; border-right: 1px solid #2a2940; }
+  .nav-active { background: var(--color-brand-bg); color: var(--color-brand); border-left: 3px solid var(--color-brand); }
+  .nav-item { padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #9ca3af; display: flex; align-items: center; gap: 10px; margin: 2px 0; }
+  .nav-item:hover { background: #1e1d30; color: #e5e7eb; }
+  .balance-card { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #8b5cf6 100%); border-radius: 16px; padding: 24px; }
+  .token-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #2a2940; }
+  .token-row:last-child { border-bottom: none; }
+  .tab { padding: 8px 20px; border-radius: 999px; font-size: 14px; cursor: pointer; color: #9ca3af; }
+  .tab.active { background: var(--color-brand); color: #fff; }
+  .code-block { background: #0a0a12; border: 1px solid #2a2940; border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; color: #a5f3fc; overflow-x: auto; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(16,185,129,0.1); color: #10b981; }
+  .badge-purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .config-file { display: none; }
+  .config-file.active { display: block; }
+</style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="flex h-screen overflow-hidden">
 
-  <!-- Header label -->
-  <div class="mb-4 flex items-center gap-3">
-    <div class="text-amber-400 text-2xl">🔐</div>
-    <div>
-      <div class="text-white font-bold text-lg" data-i18n="title">Multi-Currency Crypto Wallet</div>
-      <div class="text-zinc-400 text-sm" data-i18n="subtitle">Live demo — Bitcoin, Ethereum, ERC-20 + built-in exchange</div>
+<!-- Sidebar -->
+<aside class="sidebar w-56 flex-shrink-0 flex flex-col">
+  <div class="p-4 border-b border-gray-800">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--color-brand)">
+        <span class="text-white text-sm font-bold">M</span>
+      </div>
+      <span class="font-bold text-white">MoonPay</span>
     </div>
-    <a href="https://wallet.wpmix.net/" target="_blank"
-       class="ml-4 text-xs bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-1.5 rounded-full transition-colors"
-       data-i18n="openFull">Open full demo →</a>
+    <div class="mt-1 text-xs text-gray-500">White-label Wallet</div>
   </div>
 
-  <!-- iframe wrapper — real product -->
-  <div class="w-full max-w-3xl bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800"
-       style="height: 560px;">
-    <iframe id="walletFrame"
-            src="https://wallet.wpmix.net/"
-            title="Multi-Currency Wallet Demo"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-forms">
-    </iframe>
+  <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+    <div class="nav-item nav-active" onclick="showPage('wallet', this)">
+      <span>&#x1F4BC;</span> Wallet
+    </div>
+    <div class="nav-item" onclick="showPage('exchange', this)">
+      <span>&#x1F504;</span> Exchange
+    </div>
+    <div class="nav-item" onclick="showPage('config', this)">
+      <span>&#x2699;&#xFE0F;</span> Config Files
+    </div>
+    <div class="nav-item" onclick="showPage('deploy', this)">
+      <span>&#x1F680;</span> Deploy
+    </div>
+  </nav>
+
+  <div class="p-3 border-t border-gray-800">
+    <div class="text-xs text-gray-600 mb-1">Powered by MCW</div>
+    <div class="text-xs" style="color: var(--color-brand)">swaponline.github.io</div>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto p-6">
+
+  <!-- WALLET PAGE -->
+  <div id="page-wallet" class="page active">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-xl font-bold">My Wallet</h1>
+      <div class="flex gap-2">
+        <span class="badge badge-purple">BNB Chain</span>
+        <span class="badge badge-green">&#x25CF; Live</span>
+      </div>
+    </div>
+
+    <div class="balance-card mb-6">
+      <div class="text-purple-200 text-sm mb-1">Total Balance</div>
+      <div class="text-3xl font-bold mb-1">$4,812.50</div>
+      <div class="text-purple-300 text-sm">+$142.30 (3.05%) today</div>
+      <div class="flex gap-3 mt-5">
+        <button class="px-4 py-2 bg-white text-purple-700 rounded-lg text-sm font-semibold">Send</button>
+        <button class="px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg text-sm">Receive</button>
+        <button class="px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg text-sm">Swap</button>
+      </div>
+    </div>
+
+    <div class="card p-4 mb-4">
+      <h2 class="font-semibold mb-3 text-gray-300 text-sm">Your Assets</h2>
+
+      <div class="token-row">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-yellow-500 flex items-center justify-center font-bold text-black text-sm">B</div>
+          <div><div class="font-medium">BNB</div><div class="text-gray-500 text-xs">BNB Chain</div></div>
+        </div>
+        <div class="text-right"><div class="font-medium">8.42 BNB</div><div class="text-gray-500 text-xs">$2,442.18</div></div>
+      </div>
+
+      <div class="token-row">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center font-bold text-white text-sm">U</div>
+          <div><div class="font-medium">USDT</div><div class="text-gray-500 text-xs">BEP-20 Token</div></div>
+        </div>
+        <div class="text-right"><div class="font-medium">1,870.32</div><div class="text-gray-500 text-xs">$1,870.32</div></div>
+      </div>
+
+      <div class="token-row">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm" style="background: var(--color-brand)">M</div>
+          <div><div class="font-medium">MOON</div><div class="text-gray-500 text-xs">Custom BEP-20 Token</div></div>
+        </div>
+        <div class="text-right"><div class="font-medium">50,000 MOON</div><div class="text-gray-500 text-xs">$500.00</div></div>
+      </div>
+
+      <div class="token-row">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-sm">E</div>
+          <div><div class="font-medium">ETH</div><div class="text-gray-500 text-xs">Ethereum</div></div>
+        </div>
+        <div class="text-right"><div class="font-medium">0.0532 ETH</div><div class="text-gray-500 text-xs">$142.00</div></div>
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <h2 class="font-semibold mb-3 text-gray-300 text-sm">Recent Transactions</h2>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-green-400 text-lg">&#x2193;</span>
+            <div><div class="text-sm">Received BNB</div><div class="text-gray-500 text-xs">2 min ago</div></div>
+          </div>
+          <div class="text-green-400 text-sm">+0.5 BNB</div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-red-400 text-lg">&#x2191;</span>
+            <div><div class="text-sm">Sent USDT</div><div class="text-gray-500 text-xs">1 hour ago</div></div>
+          </div>
+          <div class="text-red-400 text-sm">-200 USDT</div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-blue-400 text-lg">&#x21C4;</span>
+            <div><div class="text-sm">Swapped BNB &rarr; USDT</div><div class="text-gray-500 text-xs">3 hours ago</div></div>
+          </div>
+          <div class="text-blue-400 text-sm">1 BNB</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Fallback: shows if iframe blocked by X-Frame-Options -->
-  <div id="fallback" class="hidden w-full max-w-3xl mt-4 text-center">
-    <a href="https://wallet.wpmix.net/" target="_blank">
-      <img src="https://onout.org/wallet/images/screens.png"
-           alt="Multi-Currency Wallet — screens"
-           class="mx-auto rounded-xl border border-zinc-700 shadow-xl">
-    </a>
-    <p class="text-zinc-500 text-sm mt-3" data-i18n="iframeBlocked">
-      Preview not available — <a href="https://wallet.wpmix.net/" target="_blank" class="text-amber-400 underline">open live demo</a>
-    </p>
+  <!-- EXCHANGE PAGE -->
+  <div id="page-exchange" class="page">
+    <h1 class="text-xl font-bold mb-6">Exchange</h1>
+    <div class="max-w-md">
+      <div class="card p-5">
+        <div class="mb-4">
+          <div class="text-gray-400 text-sm mb-2">You send</div>
+          <div class="flex items-center gap-3 bg-gray-900 rounded-lg p-3">
+            <div class="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center font-bold text-black text-xs">B</div>
+            <input class="flex-1 bg-transparent text-white text-lg outline-none" value="1.0" type="number">
+            <div class="text-gray-400 font-medium">BNB</div>
+          </div>
+          <div class="text-gray-500 text-xs mt-1 ml-1">~$290.12</div>
+        </div>
+
+        <div class="flex justify-center my-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-lg" style="background: var(--color-brand)">&#x21C5;</div>
+        </div>
+
+        <div class="mb-5">
+          <div class="text-gray-400 text-sm mb-2">You receive</div>
+          <div class="flex items-center gap-3 bg-gray-900 rounded-lg p-3">
+            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center font-bold text-white text-xs">U</div>
+            <input class="flex-1 bg-transparent text-white text-lg outline-none" value="289.25" readonly>
+            <div class="text-gray-400 font-medium">USDT</div>
+          </div>
+        </div>
+
+        <div class="text-xs text-gray-500 mb-4 space-y-1">
+          <div class="flex justify-between"><span>Rate</span><span>1 BNB = 289.25 USDT</span></div>
+          <div class="flex justify-between"><span>Fee (0.3%)</span><span>0.003 BNB &rarr; fee wallet</span></div>
+          <div class="flex justify-between"><span>Method</span><span>P2P Atomic Swap</span></div>
+        </div>
+
+        <button class="w-full py-3 rounded-lg text-white font-semibold" style="background: var(--color-brand)">
+          Start Exchange
+        </button>
+      </div>
+
+      <div class="mt-4 text-center text-xs text-gray-600">
+        P2P exchange via MultiCurrencyWallet protocol. Non-custodial.
+      </div>
+    </div>
   </div>
 
-  <!-- Config hint -->
-  <div class="mt-4 w-full max-w-3xl bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-    <div class="text-xs text-zinc-500 mb-2 font-mono" data-i18n="configLabel">Configure for your project (WordPress shortcode):</div>
-    <pre class="text-amber-300 text-xs font-mono bg-zinc-950 rounded-lg p-3 overflow-x-auto">[multi-currency-wallet
-  currencies="BTC,ETH,USDT,BNB"
-  theme="dark"
-  exchange="true"
-]</pre>
-    <div class="text-xs text-zinc-600 mt-2" data-i18n="noNpm">No npm install — upload ZIP to WordPress Admin, paste shortcode, done.</div>
+  <!-- CONFIG PAGE -->
+  <div id="page-config" class="page">
+    <h1 class="text-xl font-bold mb-2">Generated Config Files</h1>
+    <p class="text-gray-400 text-sm mb-6">AI-generated configuration for MoonPay wallet. Overlay on MCW build-mainnet/</p>
+
+    <div class="flex gap-2 mb-4">
+      <button class="tab active" onclick="showConfig('ercjs', this)">erc20tokens.js</button>
+      <button class="tab" onclick="showConfig('css', this)">variables.css</button>
+      <button class="tab" onclick="showConfig('styles', this)">customStyles.css</button>
+    </div>
+
+    <div id="config-ercjs" class="config-file active">
+      <div class="code-block"><pre>window.widgetEvmLikeTokens = [
+  {
+    standard: 'bep20',
+    address: '0x0ED943Ce24BaEBf257488771759F9BF482C39706',
+    decimals: 18,
+    symbol: 'MOON',
+    fullName: 'MoonPay Token',
+    icon: 'https://moonpay.example.com/logo.png',
+    iconBgColor: '#8B5CF6',
+  }
+]
+
+window.SO_MenuItemsAfter = [
+  { title: 'About MoonPay', link: 'https://moonpay.example.com' },
+]
+
+window.widgetERC20Comisions = {
+  bnb: {
+    fee: '0.3',
+    address: '0xYourFeeWallet',
+    min: '0.001',
+  },
+}
+
+window.buildOptions = {
+  curEnabled: {
+    btc: false,
+    eth: true,
+    bnb: true,
+    matic: false,
+    arbeth: false,
+    aureth: false,
+    xdai: false,
+    avax: false,
+    movr: false,
+    one: false,
+    ghost: false,
+    next: false,
+  },
+  blockchainSwapEnabled: {
+    btc: false,
+    eth: false,
+    bnb: false,
+    matic: false,
+  },
+  defaultExchangePair: {
+    buy: '{bnb}usdt',
+    sell: 'bnb',
+  },
+  showWalletBanners: false,
+  showHowItsWork: false,
+  invoiceEnabled: false,
+  addCustomTokens: false,
+}</pre></div>
+    </div>
+
+    <div id="config-css" class="config-file">
+      <div class="code-block"><pre>:root,
+[data-scheme="default"] {
+  --color-brand: #8B5CF6;
+  --color-brand-hover: #A78BFA;
+  --color-brand-background: #8B5CF61a;
+  --button-border-radius: 0.5rem;
+  --main-component-border-radius: 0.75rem;
+}
+
+[data-scheme="dark"] {
+  --color-brand: #8B5CF6;
+  --color-brand-hover: #A78BFA;
+  --color-brand-background: #8B5CF61a;
+}</pre></div>
+    </div>
+
+    <div id="config-styles" class="config-file">
+      <div class="code-block"><pre>/* MoonPay custom styles */
+
+/* Custom header gradient */
+header {
+  background: linear-gradient(135deg, #1a0a2e 0%, #2d1b69 100%);
+}
+
+/* Smooth transitions */
+* { transition: background-color 0.2s, color 0.2s; }</pre></div>
+    </div>
   </div>
 
-  <script>
-  // Detect iframe blocked → show fallback
-  var iframe = document.getElementById('walletFrame');
-  var fallback = document.getElementById('fallback');
-  iframe.addEventListener('error', function() {
-    iframe.parentElement.classList.add('hidden');
-    fallback.classList.remove('hidden');
-  });
-  // Timeout fallback (X-Frame-Options won't fire 'error')
-  setTimeout(function() {
-    try {
-      var doc = iframe.contentDocument || iframe.contentWindow.document;
-      if (!doc || doc.readyState !== 'complete') throw new Error();
-    } catch(e) {
-      iframe.parentElement.classList.add('hidden');
-      fallback.classList.remove('hidden');
+  <!-- DEPLOY PAGE -->
+  <div id="page-deploy" class="page">
+    <h1 class="text-xl font-bold mb-6">Deployment Guide</h1>
+
+    <div class="space-y-4 max-w-2xl">
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--color-brand)">1</span>
+          <h3 class="font-semibold">Copy MCW base files</h3>
+        </div>
+        <div class="code-block"><pre>cp -r /root/MultiCurrencyWallet/build-mainnet/ /var/www/moonpay-wallet/</pre></div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--color-brand)">2</span>
+          <h3 class="font-semibold">Overlay your config files</h3>
+        </div>
+        <div class="code-block"><pre>cp erc20tokens.js variables.css customStyles.css \
+   /var/www/moonpay-wallet/</pre></div>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--color-brand)">3</span>
+          <h3 class="font-semibold">Nginx config</h3>
+        </div>
+        <div class="code-block"><pre>server {
+    listen 80;
+    server_name wallet.moonpay.example.com;
+    root /var/www/moonpay-wallet;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
     }
-  }, 4000);
+}</pre></div>
+      </div>
 
-  // i18n
-  (function() {
-    var s = {
-      en: {
-        title: 'Multi-Currency Crypto Wallet',
-        subtitle: 'Live demo — Bitcoin, Ethereum, ERC-20 + built-in exchange',
-        openFull: 'Open full demo →',
-        iframeBlocked: 'Preview not available — open live demo',
-        configLabel: 'Configure for your project (WordPress shortcode):',
-        noNpm: 'No npm install — upload ZIP to WordPress Admin, paste shortcode, done.'
-      },
-      ru: {
-        title: 'Мультивалютный криптокошелёк',
-        subtitle: 'Живое демо — Bitcoin, Ethereum, ERC-20 + встроенный обмен',
-        openFull: 'Открыть полное демо →',
-        iframeBlocked: 'Превью недоступно — открыть живое демо',
-        configLabel: 'Настройка для вашего проекта (шорткод WordPress):',
-        noNpm: 'npm install не нужен — загрузите ZIP в WP Admin, вставьте шорткод — готово.'
-      }
-    };
-    var isRu = false;
-    try { isRu = (navigator.language||'').toLowerCase().startsWith('ru'); } catch(e){}
-    if (!isRu) return;
-    var t = s.ru;
-    document.querySelectorAll('[data-i18n]').forEach(function(el){
-      var k = el.getAttribute('data-i18n');
-      if (t[k]) el.textContent = t[k];
-    });
-  })();
-  </script>
+      <div class="card p-4" style="border-color: var(--color-brand)">
+        <div class="text-sm text-gray-300">
+          <div class="font-semibold mb-2" style="color: var(--color-brand)">&#x2713; What you get</div>
+          <ul class="space-y-1 text-gray-400">
+            <li>&#x2022; Non-custodial wallet &mdash; your users keep their keys</li>
+            <li>&#x2022; BNB Chain + Ethereum support</li>
+            <li>&#x2022; MOON token shown by default in wallet</li>
+            <li>&#x2022; 0.3% fee on BNB swaps &rarr; your fee wallet</li>
+            <li>&#x2022; Your brand colors + custom menu link</li>
+            <li>&#x2022; No server-side logic needed &mdash; pure static</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+function showPage(page, el) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('nav-active'); });
+  el.classList.add('nav-active');
+}
+
+function showConfig(file, el) {
+  document.querySelectorAll('.config-file').forEach(function(f) { f.classList.remove('active'); });
+  document.getElementById('config-' + file).classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+}
+</script>
 </body>
 </html>
