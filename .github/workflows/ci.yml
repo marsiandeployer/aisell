@@ -1,0 +1,90 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Пропустить CI если изменились только документация/черновики ──
+  check-skip:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.check.outputs.should_skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: check
+        name: Check if CI should be skipped
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD)
+          echo "Changed files:"
+          echo "$FILES"
+          # Пропускаем если изменились только: README, work/, AUTH-FLOWS.md, client-report/
+          if echo "$FILES" | grep -qvE '^(README\.md|AUTH-FLOWS\.md|work/|products/.*/showcases/client-report/)'; then
+            echo "should_skip=false" >> $GITHUB_OUTPUT
+            echo "→ Running CI (code changes detected)"
+          else
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            echo "→ Skipping CI (docs-only changes)"
+          fi
+
+  # ── Статические тесты + TypeScript build ──
+  test:
+    needs: check-skip
+    if: needs.check-skip.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: botplatform
+        run: npm install
+
+      - name: TypeScript build check
+        working-directory: botplatform
+        run: npm run build
+
+      - name: Folder structure & template checks
+        working-directory: botplatform
+        run: npm test
+
+      - name: Security precommit checks
+        working-directory: botplatform
+        run: node tests/test_security_precommit.js
+
+  # ── Деплой на production сервер (только main branch) ──
+  deploy:
+    needs: [check-skip, test]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.check-skip.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to production (95.217.227.164)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 95.217.227.164
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd /root/aisell
+            git pull origin main
+            cd botplatform
+            npm install --omit=dev
+            cd ..
+            pm2 reload ecosystem.config.js --update-env
+            echo "✅ Deploy complete: $(date)"
