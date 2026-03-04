@@ -77,6 +77,7 @@ products/simple_dashboard/
 | `aitu-web` | 8093 | AITU webchat UI |
 | `simpledashboard-web` | 8094 | SimpleDashboard webchat |
 | `dashboard-auth-api` | 8095 | Auth API (keypair, invite, JWT) |
+| `simplecrypto-web` | 8096 | SimpleCrypto webchat |
 | `noxonbot-admin` | 8889 | Админка лидов |
 | `bananzabot` | — | Конструктор ботов (Telegram) |
 | `bananzabot-admin` | 3182 | Web admin Bananzabot |
@@ -94,6 +95,7 @@ products/simple_dashboard/
 | `clodeboxbot.habab.ru` | `95.217.227.164:8091` |
 | `coderbox.wpmix.net` | `95.217.227.164:8092` |
 | `simpledashboard.wpmix.net` | `95.217.227.164:8094` |
+| `simplecrypto.wpmix.net` | `95.217.227.164:8096` |
 | `d{USERID}.wpmix.net` | `95.217.227.164` (статика) |
 
 **SSH:** `ssh root@62.109.14.209` — только для nginx конфигов и SSL.
@@ -185,6 +187,8 @@ timeout 30s pm2 logs cred-sync --lines 50 --nostream
 | `http://localhost:8093` | `aitu-web` | AITU webchat |
 | `http://localhost:8094` | `simpledashboard-web` | SimpleDashboard (локально) |
 | `https://simpledashboard.wpmix.net` | via proxy | SimpleDashboard (публично) |
+| `http://localhost:8096` | `simplecrypto-web` | SimpleCrypto (локально) |
+| `https://simplecrypto.wpmix.net` | via proxy | SimpleCrypto (публично) |
 | `https://d{USERID}.wpmix.net` | статика | Пользовательские дашборды |
 
 Webchat на `localhost` работает без логина (`userId=999999999`). Поддерживается `?prompt=...` для автоотправки.

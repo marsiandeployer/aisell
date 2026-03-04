@@ -240,7 +240,7 @@ curl -X POST https://api.moltbook.com/api/v1/posts \
 |---------|--------|-------------|------|-----------|----------|-----------------|
 | SimpleSite | active | https://simplesite.wpmix.net | 8091 | Генерация HTML | ✅ | ❌ |
 | SimpleDashboard | active | https://simpledashboard.wpmix.net | 8094 | Генерация HTML | ✅ | ✅ |
-| SimpleCrypto | dev | TBD | 8096 | Конфигурация MCW | ✅ | ✅ |
+| SimpleCrypto | active | https://simplecrypto.wpmix.net | 8096 | Конфигурация MCW | ✅ | ✅ |
 | MVP боты | bananzabot | — | — | Системный промпт | — | — |
 
 **SimpleCrypto** отличается от остальных:
