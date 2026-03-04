@@ -29,6 +29,31 @@ const WORKSPACES_ROOT = '/root/aisell/botplatform/group_data';
 const GLOBAL_CODEX_CONFIG_PATH = '/root/.codex/config.toml';
 let cachedGlobalCodexModel: string | null | undefined;
 
+// --- Output leak detection (FB-6610B7270B) ---
+const SENSITIVE_CRED_CACHE = { values: [] as string[], loadedAt: 0 };
+const CRED_CACHE_TTL_MS = 5 * 60_000;
+const MIN_CRED_LEN = 20;
+
+function extractStringValues(obj: unknown, minLen: number): string[] {
+  if (typeof obj === 'string') return obj.length >= minLen ? [obj] : [];
+  if (Array.isArray(obj)) return obj.flatMap(v => extractStringValues(v, minLen));
+  if (obj && typeof obj === 'object')
+    return Object.values(obj as Record<string, unknown>).flatMap(v => extractStringValues(v, minLen));
+  return [];
+}
+
+function refreshSensitiveCredCache(): void {
+  if (Date.now() - SENSITIVE_CRED_CACHE.loadedAt < CRED_CACHE_TTL_MS) return;
+  SENSITIVE_CRED_CACHE.loadedAt = Date.now();
+  const files = (process.env.SENSITIVE_CRED_FILES || '').split(',').filter(Boolean);
+  const collected: string[] = [];
+  for (const f of files) {
+    try { collected.push(...extractStringValues(JSON.parse(fs.readFileSync(f.trim(), 'utf8')), MIN_CRED_LEN)); }
+    catch { /* file missing or not JSON */ }
+  }
+  SENSITIVE_CRED_CACHE.values = [...new Set(collected)];
+}
+
 function readGlobalCodexModel(): string | null {
   if (cachedGlobalCodexModel !== undefined) {
     return cachedGlobalCodexModel;
@@ -805,6 +830,14 @@ export class NoxonBot {
     }
     if (!options.skipTelegramHandlers) {
       this.setupHandlers();
+    }
+
+    // CHANGE: Warm up credential cache for leak detection (FB-6610B7270B)
+    refreshSensitiveCredCache();
+    if (SENSITIVE_CRED_CACHE.values.length > 0) {
+      console.log(`[security] Leak detection: ${SENSITIVE_CRED_CACHE.values.length} credential values loaded`);
+    } else {
+      console.log('[security] Leak detection: active (static patterns only, no SENSITIVE_CRED_FILES configured)');
     }
   }
 
@@ -5037,6 +5070,61 @@ export class NoxonBot {
     ].join('\n');
   }
 
+  // CHANGE: Code-level leak detection — blocks AI output containing secrets (FB-6610B7270B)
+  // WHY: Prompt-only protection is bypassable via jailbreak; this is defense-in-depth
+  private detectSensitiveDataLeak(text: string, chatId: number): { reason: string; patternName: string } | null {
+    if (!text || text.length < 20) return null;
+
+    // Level 1: Static regex — standard secret formats (like gitleaks/GitHub secret scanning)
+    const PATTERNS = [
+      { name: 'anthropic_api_key', regex: /sk-ant-api\d+-[A-Za-z0-9_-]{20,}/ },
+      { name: 'openai_api_key',    regex: /sk-(?:proj-)?[A-Za-z0-9_-]{40,}/ },
+      { name: 'aws_access_key',    regex: /AKIA[0-9A-Z]{16}/ },
+      { name: 'private_key_pem',   regex: /-----BEGIN\s+(?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/ },
+      { name: 'eth_private_key',   regex: /\b0x[0-9a-fA-F]{64}\b/ },
+    ] as const;
+
+    for (const { name, regex } of PATTERNS) {
+      if (regex.test(text)) {
+        this.logLeakIncident(chatId, 'static', name);
+        return { reason: 'static', patternName: name };
+      }
+    }
+
+    // Level 2: Suspicious credential filenames + long secret-like string nearby
+    const SUSPICIOUS_FILES = [
+      '.credentials.json', '.claude.json', 'auth.json',
+      '.env', 'id_rsa', 'id_ed25519',
+    ];
+    const textLower = text.toLowerCase();
+    for (const fname of SUSPICIOUS_FILES) {
+      if (textLower.includes(fname)) {
+        if (/[A-Za-z0-9_-]{40,}/.test(text)) {
+          this.logLeakIncident(chatId, 'filename_with_secret', fname);
+          return { reason: 'filename_with_secret', patternName: fname };
+        }
+      }
+    }
+
+    // Level 3: Dynamic comparison with actual credential values (paths from env SENSITIVE_CRED_FILES)
+    refreshSensitiveCredCache();
+    for (const cred of SENSITIVE_CRED_CACHE.values) {
+      const needle = cred.length > 200 ? cred.slice(0, 200) : cred;
+      if (text.includes(needle)) {
+        this.logLeakIncident(chatId, 'dynamic', 'credential_value');
+        return { reason: 'dynamic', patternName: 'credential_value' };
+      }
+    }
+
+    return null;
+  }
+
+  private logLeakIncident(chatId: number, type: string, pattern: string): void {
+    console.error(
+      `[SECURITY][leak-blocked] ts=${new Date().toISOString()} chat=${chatId} type=${type} pattern=${pattern}`
+    );
+  }
+
   private applyCodexSecurityPreamble(prompt: string): string {
     // Codex CLI doesn't have a direct equivalent of Claude's `--append-system-prompt`,
     // so we prepend a short guardrail to the user prompt.
@@ -5165,6 +5253,14 @@ export class NoxonBot {
       if (firstNl !== -1 && firstNl < 80) {
         tail = tail.slice(firstNl + 1);
       }
+    }
+    // CHANGE: Leak detection in live-streaming output (FB-6610B7270B)
+    const leakCheck = this.detectSensitiveDataLeak(tail, task.chatId);
+    if (leakCheck) {
+      task.liveOutputBuffer = '';
+      return this.lang === 'ru'
+        ? '[Вывод заблокирован: обнаружены приватные данные]'
+        : '[Output blocked: private data detected]';
     }
     return this.sanitizeForTelegram(tail);
   }
@@ -5477,6 +5573,13 @@ export class NoxonBot {
       ? this.extractCodexResultFromStderr(result.stderr)
       : '';
     const rawUserOutput = result.stdout.trim() ? result.stdout : rawCodexFallback;
+
+    // CHANGE: Code-level leak detection before sending output (FB-6610B7270B)
+    const leakCheck = this.detectSensitiveDataLeak(rawUserOutput, ctx.chat?.id ?? 0);
+    if (leakCheck) {
+      await ctx.reply(this.sanitizeForTelegram(this.tr('error.sensitive_data_blocked')));
+      return;
+    }
 
     // CHANGE: Проверяем упоминает ли AI файл и автоматически загружаем его
     // WHY: Даже если stdout пустой (Codex ответил в stderr), нужно сохранить автозагрузку файлов

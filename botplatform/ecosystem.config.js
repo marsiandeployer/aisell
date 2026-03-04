@@ -36,6 +36,7 @@ module.exports = {
         IS_SANDBOX: '1',
         USE_BWRAP: '1',
         NODE_TLS_REJECT_UNAUTHORIZED: '0',
+        SENSITIVE_CRED_FILES: '/root/.claude.json,/root/.claude/.credentials.json,/root/.codex/auth.json',
         // claritycult внутренний (chat -5122506589)
         CHAT_DIR__MINUS_5122506589: '/root/claritycult',
         // hostingpanel разработка (chat -5217914003)

@@ -11,6 +11,7 @@ set -a
 source /root/aisell/noxonbot/.env
 set +a
 
+export SENSITIVE_CRED_FILES="${SENSITIVE_CRED_FILES:-/root/.claude.json,/root/.claude/.credentials.json,/root/.codex/auth.json}"
 export NOXONBOT_DISABLE_AUTO_START="${NOXONBOT_DISABLE_AUTO_START:-true}"
 export DISABLE_START_NOTIFICATIONS="${DISABLE_START_NOTIFICATIONS:-true}"
 export SKIP_GLOBAL_MESSAGE_HISTORY="${SKIP_GLOBAL_MESSAGE_HISTORY:-true}"

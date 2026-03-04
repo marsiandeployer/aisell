@@ -56,6 +56,7 @@ export interface TranslationStrings {
   'error.cli_auth_required': string;
   'error.cli_no_output_failure': string;
   'error.cli_not_installed': string;
+  'error.sensitive_data_blocked': string;
 
   // Chat info
   'chatinfo.id': string;
@@ -200,6 +201,7 @@ const translations: Record<Language, TranslationStrings> = {
     'error.cli_auth_required': '❌ Ошибка авторизации {provider} CLI\n\nНеобходимо авторизоваться на сервере:\n1. Подключитесь по SSH\n2. Выполните: {loginCmd}\n3. Перезапустите бота: {restartCmd}',
     'error.cli_no_output_failure': '⚠️ {provider} CLI завершился с ошибкой без вывода\n\nВозможные причины:\n• Не авторизован - выполните: {loginCmd}\n• Проблема с сетью или конфигурацией\n\nДля диагностики:\n1. Подключитесь по SSH\n2. Проверьте: {versionCmd}\n3. Авторизуйтесь: {loginCmd}',
     'error.cli_not_installed': '❌ {provider} CLI не установлен\n\nУстановите на сервере:\n{installCmd}',
+    'error.sensitive_data_blocked': '⚠️ Ответ заблокирован: обнаружены приватные данные.\n\nПереформулируйте запрос.',
 
     // Chat info
     'chatinfo.id': '🆔 ID чата: {id}',
@@ -342,6 +344,7 @@ const translations: Record<Language, TranslationStrings> = {
     'error.cli_auth_required': '❌ {provider} CLI authentication error\n\nPlease authenticate on the server:\n1. Connect via SSH\n2. Run: {loginCmd}\n3. Restart the bot: {restartCmd}',
     'error.cli_no_output_failure': '⚠️ {provider} CLI failed with no output\n\nPossible reasons:\n• Not logged in - run: {loginCmd}\n• Network or configuration issue\n\nTo debug:\n1. Connect via SSH\n2. Check: {versionCmd}\n3. Log in: {loginCmd}',
     'error.cli_not_installed': '❌ {provider} CLI is not installed\n\nInstall on the server:\n{installCmd}',
+    'error.sensitive_data_blocked': '⚠️ Response blocked: private data detected.\n\nPlease rephrase your request.',
 
     // Chat info
     'chatinfo.id': '🆔 Chat ID: {id}',
