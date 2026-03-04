@@ -5383,6 +5383,8 @@ export class NoxonBot {
    * REF: https://core.telegram.org/bots/api#sendmessagedraft (доступно всем ботам с марта 2026)
    */
   private scheduleSendDraft(ctx: Context, task: ActiveTask): void {
+    // Skip for webchat — ctx.telegram doesn't exist outside Telegram
+    if (!ctx.telegram || typeof ctx.telegram.callApi !== 'function') return;
     const DRAFT_INTERVAL_MS = 400;
     const now = Date.now();
     if (now - task.lastDraftSentAt < DRAFT_INTERVAL_MS) return;
