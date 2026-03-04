@@ -45,6 +45,7 @@ type WebMessageFeedbackType = 'thumbs_up' | 'thumbs_down';
 type WebMessageFeedback = {
   type: WebMessageFeedbackType;
   at: string;
+  comment?: string;
 };
 
 type WebMessage = {
@@ -628,15 +629,18 @@ function writeChatTranscript(chatId: number, messages: WebMessage[]): void {
 
 // Write WEBCHAT_INIT_MESSAGE to transcript on first login when /start is disabled.
 // Used by both /api/auth/claim and /api/auth/google when WEBCHAT_INIT_WITH_START=false.
-function maybeWriteInitMessageTranscript(userId: number, lang: string): void {
+function maybeWriteInitMessageTranscript(userId: number, lang: string, showcasesUrl?: string): void {
   const initMsg = process.env.WEBCHAT_INIT_MESSAGE;
   if (!initMsg) return;
   const transcript = readChatTranscript(userId);
   if (transcript.length !== 0) return;
-  const text =
+  let text =
     lang === 'ru' && process.env.WEBCHAT_INIT_MESSAGE_RU
       ? process.env.WEBCHAT_INIT_MESSAGE_RU
       : initMsg;
+  if (showcasesUrl) {
+    text = appendShowcasesLinkToMessage(text, lang, showcasesUrl);
+  }
   writeChatTranscript(userId, [
     { id: 1, role: 'user', text: '/start', createdAt: nowIso() },
     { id: 2, role: 'assistant', text, createdAt: nowIso() },
@@ -657,8 +661,8 @@ function cleanupStaleRunningStatusMessages(lang: 'ru' | 'en'): void {
   const cutoffMs = 3 * 60 * 1000;
   const now = Date.now();
   const interruptedText = lang === 'ru'
-    ? '⚠️ Похоже, предыдущий запуск прервался (например, из‑за перезапуска сервера). Если нужно продолжить — отправьте запрос еще раз.'
-    : '⚠️ It looks like the previous run was interrupted (for example due to a server restart). If you want to continue, please send your message again.';
+    ? '⚠️ Запрос прервался — сервер перезапустился пока Claude работал над ответом. Отправьте запрос повторно.'
+    : '⚠️ Request was interrupted — the server restarted while Claude was working. Please send your message again.';
 
   try {
     ensureDir(WEBCHAT_CHATS_DIR);
@@ -2368,6 +2372,57 @@ function renderAppHtml(): string {
 	      } catch (_e) {}
 	    }
 
+	    function showFeedbackRef(ref) {
+	      try {
+	        // Remove previous toast if any
+	        var old = document.getElementById('feedbackRefToast');
+	        if (old) old.remove();
+
+	        var toast = document.createElement('div');
+	        toast.id = 'feedbackRefToast';
+	        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+	          'background:#1e293b;color:#f8fafc;border-radius:10px;padding:12px 16px;' +
+	          'font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);' +
+	          'max-width:320px;text-align:center;line-height:1.5;';
+
+	        var refText = 'FB-' + ref.toUpperCase();
+	        var copyText = 'Фидбек ' + refText + ' — найди в feedback_log.jsonl по полю ref';
+	        toast.innerHTML =
+	          '<div style="margin-bottom:6px">📋 Номер фидбека для поддержки:</div>' +
+	          '<code style="font-size:15px;font-weight:700;letter-spacing:1px">' + refText + '</code>' +
+	          '<div style="margin-top:8px;display:flex;gap:8px;justify-content:center">' +
+	          '<button id="fbRefCopyBtn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px">Скопировать</button>' +
+	          '<button id="fbRefCloseBtn" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px">✕</button>' +
+	          '</div>';
+
+	        document.body.appendChild(toast);
+
+	        document.getElementById('fbRefCopyBtn').addEventListener('click', function() {
+	          navigator.clipboard.writeText(copyText).then(function() {
+	            document.getElementById('fbRefCopyBtn').textContent = 'Скопировано ✓';
+	            setTimeout(function() { toast.remove(); }, 1500);
+	          }).catch(function() {
+	            // fallback
+	            var ta = document.createElement('textarea');
+	            ta.value = refText;
+	            document.body.appendChild(ta);
+	            ta.select();
+	            document.execCommand('copy');
+	            ta.remove();
+	            document.getElementById('fbRefCopyBtn').textContent = 'Скопировано ✓';
+	            setTimeout(function() { toast.remove(); }, 1500);
+	          });
+	        });
+
+	        document.getElementById('fbRefCloseBtn').addEventListener('click', function() {
+	          toast.remove();
+	        });
+
+	        // Auto-dismiss after 30 seconds
+	        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 30000);
+	      } catch (_e) {}
+	    }
+
 	    function applyTheme(theme) {
 	      const t = (theme === 'dark') ? 'dark' : 'light';
 	      document.body.classList.toggle('theme-dark', t === 'dark');
@@ -3343,17 +3398,25 @@ function renderAppHtml(): string {
       const fb = btn.dataset.fb;
 
       if (fb && msgId) {
+        let feedbackComment = '';
+        if (fb === 'thumbs_down') {
+          const userComment = window.prompt('Что не так с ответом? (необязательно)');
+          if (userComment === null) return; // user cancelled
+          feedbackComment = userComment.trim();
+        }
         try {
           btn.disabled = true;
+          const fbBody = { message_id: Number(msgId), feedback_type: fb };
+          if (feedbackComment) fbBody.comment = feedbackComment;
           const resp = await fetch('/api/feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message_id: Number(msgId), feedback_type: fb }),
+            body: JSON.stringify(fbBody),
           });
           if (!resp.ok) {
             let data = null;
             try { data = await resp.json(); } catch (_e) {}
-            
+
           // CHANGE: Show user-friendly rate limit message
           // WHY: User request "пусть юзеру отдается rate limit просто а не висит человек"
           // REF: User message 2026-02-19
@@ -3365,6 +3428,14 @@ function renderAppHtml(): string {
             err = (data && data.error) ? data.error : ('Request failed (' + resp.status + ')');
           }
             showLocalSystem('⚠️ ' + err);
+          } else if (fb === 'thumbs_down' && feedbackComment) {
+            // Show support reference after negative feedback with comment
+            let data = null;
+            try { data = await resp.json(); } catch (_e) {}
+            const ref = data && data.ref ? data.ref : null;
+            if (ref) {
+              showFeedbackRef(ref);
+            }
           }
           // Keep UI consistent even when SSE is flaky behind a reverse proxy.
           await pollOnce();
@@ -3607,6 +3678,9 @@ async function main(): Promise<void> {
   // Webchat tasks run inside this process. If PM2 restarts this service while a task is running,
   // the "still working" status message can remain forever and confuse users on reload.
   cleanupStaleRunningStatusMessages(botLanguage);
+  // Run periodic cleanup every 5 minutes to catch messages that survived the startup cleanup
+  // (e.g. process restarted < 3 min after the message was last updated).
+  setInterval(() => cleanupStaleRunningStatusMessages(botLanguage), 5 * 60 * 1000);
 
   const app = express();
   app.set('trust proxy', true);
@@ -5324,7 +5398,8 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     // chat is not empty after the first login.
     if (!shouldInitWithStart) {
       const lang = typeof req.body.lang === 'string' ? req.body.lang : botLanguage;
-      maybeWriteInitMessageTranscript(user.userId, lang);
+      const sdShowcasesUrl = isSimpleDashboardProduct() ? buildSimpleDashboardShowcasesUrl(buildBaseUrl(req), '', 'examples') : undefined;
+      maybeWriteInitMessageTranscript(user.userId, lang, sdShowcasesUrl);
     }
 
     res.setHeader('Set-Cookie', buildSessionCookie(req, sessionId));
@@ -5496,7 +5571,8 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     // chat is not empty after the first login.
     if (!shouldInitWithStart) {
       const lang = typeof req.body.lang === 'string' ? req.body.lang : botLanguage;
-      maybeWriteInitMessageTranscript(user.userId, lang);
+      const sdShowcasesUrl = isSimpleDashboardProduct() ? buildSimpleDashboardShowcasesUrl(buildBaseUrl(req), '', 'examples') : undefined;
+      maybeWriteInitMessageTranscript(user.userId, lang, sdShowcasesUrl);
     }
 
     res.setHeader('Set-Cookie', buildSessionCookie(req, sessionId));
@@ -6325,7 +6401,8 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     // This also handles users who logged in before the auth-time init was added.
     if (!shouldInitWithStart && messages.length === 0) {
       const clientLang = typeof req.query['lang'] === 'string' ? req.query['lang'] : botLanguage;
-      maybeWriteInitMessageTranscript(user.userId, clientLang);
+      const sdShowcasesUrl = isSimpleDashboardProduct() ? buildSimpleDashboardShowcasesUrl(buildBaseUrl(req), '', 'examples') : undefined;
+      maybeWriteInitMessageTranscript(user.userId, clientLang, sdShowcasesUrl);
       messages = readChatTranscript(user.userId);
     }
 
@@ -6476,12 +6553,15 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     res.json({ ok: true });
   });
 
+  const FEEDBACK_LOG_PATH = path.join(WEBCHAT_DATA_DIR, 'feedback_log.jsonl');
+
   app.post('/api/feedback', requireSessionApi, (req, res) => {
     const user = getReqUser(req);
     const messageIdRaw = req.body?.message_id;
     const messageId = typeof messageIdRaw === 'number' ? messageIdRaw : Number(messageIdRaw);
     const feedbackRaw = typeof req.body?.feedback_type === 'string' ? req.body.feedback_type : '';
     const feedback = feedbackRaw.trim().toLowerCase();
+    const comment = typeof req.body?.comment === 'string' ? req.body.comment.trim().slice(0, 1000) : '';
 
     const feedbackType: WebMessageFeedbackType | null =
       feedback === 'thumbs_up' || feedback === 'up' || feedback === 'like'
@@ -6521,17 +6601,35 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
     }
 
     const current = msg.feedback && msg.feedback.type ? msg.feedback.type : null;
-    if (current === feedbackType) {
+    if (current === feedbackType && !comment) {
       msg.feedback = null; // toggle off
     } else {
-      msg.feedback = { type: feedbackType, at: nowIso() };
+      msg.feedback = { type: feedbackType, at: nowIso(), ...(comment ? { comment } : {}) };
     }
 
     writeChatTranscript(user.userId, messages);
     sseSend(user.userId, 'message_update', msg);
 
-    console.log(`✅ Feedback saved: userId=${user.userId}, messageId=${messageId}, feedback=${msg.feedback ? msg.feedback.type : 'none'}`);
-    res.json({ ok: true, message: msg });
+    // Append to feedback log for analysis
+    let feedbackRef = '';
+    if (msg.feedback) {
+      feedbackRef = crypto.randomBytes(5).toString('hex'); // e.g. "a3f9c1b2e4"
+      try {
+        const logEntry = JSON.stringify({
+          ref: feedbackRef,
+          at: msg.feedback.at,
+          userId: user.userId,
+          messageId,
+          type: msg.feedback.type,
+          comment: msg.feedback.comment || '',
+          messagePreview: msg.text ? msg.text.slice(0, 200) : '',
+        });
+        fs.appendFileSync(FEEDBACK_LOG_PATH, logEntry + '\n', 'utf8');
+      } catch (_e) { /* non-critical */ }
+    }
+
+    console.log(`✅ Feedback saved: userId=${user.userId}, messageId=${messageId}, type=${msg.feedback ? msg.feedback.type : 'none'}${comment ? ', comment=' + comment.slice(0, 60) : ''}${feedbackRef ? ' ref=' + feedbackRef : ''}`);
+    res.json({ ok: true, message: msg, ref: feedbackRef || null });
   });
 
   app.get('/api/stream', requireSessionApi, (req, res) => {
