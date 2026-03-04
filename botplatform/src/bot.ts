@@ -198,6 +198,10 @@ interface ActiveTask {
   // CHANGE: Добавлено отслеживание начала фазы tools
   // WHY: User request - показывать warning если tools выполняются слишком долго
   toolsPhaseStartTime?: number;
+  // CHANGE: Накопленный текст ответа для sendMessageDraft (Bot API 9.5)
+  // WHY: User request - показывать стриминг ответа Claude в реальном времени как черновик
+  draftAccText: string;
+  lastDraftSentAt: number;
 }
 
 interface QueuedTask {
@@ -4036,8 +4040,12 @@ export class NoxonBot {
             taskRef.firstTokenLatencyMs = Date.now() - taskRef.startTime;
           }
           taskRef.phase = 'streaming';
+          // CHANGE: Накапливаем текст для sendMessageDraft (Bot API 9.5)
+          // WHY: User request - стримить ответ Claude в реальном времени как Telegram черновик
+          taskRef.draftAccText += text;
           this.appendTaskLiveOutput(taskRef, provider, text, 'stdout');
           this.scheduleTaskStatusUpdate(ctx, taskRef, true);
+          this.scheduleSendDraft(ctx, taskRef);
         });
         claudeSdkBridge.setOnPhase((phase: TaskPhase) => {
           if (!taskRef) return;
@@ -4107,6 +4115,8 @@ export class NoxonBot {
         closeSdkBridge: claudeSdkBridge?.close,
         phase: claudeSdkBridge ? 'connecting' : 'starting',
         suppressFinalMessage: false,
+        draftAccText: '',
+        lastDraftSentAt: 0,
       };
       taskRef = task;
       this.activeTasks.set(taskId, task);
@@ -5365,6 +5375,35 @@ export class NoxonBot {
       .finally(() => {
         task.uiUpdateInFlight = false;
       });
+  }
+
+  /**
+   * CHANGE: Отправляет черновик ответа через sendMessageDraft (Bot API 9.5)
+   * WHY: User request - стримить то что думает Claude в реальном времени
+   * REF: https://core.telegram.org/bots/api#sendmessagedraft (доступно всем ботам с марта 2026)
+   */
+  private scheduleSendDraft(ctx: Context, task: ActiveTask): void {
+    const DRAFT_INTERVAL_MS = 400;
+    const now = Date.now();
+    if (now - task.lastDraftSentAt < DRAFT_INTERVAL_MS) return;
+    if (!task.draftAccText) return;
+
+    task.lastDraftSentAt = now;
+    // Telegram ограничение: 4096 символов в сообщении
+    const text = task.draftAccText.slice(0, 4096);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (ctx.telegram as any).callApi('sendMessageDraft', {
+      chat_id: task.chatId,
+      text,
+    }).catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      // TEXTDRAFT_PEER_INVALID — чат не поддерживает черновики (старый клиент)
+      // METHOD_NOT_FOUND — очень старый Bot API
+      if (!msg.includes('TEXTDRAFT_PEER_INVALID') && !msg.includes('METHOD_NOT_FOUND')) {
+        console.warn('[sendMessageDraft]', msg);
+      }
+    });
   }
 
   /**
