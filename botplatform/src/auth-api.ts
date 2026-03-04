@@ -18,8 +18,9 @@ import jwt from 'jsonwebtoken';
 
 // ─── Environment Validation (fail fast) ──────────────────────────
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
+const JWT_SECRET_RAW = process.env.JWT_SECRET;
+if (!JWT_SECRET_RAW) throw new Error('JWT_SECRET env var is required');
+const JWT_SECRET: string = JWT_SECRET_RAW;
 
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
 if (!INTERNAL_API_KEY) throw new Error('INTERNAL_API_KEY env var is required');
