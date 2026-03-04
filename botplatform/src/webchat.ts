@@ -435,6 +435,30 @@ function isSimpleDashboardProduct(): boolean {
   return title.includes('simpledashboard');
 }
 
+function getProductSkillMdPath(): string {
+  const productType = String(process.env.PRODUCT_TYPE || '').trim().toLowerCase();
+  if (!productType) return '';
+  return path.join(__dirname, `../../products/${productType}/SKILL.md`);
+}
+
+// Copy product SKILL.md as CLAUDE.md into the user workspace so Claude follows
+// product-specific rules (e.g. "always save as index.html").
+// Called once when the workspace folder is first created by webchat auth handlers.
+function maybeWriteWorkspaceClaude(userFolder: string, userId: number): void {
+  const claudePath = path.join(userFolder, 'CLAUDE.md');
+  if (fs.existsSync(claudePath)) return;
+  const skillMdPath = getProductSkillMdPath();
+  if (!skillMdPath || !fs.existsSync(skillMdPath)) return;
+  try {
+    let content = fs.readFileSync(skillMdPath, 'utf8');
+    content = content.replace(/\{USERID\}/g, String(userId));
+    fs.writeFileSync(claudePath, content, { encoding: 'utf8', mode: 0o600 });
+    console.log(`✅ [webchat] Wrote CLAUDE.md from SKILL.md for userId=${userId}`);
+  } catch (err) {
+    console.warn(`⚠️ [webchat] Failed to write CLAUDE.md for userId=${userId}:`, err);
+  }
+}
+
 function normalizeExtensionId(rawValue: string): string {
   const value = String(rawValue || '').trim().toLowerCase();
   return /^[a-z]{32}$/.test(value) ? value : '';
@@ -3678,6 +3702,24 @@ async function main(): Promise<void> {
   // Webchat tasks run inside this process. If PM2 restarts this service while a task is running,
   // the "still working" status message can remain forever and confuse users on reload.
   cleanupStaleRunningStatusMessages(botLanguage);
+
+  // Backfill CLAUDE.md for existing user workspaces that were created before this logic was added.
+  try {
+    const skillMdPath = getProductSkillMdPath();
+    if (skillMdPath && fs.existsSync(skillMdPath)) {
+      const dirs = fs.readdirSync(WORKSPACES_ROOT).filter((d) => d.startsWith('user_'));
+      let backfilled = 0;
+      for (const dir of dirs) {
+        const userId = Number(dir.slice('user_'.length));
+        if (!Number.isSafeInteger(userId) || userId <= 0) continue;
+        maybeWriteWorkspaceClaude(path.join(WORKSPACES_ROOT, dir), userId);
+        backfilled++;
+      }
+      if (backfilled > 0) console.log(`✅ [webchat] Backfilled CLAUDE.md check for ${backfilled} workspaces`);
+    }
+  } catch (err) {
+    console.warn('⚠️ [webchat] CLAUDE.md backfill failed:', err);
+  }
   // Run periodic cleanup every 5 minutes to catch messages that survived the startup cleanup
   // (e.g. process restarted < 3 min after the message was last updated).
   setInterval(() => cleanupStaleRunningStatusMessages(botLanguage), 5 * 60 * 1000);
@@ -5544,6 +5586,7 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
         console.error(`❌ [webchat] Failed to create workspace folder for ${user.userId}:`, err);
       }
     }
+    maybeWriteWorkspaceClaude(userWorkspaceFolder, user.userId);
 
     // Create session
     const sessions = cleanupExpired(readSessions()).filter((s) => s.userId !== user!.userId);
