@@ -15,4 +15,4 @@ Key rules (summary):
 - Always save as `index.html` (never dashboard.html, report.html, etc.)
 - Single-file SPA: Tailwind CSS + Chart.js via CDN only
 - Use `tt()` for i18n (EN default, RU if browser language starts with ru)
-- Do NOT add Google OAuth / Firebase Auth — use platform's Auth API `/api/auth/login`
+- Auth: platform uses Web3 keypair (NOT email+password). Read SKILL.md auth section before implementing any login/registration.

@@ -9,24 +9,43 @@ tags: [dashboard, analytics, business, chartjs, tailwind, visualization, spa, i1
 
 ## Система авторизации
 
-**НЕ добавляй Google OAuth / Firebase Auth / Auth0 / JWT самостоятельно в index.html.**
+**НЕ добавляй Google OAuth / Firebase Auth / Auth0 / JWT / email+password форму самостоятельно в index.html.**
 
-У платформы SimpleDashboard уже есть готовая система авторизации. Когда пользователь просит «авторизацию», «вход через гугл», «защитить дашборд», «login» — используй встроенную Auth API:
+Платформа использует **Web3 keypair auth** (Ethereum подпись). Это НЕ email+password. Auth API принимает `{ signature, challenge, dashboardId }`, а не `{ email, password }` — такой запрос вернёт ошибку 400.
+
+### Кто управляет авторизацией
+
+**Авторизация владельца дашборда** управляется Chrome Extension платформы автоматически:
+- Extension генерирует Ethereum keypair при первом входе
+- Платформа регистрирует ключ на сервере
+- Логин происходит через подпись challenge (`/api/auth/login` принимает `{ signature, challenge, dashboardId }`)
+
+Ты **не должен** реализовывать этот flow в index.html — он уже встроен в платформу.
+
+### Когда пользователь просит «добавить авторизацию» или «логин»
+
+Уточни, что именно он имеет в виду:
+
+**Сценарий A: Защитить дашборд от посторонних** — авторизация уже работает через Extension. Скажи пользователю об этом, ничего не добавляй в код.
+
+**Сценарий B: Создать форму входа/регистрации для посетителей** — статический index.html не может хранить пароли и аккаунты (нет backend). Предложи альтернативы:
+- Простая защита паролем через `localStorage` (один общий пароль)
+- Объясни ограничение и предложи добавить backend (выходит за рамки одного index.html)
 
 ```javascript
-// Форма входа — POST /api/auth/login (Auth API на порту 8095, проксируется nginx-ом на d*.wpmix.net)
-const res = await fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-});
-const { token } = await res.json(); // JWT токен
+// ✅ ПРАВИЛЬНО для сценария B: простая password-gate через localStorage
+const PASS = 'your-secret'; // пользователь меняет на свой
+function checkAccess() {
+  if (localStorage.getItem('access') === PASS) return true;
+  const entered = prompt('Введите пароль:');
+  if (entered === PASS) { localStorage.setItem('access', PASS); return true; }
+  return false;
+}
 ```
 
-Сессию храни в `localStorage` / `sessionStorage`. Проверяй токен при загрузке страницы.
-Endpoint `/api/auth/login` уже настроен на `d{USERID}.wpmix.net` через nginx proxy на Auth API (8095).
-
-Если пользователь хочет разграничить доступ — **только Auth API**, не встраивай сторонние OAuth-провайдеры.
+**НЕ делай:**
+- `fetch('/api/auth/login', { body: JSON.stringify({ email, password }) })` — этот endpoint принимает Ethereum подпись, не пароль, вернёт 400
+- Не реализовывай регистрацию пользователей — `/api/auth/register` требует серверный API-ключ, недоступен из браузера
 
 ## Безопасность
 
