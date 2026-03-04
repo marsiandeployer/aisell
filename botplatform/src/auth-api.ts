@@ -391,10 +391,12 @@ app.post('/api/auth/login', async (req, res) => {
     return;
   }
 
-  // Check access in database
+  // Check access in database and fetch user email
   try {
     const result = await pool.query(
-      'SELECT 1 FROM dashboard_access WHERE dashboard_id = $1 AND address = $2',
+      `SELECT u.email FROM dashboard_access da
+       JOIN users u ON u.address = da.address
+       WHERE da.dashboard_id = $1 AND da.address = $2`,
       [dashboardId, recoveredAddress]
     );
 
@@ -404,14 +406,16 @@ app.post('/api/auth/login', async (req, res) => {
       return;
     }
 
-    // Issue JWT
+    const email = (result.rows[0].email as string) || '';
+
+    // Issue JWT with email for SDK getUser()
     const token = jwt.sign(
-      { address: recoveredAddress, dashboardId },
+      { address: recoveredAddress, dashboardId, email },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    console.log(`[auth-api] Login: ${recoveredAddress} for dashboard ${dashboardId}`);
+    console.log(`[auth-api] Login: ${recoveredAddress} (${email}) for dashboard ${dashboardId}`);
     res.json({ token });
   } catch (err) {
     console.error('[auth-api] Login PG error:', (err as Error).message);

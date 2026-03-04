@@ -6277,8 +6277,34 @@ async function main(): Promise<void> {
         }
 
         if (!alreadyHasAccess) {
-          res.redirect(302, `${safeRedirectBase}?error=no_access`);
-          return;
+          // Check if user is the dashboard owner — auto-grant access
+          const ownerSettings = loadChatSettings(dashboardUserId);
+          const ownerAddress = ownerSettings.ownerAddress;
+          const guestAddress = chatSettings.ownerAddress;
+          const isOwner = ownerAddress && guestAddress &&
+            ownerAddress.toLowerCase() === guestAddress.toLowerCase();
+
+          if (isOwner) {
+            // Owner logging in via Google for the first time — auto-share
+            try {
+              await fetch(`${AUTH_API_URL}/api/auth/share`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(INTERNAL_API_KEY ? { Authorization: `Bearer ${INTERNAL_API_KEY}` } : {}),
+                },
+                body: JSON.stringify({ dashboardId, email: normalizedEmail, ownerAddress }),
+                signal: AbortSignal.timeout(10000),
+              });
+              console.log(`[AUDIT] auto-shared owner access: email=${normalizedEmail} dashboardId=${dashboardId}`);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error(`[ERROR] google-dashboard-callback: auto-share owner failed: ${msg}`);
+            }
+          } else {
+            res.redirect(302, `${safeRedirectBase}?error=no_access`);
+            return;
+          }
         }
       }
 
