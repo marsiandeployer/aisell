@@ -5444,6 +5444,20 @@ history.replaceState({},'',location.pathname);}).catch(function(){});})();
       maybeWriteInitMessageTranscript(user.userId, lang, sdShowcasesUrl);
     }
 
+    // Ensure user workspace folder exists and has CLAUDE.md so Claude follows product rules.
+    // CHANGE: Added workspace creation + CLAUDE.md write to /api/auth/claim (was only in /api/auth/google)
+    // WHY: Claude was creating dashboard.html instead of index.html because CLAUDE.md wasn't in workspace
+    const userWorkspaceFolder = `${WORKSPACES_ROOT}/user_${user.userId}`;
+    if (!fs.existsSync(userWorkspaceFolder)) {
+      try {
+        fs.mkdirSync(userWorkspaceFolder, { recursive: true });
+        console.log(`✅ [webchat] Created workspace folder for ${email} (userId=${user.userId})`);
+      } catch (err) {
+        console.error(`❌ [webchat] Failed to create workspace folder for ${user.userId}:`, err);
+      }
+    }
+    maybeWriteWorkspaceClaude(userWorkspaceFolder, user.userId);
+
     res.setHeader('Set-Cookie', buildSessionCookie(req, sessionId));
     res.json({
       ok: true,
