@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Construction CRM Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+  <!-- Prompt bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:14px 32px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(59,130,246,0.5);letter-spacing:0.01em" href="#"></a>
+  </div>
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.55),rgba(17,24,39,0.65)),url('/showcases/construction-crm/sidebar-bg.jpg') center/cover no-repeat">
+      <div class="p-4 pb-2">
+        <div class="text-lg font-bold mb-1" id="sidebarTitle">&#127959; CRM Dashboard</div>
+        <div class="text-xs text-gray-500" id="sidebarCompany"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav">
+        <button onclick="navigateTo('overview')" data-page="overview" data-nav="navOverview" data-icon="&#128200;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('pipeline')" data-page="pipeline" data-nav="navPipeline" data-icon="&#128640;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('deals')" data-page="deals" data-nav="navDeals" data-icon="&#128196;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('team')" data-page="team" data-nav="navTeam" data-icon="&#128101;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('tasks')" data-page="tasks" data-nav="navTasks" data-icon="&#9745;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('analytics')" data-page="analytics" data-nav="navAnalytics" data-icon="&#128202;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+        <button onclick="navigateTo('calendar')" data-page="calendar" data-nav="navCalendar" data-icon="&#128197;" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm"></button>
+      </nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-5 overflow-auto mini-scroll" id="mainContent"></main>
+  </div>
+
+  <script>
+    // ===== i18n =====
+    var _s = {
+      en: {
+        currency: '$',
+        sidebarTitle: 'CRM Dashboard',
+        companyName: 'Interior Design & Construction',
+        navOverview: 'Overview',
+        navPipeline: 'Pipeline',
+        navDeals: 'Deals',
+        navTeam: 'Team',
+        navTasks: 'Auto Tasks',
+        navAnalytics: 'Analytics',
+        navCalendar: 'Calendar',
+        totalDeals: 'Active Deals',
+        totalRevenue: 'Total Revenue',
+        avgCheck: 'Avg. Deal Size',
+        convRate: 'Conversion Rate',
+        overdueTotal: 'Overdue Tasks',
+        completedMonth: 'Completed This Month',
+        newLeads: 'New Lead',
+        costCalc: 'Cost Calculation',
+        contract: 'Contract Meeting',
+        workDesign: 'Work: Design',
+        workConstruction: 'Work: Construction',
+        workSupply: 'Work: Supply',
+        workComplex: 'Work: Complex',
+        feedback: 'Feedback & Analytics',
+        rejected: 'Rejected',
+        design: 'Design',
+        construction: 'Construction',
+        supply: 'Supply',
+        complex: 'Complex',
+        dealsByStatus: 'Deals by Status',
+        dealsByType: 'Deals by Service Type',
+        revenueByType: 'Revenue by Service Type',
+        recentActivity: 'Recent Activity',
+        monthlyTrend: 'Monthly Revenue Trend',
+        recentDeals: 'Recent Deals',
+        allDeals: 'All Deals',
+        client: 'Client',
+        type: 'Type',
+        status: 'Status',
+        budget: 'Budget',
+        area: 'Area',
+        sqm: 'sq.m',
+        deadline: 'Deadline',
+        manager: 'Manager',
+        assignedTo: 'Assigned To',
+        pipelineTitle: 'Deal Pipeline',
+        stageConversion: 'Stage Conversion Rate',
+        avgDays: 'avg. days',
+        deals: 'deals',
+        pipelineFlow: 'Pipeline Flow',
+        stageDetails: 'Stage Details',
+        avgTimeInStage: 'Avg. Time in Stage',
+        dealsInStage: 'Deals in Stage',
+        conversionRate: 'Conversion',
+        teamTitle: 'Team Workload',
+        department: 'Department',
+        role: 'Role',
+        activeTasks: 'Active Tasks',
+        overdue: 'Overdue',
+        load: 'Load',
+        salesDept: 'Sales',
+        techDept: 'Technical',
+        supplyDept: 'Supply',
+        designDept: 'Design',
+        creativeDept: 'Creative',
+        structDept: 'Structural',
+        marketingDept: 'Marketing',
+        tasksByDept: 'Tasks by Department',
+        overdueByDept: 'Overdue by Department',
+        workloadHeatmap: 'Role Involvement by Stage',
+        salesHead: 'Sales Head',
+        salesMgr1: 'Sales Manager 1',
+        salesMgr2: 'Sales Manager 2',
+        techDir: 'Technical Director',
+        foreman1: 'Foreman 1',
+        foreman2: 'Foreman 2',
+        supplyHead: 'Supply Head',
+        mgrRaw: 'Raw Materials Mgr',
+        mgrFinish: 'Finish Materials Mgr',
+        mgrFurniture: 'Furniture Mgr',
+        designHead: 'Design Head',
+        creativeHead: 'Creative Director',
+        visualizer: 'Visualizer',
+        structHead: 'Structural Head',
+        marketer: 'Marketer',
+        tasksTitle: 'Auto Tasks',
+        taskName: 'Task',
+        taskDeadline: 'Deadline',
+        taskAssignee: 'Assignee',
+        taskStatus: 'Status',
+        taskStage: 'Stage',
+        taskPending: 'Pending',
+        taskDone: 'Done',
+        taskOverdue: 'Overdue',
+        taskCallClient: 'Call client & send materials',
+        taskCalcEstimate: 'Calculate estimate',
+        taskCalcSpec: 'Calculate specification',
+        taskAgreeEstimate: 'Agree estimate with client',
+        taskPrepDocs: 'Prepare contract documents',
+        taskSignContract: 'Sign contract & invoice',
+        taskShootSurvey: 'Film property survey',
+        taskFormSchedule: 'Form work schedule (GPR)',
+        taskMonthlyActs: 'Monthly completion acts',
+        taskAuthorSupervision: 'Author supervision',
+        taskDeliverSamples: 'Deliver material samples',
+        taskPreProjectAnalysis: 'Pre-project analysis',
+        task3dVisualization: '3D Visualization',
+        taskArchProject: 'Architectural project',
+        taskFilmObject: 'Film object (bi-weekly)',
+        taskCollectFeedback: 'Collect feedback & video review',
+        taskFillCosts: 'Fill costs section',
+        analyticsTitle: 'Analytics',
+        revenueByMonth: 'Revenue by Month',
+        conversionFunnel: 'Conversion Funnel',
+        dealsByMonth: 'Deals Closed by Month',
+        avgDealTime: 'Avg. Deal Cycle',
+        deadlineCompliance: 'Deadline Compliance',
+        onTime: 'On Time',
+        delayed: 'Delayed',
+        revenueByTypeChart: 'Revenue Split by Type',
+        dealVelocity: 'Deal Velocity (days per stage)',
+        topClients: 'Top Clients by Revenue',
+        days: 'days',
+        monthLabels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+        calendarTitle: 'Deadlines Calendar',
+        today: 'Today',
+        upcoming: 'Upcoming Deadlines',
+        thisWeek: 'This Week',
+        nextWeek: 'Next Week',
+        later: 'Later',
+        noDue: 'No deadlines',
+        fromLastMonth: 'from last month',
+        total: 'Total',
+        showAll: 'Show all',
+        filterByType: 'Filter by Type',
+        filterByStatus: 'Filter by Status',
+        all: 'All'
+      },
+      ru: {
+        currency: '\u20bd',
+        sidebarTitle: 'CRM \u041f\u0430\u043d\u0435\u043b\u044c',
+        companyName: '\u0414\u0438\u0437\u0430\u0439\u043d \u0438\u043d\u0442\u0435\u0440\u044c\u0435\u0440\u0430 \u0438 \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e',
+        navOverview: '\u041e\u0431\u0437\u043e\u0440',
+        navPipeline: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430',
+        navDeals: '\u0421\u0434\u0435\u043b\u043a\u0438',
+        navTeam: '\u041a\u043e\u043c\u0430\u043d\u0434\u0430',
+        navTasks: '\u0410\u0432\u0442\u043e\u0437\u0430\u0434\u0430\u0447\u0438',
+        navAnalytics: '\u0410\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430',
+        navCalendar: '\u041a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c',
+        totalDeals: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u0441\u0434\u0435\u043b\u043a\u0438',
+        totalRevenue: '\u041e\u0431\u0449\u0430\u044f \u0432\u044b\u0440\u0443\u0447\u043a\u0430',
+        avgCheck: '\u0421\u0440\u0435\u0434\u043d\u0438\u0439 \u0447\u0435\u043a',
+        convRate: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+        overdueTotal: '\u041f\u0440\u043e\u0441\u0440\u043e\u0447\u0435\u043d\u043e \u0437\u0430\u0434\u0430\u0447',
+        completedMonth: '\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u043e \u0432 \u044d\u0442\u043e\u043c \u043c\u0435\u0441\u044f\u0446\u0435',
+        newLeads: '\u041d\u043e\u0432\u044b\u0439 \u043b\u0438\u0434',
+        costCalc: '\u0420\u0430\u0441\u0447\u0451\u0442 \u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u0438',
+        contract: '\u041a\u043e\u043d\u0442\u0440\u0430\u043a\u0442-\u0432\u0441\u0442\u0440\u0435\u0447\u0430',
+        workDesign: '\u0420\u0430\u0431\u043e\u0442\u0430: \u041f\u0440\u043e\u0435\u043a\u0442.',
+        workConstruction: '\u0420\u0430\u0431\u043e\u0442\u0430: \u0421\u0442\u0440\u043e\u0439\u043a\u0430',
+        workSupply: '\u0420\u0430\u0431\u043e\u0442\u0430: \u041f\u043e\u0441\u0442\u0430\u0432\u043a\u0430',
+        workComplex: '\u0420\u0430\u0431\u043e\u0442\u0430: \u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0441',
+        feedback: '\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c',
+        rejected: '\u041e\u0442\u043a\u0430\u0437',
+        design: '\u041f\u0440\u043e\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435',
+        construction: '\u0421\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e',
+        supply: '\u041f\u043e\u0441\u0442\u0430\u0432\u043a\u0430',
+        complex: '\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0441\u043d\u044b\u0439',
+        dealsByStatus: '\u0421\u0434\u0435\u043b\u043a\u0438 \u043f\u043e \u0441\u0442\u0430\u0442\u0443\u0441\u0430\u043c',
+        dealsByType: '\u041f\u043e \u0442\u0438\u043f\u0443 \u0443\u0441\u043b\u0443\u0433',
+        revenueByType: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u0442\u0438\u043f\u0443 \u0443\u0441\u043b\u0443\u0433',
+        recentActivity: '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f',
+        monthlyTrend: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0432\u044b\u0440\u0443\u0447\u043a\u0438',
+        recentDeals: '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0441\u0434\u0435\u043b\u043a\u0438',
+        allDeals: '\u0412\u0441\u0435 \u0441\u0434\u0435\u043b\u043a\u0438',
+        client: '\u041a\u043b\u0438\u0435\u043d\u0442',
+        type: '\u0422\u0438\u043f',
+        status: '\u0421\u0442\u0430\u0442\u0443\u0441',
+        budget: '\u0411\u044e\u0434\u0436\u0435\u0442',
+        area: '\u041f\u043b\u043e\u0449\u0430\u0434\u044c',
+        sqm: '\u043c\u00b2',
+        deadline: '\u0414\u0435\u0434\u043b\u0430\u0439\u043d',
+        manager: '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440',
+        assignedTo: '\u041e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439',
+        pipelineTitle: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u0441\u0434\u0435\u043b\u043e\u043a',
+        stageConversion: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f \u044d\u0442\u0430\u043f\u043e\u0432',
+        avgDays: '\u0441\u0440. \u0434\u043d\u0435\u0439',
+        deals: '\u0441\u0434\u0435\u043b\u043e\u043a',
+        pipelineFlow: '\u0414\u0432\u0438\u0436\u0435\u043d\u0438\u0435 \u043f\u043e \u0432\u043e\u0440\u043e\u043d\u043a\u0435',
+        stageDetails: '\u0414\u0435\u0442\u0430\u043b\u0438 \u044d\u0442\u0430\u043f\u043e\u0432',
+        avgTimeInStage: '\u0421\u0440. \u0432\u0440\u0435\u043c\u044f \u043d\u0430 \u044d\u0442\u0430\u043f\u0435',
+        dealsInStage: '\u0421\u0434\u0435\u043b\u043e\u043a \u043d\u0430 \u044d\u0442\u0430\u043f\u0435',
+        conversionRate: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+        teamTitle: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043a\u043e\u043c\u0430\u043d\u0434\u044b',
+        department: '\u041e\u0442\u0434\u0435\u043b',
+        role: '\u0420\u043e\u043b\u044c',
+        activeTasks: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435',
+        overdue: '\u041f\u0440\u043e\u0441\u0440\u043e\u0447\u0435\u043d\u043e',
+        load: '\u041d\u0430\u0433\u0440\u0443\u0437\u043a\u0430',
+        salesDept: '\u041f\u0440\u043e\u0434\u0430\u0436\u0438',
+        techDept: '\u0422\u0435\u0445\u043e\u0442\u0434\u0435\u043b',
+        supplyDept: '\u0421\u043d\u0430\u0431\u0436\u0435\u043d\u0438\u0435',
+        designDept: '\u041f\u0440\u043e\u0435\u043a\u0442\u043d\u044b\u0439',
+        creativeDept: '\u041a\u0440\u0435\u0430\u0442\u0438\u0432\u043d\u044b\u0439',
+        structDept: '\u041a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442.',
+        marketingDept: '\u041c\u0430\u0440\u043a\u0435\u0442\u0438\u043d\u0433',
+        tasksByDept: '\u0417\u0430\u0434\u0430\u0447\u0438 \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c',
+        overdueByDept: '\u041f\u0440\u043e\u0441\u0440\u043e\u0447\u043a\u0438 \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c',
+        workloadHeatmap: '\u0423\u0447\u0430\u0441\u0442\u0438\u0435 \u0440\u043e\u043b\u0435\u0439 \u043f\u043e \u044d\u0442\u0430\u043f\u0430\u043c',
+        salesHead: '\u0420\u0443\u043a. \u043e\u0442\u0434. \u043f\u0440\u043e\u0434\u0430\u0436',
+        salesMgr1: '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 1',
+        salesMgr2: '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 2',
+        techDir: '\u0422\u0435\u0445. \u0434\u0438\u0440\u0435\u043a\u0442\u043e\u0440',
+        foreman1: '\u041f\u0440\u043e\u0440\u0430\u0431 1',
+        foreman2: '\u041f\u0440\u043e\u0440\u0430\u0431 2',
+        supplyHead: '\u0420\u0443\u043a. \u0441\u043d\u0430\u0431\u0436\u0435\u043d\u0438\u044f',
+        mgrRaw: '\u041c\u0435\u043d. \u0447\u0435\u0440\u043d\u043e\u0432\u044b\u0445',
+        mgrFinish: '\u041c\u0435\u043d. \u0447\u0438\u0441\u0442\u043e\u0432\u044b\u0445',
+        mgrFurniture: '\u041c\u0435\u043d. \u043c\u0435\u0431\u0435\u043b\u0438',
+        designHead: '\u0420\u0443\u043a. \u043f\u0440\u043e\u0435\u043a\u0442\u043d\u043e\u0433\u043e',
+        creativeHead: '\u041a\u0440\u0435\u0430\u0442\u0438\u0432\u043d\u044b\u0439 \u0434\u0438\u0440.',
+        visualizer: '\u0412\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0442\u043e\u0440',
+        structHead: '\u0420\u0443\u043a. \u043a\u043e\u043d\u0441\u0442\u0440\u0443\u043a\u0442.',
+        marketer: '\u041c\u0430\u0440\u043a\u0435\u0442\u043e\u043b\u043e\u0433',
+        tasksTitle: '\u0410\u0432\u0442\u043e\u0437\u0430\u0434\u0430\u0447\u0438',
+        taskName: '\u0417\u0430\u0434\u0430\u0447\u0430',
+        taskDeadline: '\u0414\u0435\u0434\u043b\u0430\u0439\u043d',
+        taskAssignee: '\u0418\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c',
+        taskStatus: '\u0421\u0442\u0430\u0442\u0443\u0441',
+        taskStage: '\u042d\u0442\u0430\u043f',
+        taskPending: '\u0412 \u0440\u0430\u0431\u043e\u0442\u0435',
+        taskDone: '\u0413\u043e\u0442\u043e\u0432\u043e',
+        taskOverdue: '\u041f\u0440\u043e\u0441\u0440\u043e\u0447\u0435\u043d\u043e',
+        taskCallClient: '\u0421\u043e\u0437\u0432\u043e\u043d\u0438\u0442\u044c\u0441\u044f \u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b',
+        taskCalcEstimate: '\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u0442\u044c \u0441\u043c\u0435\u0442\u0443',
+        taskCalcSpec: '\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u0442\u044c \u0441\u043f\u0435\u0446\u0438\u0444\u0438\u043a\u0430\u0446\u0438\u044e',
+        taskAgreeEstimate: '\u0421\u043e\u0433\u043b\u0430\u0441\u043e\u0432\u0430\u0442\u044c \u0441\u043c\u0435\u0442\u0443 \u0441 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u043c',
+        taskPrepDocs: '\u041f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u044b \u043f\u043e \u0434\u043e\u0433\u043e\u0432\u043e\u0440\u0443',
+        taskSignContract: '\u041f\u043e\u0434\u043f\u0438\u0441\u0430\u0442\u044c \u0434\u043e\u0433\u043e\u0432\u043e\u0440 \u0438 \u0432\u044b\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0441\u0447\u0451\u0442',
+        taskShootSurvey: '\u0421\u044a\u0451\u043c\u043a\u0430 \u043e\u0431\u043c\u0435\u0440\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0430',
+        taskFormSchedule: '\u0421\u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0413\u041f\u0420',
+        taskMonthlyActs: '\u0415\u0436\u0435\u043c\u0435\u0441\u044f\u0447\u043d\u044b\u0435 \u0430\u043a\u0442\u044b',
+        taskAuthorSupervision: '\u0410\u0432\u0442\u043e\u0440\u0441\u043a\u0438\u0439 \u043d\u0430\u0434\u0437\u043e\u0440',
+        taskDeliverSamples: '\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u043e\u0431\u0440\u0430\u0437\u0446\u043e\u0432',
+        taskPreProjectAnalysis: '\u041f\u0440\u0435\u0434\u043f\u0440\u043e\u0435\u043a\u0442\u043d\u044b\u0439 \u0430\u043d\u0430\u043b\u0438\u0437',
+        task3dVisualization: '3D-\u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f',
+        taskArchProject: '\u0410\u0440\u0445\u0438\u0442\u0435\u043a\u0442\u0443\u0440\u043d\u044b\u0439 \u043f\u0440\u043e\u0435\u043a\u0442',
+        taskFilmObject: '\u0421\u044a\u0451\u043c\u043a\u0430 \u043e\u0431\u044a\u0435\u043a\u0442\u0430 (\u0440\u0430\u0437 \u0432 2 \u043d\u0435\u0434.)',
+        taskCollectFeedback: '\u0421\u0431\u043e\u0440 \u043e\u0442\u0437\u044b\u0432\u0430 \u0438 \u0432\u0438\u0434\u0435\u043e',
+        taskFillCosts: '\u0417\u0430\u043f\u043e\u043b\u043d\u0438\u0442\u044c \u0440\u0430\u0437\u0434\u0435\u043b \u0437\u0430\u0442\u0440\u0430\u0442',
+        analyticsTitle: '\u0410\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430',
+        revenueByMonth: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u043c\u0435\u0441\u044f\u0446\u0430\u043c',
+        conversionFunnel: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0438',
+        dealsByMonth: '\u0417\u0430\u043a\u0440\u044b\u0442\u044b\u0435 \u0441\u0434\u0435\u043b\u043a\u0438',
+        avgDealTime: '\u0421\u0440. \u0446\u0438\u043a\u043b \u0441\u0434\u0435\u043b\u043a\u0438',
+        deadlineCompliance: '\u0421\u043e\u0431\u043b\u044e\u0434\u0435\u043d\u0438\u0435 \u0441\u0440\u043e\u043a\u043e\u0432',
+        onTime: '\u0412 \u0441\u0440\u043e\u043a',
+        delayed: '\u0421 \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u043e\u0439',
+        revenueByTypeChart: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u0442\u0438\u043f\u0430\u043c',
+        dealVelocity: '\u0421\u043a\u043e\u0440\u043e\u0441\u0442\u044c (\u0434\u043d\u0435\u0439 \u043d\u0430 \u044d\u0442\u0430\u043f)',
+        topClients: '\u0422\u043e\u043f \u043a\u043b\u0438\u0435\u043d\u0442\u044b \u043f\u043e \u0432\u044b\u0440\u0443\u0447\u043a\u0435',
+        days: '\u0434\u043d\u0435\u0439',
+        monthLabels: ['\u042f\u043d\u0432','\u0424\u0435\u0432','\u041c\u0430\u0440','\u0410\u043f\u0440','\u041c\u0430\u0439','\u0418\u044e\u043d','\u0418\u044e\u043b','\u0410\u0432\u0433','\u0421\u0435\u043d','\u041e\u043a\u0442','\u041d\u043e\u044f','\u0414\u0435\u043a'],
+        calendarTitle: '\u041a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u043e\u0432',
+        today: '\u0421\u0435\u0433\u043e\u0434\u043d\u044f',
+        upcoming: '\u0411\u043b\u0438\u0436\u0430\u0439\u0448\u0438\u0435 \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u044b',
+        thisWeek: '\u042d\u0442\u0430 \u043d\u0435\u0434\u0435\u043b\u044f',
+        nextWeek: '\u0421\u043b\u0435\u0434\u0443\u044e\u0449\u0430\u044f \u043d\u0435\u0434\u0435\u043b\u044f',
+        later: '\u041f\u043e\u0437\u0436\u0435',
+        noDue: '\u041d\u0435\u0442 \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u043e\u0432',
+        fromLastMonth: '\u043e\u0442 \u043f\u0440\u043e\u0448\u043b\u043e\u0433\u043e \u043c\u0435\u0441\u044f\u0446\u0430',
+        total: '\u0418\u0442\u043e\u0433\u043e',
+        showAll: '\u041f\u043e\u043a\u0430\u0437\u0430\u0442\u044c \u0432\u0441\u0435',
+        filterByType: '\u0424\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0442\u0438\u043f\u0443',
+        filterByStatus: '\u0424\u0438\u043b\u044c\u0442\u0440 \u043f\u043e \u0441\u0442\u0430\u0442\u0443\u0441\u0443',
+        all: '\u0412\u0441\u0435'
+      }
+    };
+
+    var _lang = 'en';
+    var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+    function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+      document.getElementById('langBtn').textContent = _lang === 'ru' ? '\uD83C\uDF10 \u0420\u0443\u0441\u0441\u043a\u0438\u0439' : '\uD83C\uDF10 English';
+      if (typeof updatePromptBar === 'function') updatePromptBar();
+      updateNavLabels();
+      navigateTo(currentPage);
+    }
+
+    // ===== JIT Data =====
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function fmtMoney(v) { return v.toLocaleString(_lang === 'ru' ? 'ru-RU' : 'en-US'); }
+
+    var statusKeys = ['newLeads','costCalc','contract','workDesign','workConstruction','workSupply','workComplex','feedback'];
+    var statusColors = {
+      newLeads:'#3B82F6', costCalc:'#F59E0B', contract:'#8B5CF6',
+      workDesign:'#06B6D4', workConstruction:'#F97316', workSupply:'#10B981', workComplex:'#EC4899',
+      feedback:'#6B7280', rejected:'#EF4444'
+    };
+    var typeKeys = ['design','construction','supply','complex'];
+    var typeColors = ['#3B82F6','#F97316','#10B981','#8B5CF6'];
+
+    function genPipeline() {
+      return {
+        newLeads: rand(30,55), costCalc: rand(18,32), contract: rand(10,20),
+        workDesign: rand(6,14), workConstruction: rand(5,12), workSupply: rand(8,16), workComplex: rand(2,6),
+        feedback: rand(3,8), rejected: rand(10,22)
+      };
+    }
+    function genDealsByType() {
+      return { design: rand(14,28), construction: rand(10,20), supply: rand(18,35), complex: rand(4,10) };
+    }
+    function genRevenueByType() {
+      return { design: rand(2000,6000)*1000, construction: rand(5000,15000)*1000, supply: rand(3000,8000)*1000, complex: rand(4000,12000)*1000 };
+    }
+
+    var clientsEn = ['Sokolov A.','Petrov D.','Ivanova M.','Smirnov K.','Kozlova E.','Novikov S.','Morozova T.','Volkov R.','Fedorov A.','Kuznetsova O.','Popov V.','Egorova N.'];
+    var clientsRu = ['\u0421\u043e\u043a\u043e\u043b\u043e\u0432 \u0410.','\u041f\u0435\u0442\u0440\u043e\u0432 \u0414.','\u0418\u0432\u0430\u043d\u043e\u0432\u0430 \u041c.','\u0421\u043c\u0438\u0440\u043d\u043e\u0432 \u041a.','\u041a\u043e\u0437\u043b\u043e\u0432\u0430 \u0415.','\u041d\u043e\u0432\u0438\u043a\u043e\u0432 \u0421.','\u041c\u043e\u0440\u043e\u0437\u043e\u0432\u0430 \u0422.','\u0412\u043e\u043b\u043a\u043e\u0432 \u0420.','\u0424\u0435\u0434\u043e\u0440\u043e\u0432 \u0410.','\u041a\u0443\u0437\u043d\u0435\u0446\u043e\u0432\u0430 \u041e.','\u041f\u043e\u043f\u043e\u0432 \u0412.','\u0415\u0433\u043e\u0440\u043e\u0432\u0430 \u041d.'];
+
+    function genDeals(count) {
+      var clients = _lang === 'ru' ? clientsRu : clientsEn;
+      var managers = ['salesMgr1','salesMgr2'];
+      return Array.from({length: count}, function(_, i) {
+        var t = typeKeys[rand(0, 3)];
+        var workKey = t === 'design' ? 'workDesign' : t === 'construction' ? 'workConstruction' : t === 'supply' ? 'workSupply' : 'workComplex';
+        var possibleStatuses = ['newLeads','costCalc','contract', workKey, 'feedback'];
+        return {
+          client: clients[i % clients.length],
+          type: t,
+          status: possibleStatuses[rand(0, possibleStatuses.length - 1)],
+          budget: rand(800, 12000) * 1000,
+          area: rand(40, 350),
+          deadline: '2026-' + String(rand(2,9)).padStart(2,'0') + '-' + String(rand(1,28)).padStart(2,'0'),
+          manager: managers[rand(0,1)]
+        };
+      });
+    }
+
+    function genTeamData() {
+      return [
+        { dept: 'salesDept', roles: [
+          { key: 'salesHead', tasks: rand(6,14), overdue: rand(0,2) },
+          { key: 'salesMgr1', tasks: rand(10,22), overdue: rand(0,5) },
+          { key: 'salesMgr2', tasks: rand(10,22), overdue: rand(0,5) }
+        ]},
+        { dept: 'techDept', roles: [
+          { key: 'techDir', tasks: rand(5,12), overdue: rand(0,3) },
+          { key: 'foreman1', tasks: rand(7,16), overdue: rand(0,4) },
+          { key: 'foreman2', tasks: rand(7,16), overdue: rand(0,4) }
+        ]},
+        { dept: 'supplyDept', roles: [
+          { key: 'supplyHead', tasks: rand(6,14), overdue: rand(0,3) },
+          { key: 'mgrRaw', tasks: rand(5,12), overdue: rand(0,2) },
+          { key: 'mgrFinish', tasks: rand(5,12), overdue: rand(0,2) },
+          { key: 'mgrFurniture', tasks: rand(4,10), overdue: rand(0,2) }
+        ]},
+        { dept: 'designDept', roles: [
+          { key: 'designHead', tasks: rand(7,16), overdue: rand(0,3) }
+        ]},
+        { dept: 'creativeDept', roles: [
+          { key: 'creativeHead', tasks: rand(6,14), overdue: rand(0,2) },
+          { key: 'visualizer', tasks: rand(4,10), overdue: rand(0,2) }
+        ]},
+        { dept: 'structDept', roles: [
+          { key: 'structHead', tasks: rand(5,12), overdue: rand(0,2) }
+        ]},
+        { dept: 'marketingDept', roles: [
+          { key: 'marketer', tasks: rand(6,14), overdue: rand(0,3) }
+        ]}
+      ];
+    }
+
+    function genAutoTasks() {
+      var clients = _lang === 'ru' ? clientsRu : clientsEn;
+      var taskDefs = [
+        { name: 'taskCallClient', stage: 'newLeads', assignees: ['salesMgr1','salesMgr2'], deadlineDays: 1 },
+        { name: 'taskCalcEstimate', stage: 'costCalc', assignees: ['techDir','foreman1','foreman2'], deadlineDays: 7 },
+        { name: 'taskCalcSpec', stage: 'costCalc', assignees: ['supplyHead','mgrRaw','mgrFinish','mgrFurniture'], deadlineDays: 5 },
+        { name: 'taskAgreeEstimate', stage: 'costCalc', assignees: ['salesMgr1','salesMgr2'], deadlineDays: 2 },
+        { name: 'taskPrepDocs', stage: 'contract', assignees: ['salesMgr1','salesMgr2'], deadlineDays: 2 },
+        { name: 'taskSignContract', stage: 'contract', assignees: ['salesMgr1','salesMgr2'], deadlineDays: 3 },
+        { name: 'taskShootSurvey', stage: 'contract', assignees: ['marketer'], deadlineDays: 5 },
+        { name: 'taskPreProjectAnalysis', stage: 'workDesign', assignees: ['creativeHead'], deadlineDays: 7 },
+        { name: 'task3dVisualization', stage: 'workDesign', assignees: ['visualizer'], deadlineDays: 14 },
+        { name: 'taskArchProject', stage: 'workDesign', assignees: ['structHead'], deadlineDays: 21 },
+        { name: 'taskDeliverSamples', stage: 'workDesign', assignees: ['supplyHead'], deadlineDays: 10 },
+        { name: 'taskFormSchedule', stage: 'workConstruction', assignees: ['foreman1','foreman2'], deadlineDays: 2 },
+        { name: 'taskMonthlyActs', stage: 'workConstruction', assignees: ['foreman1','foreman2'], deadlineDays: 30 },
+        { name: 'taskAuthorSupervision', stage: 'workConstruction', assignees: ['designHead'], deadlineDays: 0 },
+        { name: 'taskFilmObject', stage: 'workConstruction', assignees: ['marketer'], deadlineDays: 14 },
+        { name: 'taskCollectFeedback', stage: 'feedback', assignees: ['marketer'], deadlineDays: 5 },
+        { name: 'taskFillCosts', stage: 'feedback', assignees: ['salesMgr1','salesMgr2'], deadlineDays: 5 }
+      ];
+      var tasks = [];
+      for (var i = 0; i < 20; i++) {
+        var td = taskDefs[rand(0, taskDefs.length - 1)];
+        var statRoll = rand(0, 10);
+        var stat = statRoll < 4 ? 'taskPending' : statRoll < 8 ? 'taskDone' : 'taskOverdue';
+        var daysOffset = rand(-3, td.deadlineDays + 5);
+        var d = new Date(2026, 1, 20);
+        d.setDate(d.getDate() + daysOffset);
+        tasks.push({ name: td.name, stage: td.stage, assignee: td.assignees[rand(0, td.assignees.length - 1)], client: clients[rand(0, clients.length - 1)], deadline: d.toISOString().slice(0, 10), status: stat });
+      }
+      return tasks.sort(function(a, b) { return a.deadline < b.deadline ? -1 : 1; });
+    }
+
+    function genMonthly(min, max, months) {
+      return Array.from({length: months}, function() { return rand(min, max); });
+    }
+
+    function genActivity() {
+      var clients = _lang === 'ru' ? clientsRu : clientsEn;
+      var actions = _lang === 'ru'
+        ? ['\u041d\u043e\u0432\u044b\u0439 \u043b\u0438\u0434 \u0441\u043e\u0437\u0434\u0430\u043d','\u0421\u043c\u0435\u0442\u0430 \u0441\u043e\u0433\u043b\u0430\u0441\u043e\u0432\u0430\u043d\u0430','\u0414\u043e\u0433\u043e\u0432\u043e\u0440 \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d','\u0421\u0447\u0451\u0442 \u043e\u043f\u043b\u0430\u0447\u0435\u043d','\u0410\u043a\u0442 \u043f\u0440\u0438\u043d\u044f\u0442','\u041f\u0435\u0440\u0435\u0432\u043e\u0434 \u0432 \u0441\u0442\u0440\u043e\u0439\u043a\u0443','\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c \u0441\u043e\u0431\u0440\u0430\u043d\u0430','\u0417\u0430\u0434\u0430\u0447\u0430 \u043f\u0440\u043e\u0441\u0440\u043e\u0447\u0435\u043d\u0430']
+        : ['New lead created','Estimate approved','Contract signed','Invoice paid','Act accepted','Moved to construction','Feedback collected','Task overdue'];
+      var icons = ['\uD83D\uDFE2','\u2705','\uD83D\uDCDD','\uD83D\uDCB0','\uD83D\uDCC4','\uD83C\uDFD7','\u2B50','\uD83D\uDD34'];
+      return Array.from({length: 8}, function() {
+        var idx = rand(0, actions.length - 1);
+        return { icon: icons[idx], text: actions[idx], client: clients[rand(0, clients.length - 1)], time: rand(1, 120) + (_lang === 'ru' ? ' \u043c\u0438\u043d. \u043d\u0430\u0437\u0430\u0434' : ' min ago') };
+      });
+    }
+
+    // ===== Nav =====
+    var currentPage = 'overview';
+
+    function updateNavLabels() {
+      document.getElementById('sidebarTitle').innerHTML = '&#127959; ' + tt('sidebarTitle');
+      document.getElementById('sidebarCompany').textContent = tt('companyName');
+      document.querySelectorAll('.nav-link[data-nav]').forEach(function(btn) {
+        btn.textContent = btn.dataset.icon + ' ' + tt(btn.dataset.nav);
+      });
+    }
+
+    function kpiCard(label, value, trend, color, icon) {
+      var trendHtml = trend !== null
+        ? '<div class="text-xs mt-1 ' + (trend >= 0 ? 'text-green-500' : 'text-red-500') + '">' + (trend >= 0 ? '\u2191' : '\u2193') + ' ' + Math.abs(trend) + '% ' + tt('fromLastMonth') + '</div>'
+        : '';
+      return '<div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">' +
+        '<div class="flex items-center justify-between mb-1"><span class="text-gray-500 text-xs">' + label + '</span><span class="text-lg">' + icon + '</span></div>' +
+        '<div class="text-xl font-bold ' + color + '">' + value + '</div>' + trendHtml + '</div>';
+    }
+
+    function statusBadge(statusKey) {
+      var bgMap = {
+        newLeads:'bg-blue-100 text-blue-700', costCalc:'bg-yellow-100 text-yellow-700', contract:'bg-purple-100 text-purple-700',
+        workDesign:'bg-cyan-100 text-cyan-700', workConstruction:'bg-orange-100 text-orange-700', workSupply:'bg-emerald-100 text-emerald-700', workComplex:'bg-pink-100 text-pink-700',
+        feedback:'bg-gray-100 text-gray-700', rejected:'bg-red-100 text-red-700',
+        taskPending:'bg-yellow-100 text-yellow-700', taskDone:'bg-green-100 text-green-700', taskOverdue:'bg-red-100 text-red-700'
+      };
+      return '<span class="px-2 py-0.5 rounded-full text-xs font-medium ' + (bgMap[statusKey] || 'bg-gray-100') + '">' + tt(statusKey) + '</span>';
+    }
+
+    // ===== Pages =====
+    var pages = {
+      overview: function() {
+        var p = genPipeline();
+        var revByType = genRevenueByType();
+        var totalDeals = statusKeys.reduce(function(s, k) { return s + (p[k] || 0); }, 0);
+        var totalRev = Object.values(revByType).reduce(function(s, v) { return s + v; }, 0);
+        var avgDeal = Math.floor(totalRev / totalDeals);
+        var conv = ((p.feedback / p.newLeads) * 100).toFixed(1);
+        var overdueCount = rand(5, 18);
+        var completedCount = rand(8, 25);
+        var deals = genDeals(8);
+        var activity = genActivity();
+
+        return '<h1 class="text-xl font-bold mb-4">' + tt('navOverview') + '</h1>' +
+          '<div class="grid grid-cols-6 gap-3 mb-4">' +
+            kpiCard(tt('totalDeals'), totalDeals, rand(3,20), 'text-blue-600', '\uD83D\uDCC8') +
+            kpiCard(tt('totalRevenue'), fmtMoney(totalRev) + ' ' + tt('currency'), rand(5,25), 'text-green-600', '\uD83D\uDCB0') +
+            kpiCard(tt('avgCheck'), fmtMoney(avgDeal) + ' ' + tt('currency'), null, 'text-purple-600', '\uD83C\uDFAF') +
+            kpiCard(tt('convRate'), conv + '%', rand(-3,8), 'text-orange-600', '\uD83D\uDD04') +
+            kpiCard(tt('overdueTotal'), overdueCount, -rand(2,10), 'text-red-600', '\u26A0\uFE0F') +
+            kpiCard(tt('completedMonth'), completedCount, rand(5,15), 'text-teal-600', '\u2705') +
+          '</div>' +
+          '<div class="grid grid-cols-3 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('dealsByStatus') + '</h3><canvas id="statusChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('dealsByType') + '</h3><canvas id="typeChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('monthlyTrend') + '</h3><canvas id="trendChart" height="180"></canvas></div>' +
+          '</div>' +
+          '<div class="grid grid-cols-3 gap-3">' +
+            '<div class="col-span-2 bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('recentDeals') + '</h3>' +
+              '<table class="w-full text-xs"><thead class="bg-gray-50"><tr><th class="px-2 py-1.5 text-left">' + tt('client') + '</th><th class="px-2 py-1.5 text-left">' + tt('type') + '</th><th class="px-2 py-1.5 text-left">' + tt('status') + '</th><th class="px-2 py-1.5 text-right">' + tt('budget') + '</th><th class="px-2 py-1.5 text-right">' + tt('area') + '</th><th class="px-2 py-1.5 text-right">' + tt('deadline') + '</th></tr></thead>' +
+              '<tbody class="divide-y">' + deals.map(function(d) {
+                return '<tr class="hover:bg-gray-50"><td class="px-2 py-1.5 font-medium">' + d.client + '</td><td class="px-2 py-1.5">' + tt(d.type) + '</td><td class="px-2 py-1.5">' + statusBadge(d.status) + '</td><td class="px-2 py-1.5 text-right">' + fmtMoney(d.budget) + ' ' + tt('currency') + '</td><td class="px-2 py-1.5 text-right">' + d.area + ' ' + tt('sqm') + '</td><td class="px-2 py-1.5 text-right text-gray-500">' + d.deadline + '</td></tr>';
+              }).join('') + '</tbody></table></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('recentActivity') + '</h3>' +
+              '<div class="space-y-2 max-h-64 overflow-auto mini-scroll">' + activity.map(function(a) {
+                return '<div class="flex items-start gap-2 text-xs"><span>' + a.icon + '</span><div class="flex-1"><div class="font-medium">' + a.text + '</div><div class="text-gray-400">' + a.client + ' \u2022 ' + a.time + '</div></div></div>';
+              }).join('') + '</div></div>' +
+          '</div>';
+      },
+
+      pipeline: function() {
+        var p = genPipeline();
+        var allStages = statusKeys.map(function(k) {
+          var daysMap = { newLeads: rand(1,3), costCalc: rand(3,7), contract: rand(2,5), workDesign: rand(14,45), workConstruction: rand(30,90), workSupply: rand(14,60), workComplex: rand(30,90), feedback: rand(3,7) };
+          return { key: k, count: p[k], color: statusColors[k], days: daysMap[k] };
+        });
+
+        return '<h1 class="text-xl font-bold mb-4">' + tt('pipelineTitle') + '</h1>' +
+          '<div class="flex gap-2 mb-4 overflow-x-auto pb-1">' + allStages.map(function(s) {
+            return '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 min-w-[120px] flex-1 text-center">' +
+              '<div class="text-[10px] text-gray-500 mb-1 truncate">' + tt(s.key) + '</div>' +
+              '<div class="text-2xl font-bold" style="color:' + s.color + '">' + s.count + '</div>' +
+              '<div class="text-[10px] text-gray-400 mt-0.5">' + s.days + ' ' + tt('days') + '</div></div>';
+          }).join('') + '</div>' +
+          '<div class="grid grid-cols-2 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('stageConversion') + '</h3><canvas id="conversionChart" height="200"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('pipelineFlow') + '</h3><canvas id="pipelineFlowChart" height="200"></canvas></div>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-3">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('stageDetails') + '</h3>' +
+              '<table class="w-full text-xs"><thead class="bg-gray-50"><tr><th class="px-2 py-1.5 text-left">' + tt('status') + '</th><th class="px-2 py-1.5 text-right">' + tt('dealsInStage') + '</th><th class="px-2 py-1.5 text-right">' + tt('avgTimeInStage') + '</th><th class="px-2 py-1.5 text-right">' + tt('conversionRate') + '</th></tr></thead>' +
+              '<tbody class="divide-y">' + allStages.map(function(s, i) {
+                var next = allStages[i + 1];
+                var convPct = next ? Math.round(next.count / s.count * 100) : '-';
+                return '<tr class="hover:bg-gray-50"><td class="px-2 py-1.5"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:' + s.color + '"></span>' + tt(s.key) + '</td><td class="px-2 py-1.5 text-right font-medium">' + s.count + '</td><td class="px-2 py-1.5 text-right text-gray-500">' + s.days + ' ' + tt('days') + '</td><td class="px-2 py-1.5 text-right">' + (typeof convPct === 'number' ? convPct + '%' : '-') + '</td></tr>';
+              }).join('') + '</tbody></table></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('avgTimeInStage') + '</h3>' +
+              '<div class="space-y-2 mt-2">' + allStages.map(function(s) {
+                var pct = Math.min(s.days / 90 * 100, 100);
+                return '<div class="flex items-center gap-2"><div class="w-24 text-[10px] text-gray-600 truncate">' + tt(s.key) + '</div><div class="flex-1 bg-gray-100 rounded-full h-5"><div class="h-5 rounded-full flex items-center pl-2 text-white text-[10px] font-medium" style="width:' + Math.max(pct, 12) + '%;background:' + s.color + '">' + s.days + 'd</div></div></div>';
+              }).join('') + '</div></div>' +
+          '</div>';
+      },
+
+      deals: function() {
+        var deals = genDeals(12);
+        return '<h1 class="text-xl font-bold mb-4">' + tt('allDeals') + '</h1>' +
+          '<div class="flex gap-3 mb-4">' +
+            '<div class="bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-100 flex items-center gap-2 text-xs"><span class="text-gray-500">' + tt('filterByType') + ':</span>' +
+              typeKeys.map(function(t) { return '<span class="px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80" style="background:' + typeColors[typeKeys.indexOf(t)] + '20;color:' + typeColors[typeKeys.indexOf(t)] + '">' + tt(t) + '</span>'; }).join('') +
+            '</div>' +
+            '<div class="bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-100 text-xs text-gray-500">' + tt('total') + ': <span class="font-bold text-gray-900">' + deals.length + '</span> ' + tt('deals') + '</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">' +
+            '<table class="w-full text-xs"><thead class="bg-gray-50"><tr>' +
+              '<th class="px-3 py-2 text-left">' + tt('client') + '</th><th class="px-3 py-2 text-left">' + tt('type') + '</th><th class="px-3 py-2 text-left">' + tt('status') + '</th><th class="px-3 py-2 text-right">' + tt('budget') + '</th><th class="px-3 py-2 text-right">' + tt('area') + '</th><th class="px-3 py-2 text-left">' + tt('manager') + '</th><th class="px-3 py-2 text-right">' + tt('deadline') + '</th>' +
+            '</tr></thead>' +
+            '<tbody class="divide-y">' + deals.map(function(d) {
+              var isOverdue = d.deadline < '2026-02-20';
+              return '<tr class="hover:bg-gray-50"><td class="px-3 py-2 font-medium">' + d.client + '</td><td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-[10px]" style="background:' + typeColors[typeKeys.indexOf(d.type)] + '15;color:' + typeColors[typeKeys.indexOf(d.type)] + '">' + tt(d.type) + '</span></td><td class="px-3 py-2">' + statusBadge(d.status) + '</td><td class="px-3 py-2 text-right font-medium">' + fmtMoney(d.budget) + ' ' + tt('currency') + '</td><td class="px-3 py-2 text-right">' + d.area + ' ' + tt('sqm') + '</td><td class="px-3 py-2">' + tt(d.manager) + '</td><td class="px-3 py-2 text-right ' + (isOverdue ? 'text-red-500 font-semibold' : 'text-gray-500') + '">' + d.deadline + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+      },
+
+      team: function() {
+        var depts = genTeamData();
+        return '<h1 class="text-xl font-bold mb-4">' + tt('teamTitle') + '</h1>' +
+          '<div class="grid grid-cols-2 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('tasksByDept') + '</h3><canvas id="tasksDeptChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('overdueByDept') + '</h3><canvas id="overdueDeptChart" height="180"></canvas></div>' +
+          '</div>' +
+          '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 mb-4"><h3 class="font-semibold text-xs mb-2">' + tt('workloadHeatmap') + '</h3>' +
+            '<div class="overflow-x-auto"><table class="w-full text-[10px]"><thead class="bg-gray-50"><tr><th class="px-2 py-1.5 text-left">' + tt('role') + '</th>' +
+            statusKeys.map(function(k) { return '<th class="px-1 py-1.5 text-center" style="color:' + statusColors[k] + '">' + tt(k).replace(/\s/g, '<br>') + '</th>'; }).join('') +
+            '</tr></thead><tbody class="divide-y">' +
+            [
+              { key: 'salesHead', stages: [1,1,1,0,1,1,0,1] },
+              { key: 'salesMgr1', stages: [1,1,1,1,1,1,1,1] },
+              { key: 'salesMgr2', stages: [1,1,1,1,1,1,1,1] },
+              { key: 'techDir', stages: [0,1,0,0,1,0,0,0] },
+              { key: 'foreman1', stages: [0,1,0,0,1,0,0,0] },
+              { key: 'foreman2', stages: [0,1,0,0,1,0,0,0] },
+              { key: 'supplyHead', stages: [0,1,0,1,1,1,1,0] },
+              { key: 'mgrRaw', stages: [0,1,0,0,0,1,1,0] },
+              { key: 'mgrFinish', stages: [0,1,0,0,0,1,1,0] },
+              { key: 'mgrFurniture', stages: [0,1,0,0,0,1,1,0] },
+              { key: 'designHead', stages: [0,0,0,1,1,1,1,0] },
+              { key: 'creativeHead', stages: [0,0,0,1,0,1,0,0] },
+              { key: 'visualizer', stages: [0,0,0,1,0,0,0,0] },
+              { key: 'structHead', stages: [0,0,0,1,0,0,0,0] },
+              { key: 'marketer', stages: [0,0,1,1,1,1,0,1] }
+            ].map(function(r) {
+              return '<tr class="hover:bg-gray-50"><td class="px-2 py-1 font-medium">' + tt(r.key) + '</td>' +
+                r.stages.map(function(v) {
+                  return '<td class="px-1 py-1 text-center">' + (v ? '<span class="inline-block w-4 h-4 rounded bg-blue-500 opacity-70"></span>' : '<span class="inline-block w-4 h-4 rounded bg-gray-100"></span>') + '</td>';
+                }).join('') + '</tr>';
+            }).join('') +
+            '</tbody></table></div></div>' +
+          '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><table class="w-full text-xs"><thead class="bg-gray-50"><tr><th class="px-2 py-1.5 text-left">' + tt('department') + '</th><th class="px-2 py-1.5 text-left">' + tt('role') + '</th><th class="px-2 py-1.5 text-right">' + tt('activeTasks') + '</th><th class="px-2 py-1.5 text-right">' + tt('overdue') + '</th><th class="px-2 py-1.5 text-right">' + tt('load') + '</th></tr></thead>' +
+          '<tbody class="divide-y">' + depts.map(function(d) {
+            return d.roles.map(function(r, i) {
+              var loadPct = Math.min(Math.round(r.tasks / 22 * 100), 100);
+              var loadColor = loadPct > 80 ? 'text-red-600' : loadPct > 50 ? 'text-yellow-600' : 'text-green-600';
+              var bar = '<div class="inline-block w-16 bg-gray-100 rounded-full h-2 ml-1 align-middle"><div class="h-2 rounded-full" style="width:' + loadPct + '%;background:' + (loadPct > 80 ? '#EF4444' : loadPct > 50 ? '#F59E0B' : '#10B981') + '"></div></div>';
+              return '<tr class="hover:bg-gray-50">' + (i === 0 ? '<td class="px-2 py-1.5 font-semibold" rowspan="' + d.roles.length + '">' + tt(d.dept) + '</td>' : '') + '<td class="px-2 py-1.5">' + tt(r.key) + '</td><td class="px-2 py-1.5 text-right font-medium">' + r.tasks + '</td><td class="px-2 py-1.5 text-right ' + (r.overdue > 0 ? 'text-red-600 font-semibold' : 'text-gray-400') + '">' + r.overdue + '</td><td class="px-2 py-1.5 text-right"><span class="' + loadColor + ' font-medium text-xs">' + loadPct + '%</span>' + bar + '</td></tr>';
+            }).join('');
+          }).join('') + '</tbody></table></div>';
+      },
+
+      tasks: function() {
+        var tasks = genAutoTasks();
+        var pending = tasks.filter(function(t) { return t.status === 'taskPending'; }).length;
+        var done = tasks.filter(function(t) { return t.status === 'taskDone'; }).length;
+        var overdue = tasks.filter(function(t) { return t.status === 'taskOverdue'; }).length;
+
+        return '<h1 class="text-xl font-bold mb-4">' + tt('tasksTitle') + '</h1>' +
+          '<div class="grid grid-cols-3 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center"><div class="text-xs text-gray-500">' + tt('taskPending') + '</div><div class="text-2xl font-bold text-yellow-600">' + pending + '</div></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center"><div class="text-xs text-gray-500">' + tt('taskDone') + '</div><div class="text-2xl font-bold text-green-600">' + done + '</div></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center"><div class="text-xs text-gray-500">' + tt('taskOverdue') + '</div><div class="text-2xl font-bold text-red-600">' + overdue + '</div></div>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('tasksByDept') + '</h3><canvas id="tasksStageChart" height="160"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('overdueByDept') + '</h3><canvas id="tasksStatusChart" height="160"></canvas></div>' +
+          '</div>' +
+          '<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">' +
+            '<table class="w-full text-xs"><thead class="bg-gray-50"><tr>' +
+              '<th class="px-3 py-2 text-left">' + tt('taskName') + '</th><th class="px-3 py-2 text-left">' + tt('client') + '</th><th class="px-3 py-2 text-left">' + tt('taskStage') + '</th><th class="px-3 py-2 text-left">' + tt('taskAssignee') + '</th><th class="px-3 py-2 text-right">' + tt('taskDeadline') + '</th><th class="px-3 py-2 text-center">' + tt('taskStatus') + '</th>' +
+            '</tr></thead>' +
+            '<tbody class="divide-y">' + tasks.map(function(t) {
+              return '<tr class="hover:bg-gray-50"><td class="px-3 py-2 font-medium">' + tt(t.name) + '</td><td class="px-3 py-2">' + t.client + '</td><td class="px-3 py-2">' + statusBadge(t.stage) + '</td><td class="px-3 py-2">' + tt(t.assignee) + '</td><td class="px-3 py-2 text-right ' + (t.status === 'taskOverdue' ? 'text-red-500 font-semibold' : 'text-gray-500') + '">' + t.deadline + '</td><td class="px-3 py-2 text-center">' + statusBadge(t.status) + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+      },
+
+      analytics: function() {
+        var revenue = genMonthly(800, 2500, 12).map(function(v) { return v * 1000; });
+        var closed = genMonthly(3, 14, 12);
+        var p = genPipeline();
+        var totalTime = rand(28, 65);
+        var onTimePct = rand(65, 90);
+        var revByType = genRevenueByType();
+
+        return '<h1 class="text-xl font-bold mb-4">' + tt('analyticsTitle') + '</h1>' +
+          '<div class="grid grid-cols-3 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('revenueByMonth') + '</h3><canvas id="revenueChart" height="160"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('dealsByMonth') + '</h3><canvas id="dealsMonthChart" height="160"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('avgDealTime') + '</h3><div class="flex items-center justify-center h-36"><div class="text-center"><div class="text-5xl font-bold text-blue-600">' + totalTime + '</div><div class="text-gray-500 text-sm mt-1">' + tt('days') + '</div></div></div></div>' +
+          '</div>' +
+          '<div class="grid grid-cols-4 gap-3">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('conversionFunnel') + '</h3><canvas id="funnelAnalChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('revenueByTypeChart') + '</h3><canvas id="revTypeChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('deadlineCompliance') + '</h3><canvas id="deadlineChart" height="180"></canvas></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100"><h3 class="font-semibold text-xs mb-2">' + tt('topClients') + '</h3>' +
+              '<div class="space-y-1.5 mt-1">' + (function() {
+                var clients = _lang === 'ru' ? clientsRu : clientsEn;
+                return clients.slice(0, 6).map(function(c) {
+                  var rev = rand(1000, 8000) * 1000;
+                  var pct = Math.round(rev / 8000000 * 100);
+                  return '<div class="flex items-center gap-1 text-[10px]"><span class="w-20 truncate font-medium">' + c + '</span><div class="flex-1 bg-gray-100 rounded-full h-3"><div class="h-3 rounded-full bg-blue-500" style="width:' + pct + '%"></div></div><span class="w-14 text-right text-gray-500">' + fmtMoney(rev) + '</span></div>';
+                }).join('');
+              })() + '</div></div>' +
+          '</div>';
+      },
+
+      calendar: function() {
+        var tasks = genAutoTasks();
+        var today = '2026-02-20';
+        var weekEnd = '2026-02-27';
+        var nextWeekEnd = '2026-03-06';
+        var overdueTasks = tasks.filter(function(t) { return t.deadline < today; });
+        var thisWeekTasks = tasks.filter(function(t) { return t.deadline >= today && t.deadline <= weekEnd; });
+        var nextWeekTasks = tasks.filter(function(t) { return t.deadline > weekEnd && t.deadline <= nextWeekEnd; });
+        var laterTasks = tasks.filter(function(t) { return t.deadline > nextWeekEnd; });
+
+        function renderGroup(label, items, accent) {
+          if (!items.length) return '<div class="mb-3"><h3 class="font-semibold text-xs mb-1 ' + accent + '">' + label + '</h3><div class="text-xs text-gray-400 pl-2">' + tt('noDue') + '</div></div>';
+          return '<div class="mb-3"><h3 class="font-semibold text-xs mb-1.5 ' + accent + '">' + label + ' <span class="text-gray-400 font-normal">(' + items.length + ')</span></h3>' +
+            '<div class="space-y-1">' + items.map(function(t) {
+              return '<div class="flex items-center gap-2 bg-white p-2 rounded-lg shadow-sm border border-gray-100 text-xs">' +
+                '<div class="w-20 text-gray-500">' + t.deadline + '</div>' +
+                '<div class="flex-1 font-medium">' + tt(t.name) + '</div>' +
+                '<div class="text-gray-500">' + t.client + '</div>' +
+                '<div class="w-24">' + statusBadge(t.stage) + '</div>' +
+                '<div class="w-20 text-right">' + tt(t.assignee) + '</div></div>';
+            }).join('') + '</div></div>';
+        }
+
+        return '<h1 class="text-xl font-bold mb-4">' + tt('calendarTitle') + '</h1>' +
+          '<div class="grid grid-cols-4 gap-3 mb-4">' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-red-200 text-center"><div class="text-xs text-red-500">' + tt('taskOverdue') + '</div><div class="text-2xl font-bold text-red-600">' + overdueTasks.length + '</div></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-yellow-200 text-center"><div class="text-xs text-yellow-600">' + tt('thisWeek') + '</div><div class="text-2xl font-bold text-yellow-600">' + thisWeekTasks.length + '</div></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-blue-200 text-center"><div class="text-xs text-blue-500">' + tt('nextWeek') + '</div><div class="text-2xl font-bold text-blue-600">' + nextWeekTasks.length + '</div></div>' +
+            '<div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 text-center"><div class="text-xs text-gray-500">' + tt('later') + '</div><div class="text-2xl font-bold text-gray-600">' + laterTasks.length + '</div></div>' +
+          '</div>' +
+          renderGroup(tt('taskOverdue'), overdueTasks, 'text-red-600') +
+          renderGroup(tt('thisWeek'), thisWeekTasks, 'text-yellow-600') +
+          renderGroup(tt('nextWeek'), nextWeekTasks, 'text-blue-600') +
+          renderGroup(tt('later'), laterTasks, 'text-gray-600');
+      }
+    };
+
+    function navigateTo(page) {
+      currentPage = page;
+      document.getElementById('mainContent').innerHTML = pages[page]();
+      updateNavLabels();
+      document.querySelectorAll('.nav-link').forEach(function(link) {
+        if (link.dataset.page === page) {
+          link.classList.add('bg-blue-600');
+          link.classList.remove('hover:bg-gray-700');
+        } else {
+          link.classList.remove('bg-blue-600');
+          link.classList.add('hover:bg-gray-700');
+        }
+      });
+      setTimeout(function() { renderCharts(page); }, 50);
+    }
+
+    function renderCharts(page) {
+      var defOpts = { responsive: true, plugins: { legend: { display: false } }, animation: { duration: 400 } };
+
+      if (page === 'overview') {
+        var p = genPipeline();
+        new Chart(document.getElementById('statusChart'), {
+          type: 'bar',
+          data: { labels: statusKeys.map(function(k) { return tt(k); }), datasets: [{ data: statusKeys.map(function(k) { return p[k]; }), backgroundColor: statusKeys.map(function(k) { return statusColors[k]; }) }] },
+          options: Object.assign({}, defOpts, { scales: { x: { ticks: { font: { size: 9 }, maxRotation: 45 } } } })
+        });
+        var types = genDealsByType();
+        new Chart(document.getElementById('typeChart'), {
+          type: 'doughnut',
+          data: { labels: typeKeys.map(function(k) { return tt(k); }), datasets: [{ data: typeKeys.map(function(k) { return types[k]; }), backgroundColor: typeColors }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, animation: { duration: 400 } }
+        });
+        var months = tt('monthLabels').slice(0, 6);
+        var rev = genMonthly(800, 2500, 6).map(function(v) { return v * 1000; });
+        new Chart(document.getElementById('trendChart'), {
+          type: 'line',
+          data: { labels: months, datasets: [{ data: rev, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, pointRadius: 3 }] },
+          options: defOpts
+        });
+      }
+
+      if (page === 'pipeline') {
+        var p2 = genPipeline();
+        var vals = statusKeys.map(function(k) { return p2[k]; });
+        var convRates = vals.slice(1).map(function(v, i) { return vals[i] > 0 ? Math.round(v / vals[i] * 100) : 0; });
+        new Chart(document.getElementById('conversionChart'), {
+          type: 'bar',
+          data: { labels: statusKeys.slice(0, -1).map(function(k) { return tt(k) + ' \u2192'; }), datasets: [{ data: convRates, backgroundColor: statusKeys.slice(1).map(function(k) { return statusColors[k]; }), barThickness: 20 }] },
+          options: Object.assign({}, defOpts, { scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } }, x: { ticks: { font: { size: 8 }, maxRotation: 45 } } } })
+        });
+        new Chart(document.getElementById('pipelineFlowChart'), {
+          type: 'bar',
+          data: { labels: statusKeys.map(function(k) { return tt(k); }), datasets: [{ data: vals, backgroundColor: statusKeys.map(function(k) { return statusColors[k]; }) }] },
+          options: Object.assign({}, defOpts, { indexAxis: 'y', scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 9 } } } } })
+        });
+      }
+
+      if (page === 'team') {
+        var depts = genTeamData();
+        var deptLabels = depts.map(function(d) { return tt(d.dept); });
+        var deptTasks = depts.map(function(d) { return d.roles.reduce(function(s,r) { return s + r.tasks; }, 0); });
+        var deptOverdue = depts.map(function(d) { return d.roles.reduce(function(s,r) { return s + r.overdue; }, 0); });
+        var deptColors = ['#3B82F6','#F97316','#10B981','#06B6D4','#8B5CF6','#EC4899','#F59E0B'];
+        new Chart(document.getElementById('tasksDeptChart'), {
+          type: 'bar',
+          data: { labels: deptLabels, datasets: [{ data: deptTasks, backgroundColor: deptColors }] },
+          options: Object.assign({}, defOpts, { scales: { x: { ticks: { font: { size: 9 } } } } })
+        });
+        new Chart(document.getElementById('overdueDeptChart'), {
+          type: 'bar',
+          data: { labels: deptLabels, datasets: [{ data: deptOverdue, backgroundColor: '#EF4444' }] },
+          options: Object.assign({}, defOpts, { scales: { x: { ticks: { font: { size: 9 } } } } })
+        });
+      }
+
+      if (page === 'tasks') {
+        var tasks = genAutoTasks();
+        var stageCounts = {};
+        statusKeys.forEach(function(k) { stageCounts[k] = 0; });
+        tasks.forEach(function(t) { if (stageCounts[t.stage] !== undefined) stageCounts[t.stage]++; });
+        new Chart(document.getElementById('tasksStageChart'), {
+          type: 'bar',
+          data: { labels: statusKeys.map(function(k) { return tt(k); }), datasets: [{ data: statusKeys.map(function(k) { return stageCounts[k]; }), backgroundColor: statusKeys.map(function(k) { return statusColors[k]; }) }] },
+          options: Object.assign({}, defOpts, { scales: { x: { ticks: { font: { size: 8 }, maxRotation: 45 } } } })
+        });
+        var pending = tasks.filter(function(t) { return t.status === 'taskPending'; }).length;
+        var done = tasks.filter(function(t) { return t.status === 'taskDone'; }).length;
+        var overdue = tasks.filter(function(t) { return t.status === 'taskOverdue'; }).length;
+        new Chart(document.getElementById('tasksStatusChart'), {
+          type: 'doughnut',
+          data: { labels: [tt('taskPending'), tt('taskDone'), tt('taskOverdue')], datasets: [{ data: [pending, done, overdue], backgroundColor: ['#F59E0B','#10B981','#EF4444'] }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, animation: { duration: 400 } }
+        });
+      }
+
+      if (page === 'analytics') {
+        var months = tt('monthLabels');
+        var rev = genMonthly(800, 2500, 12).map(function(v) { return v * 1000; });
+        var closed = genMonthly(3, 14, 12);
+        var p3 = genPipeline();
+        var revByType = genRevenueByType();
+        var onTimePct = rand(65, 90);
+        new Chart(document.getElementById('revenueChart'), {
+          type: 'line',
+          data: { labels: months, datasets: [{ label: tt('totalRevenue'), data: rev, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.3, fill: true, pointRadius: 2 }] },
+          options: defOpts
+        });
+        new Chart(document.getElementById('dealsMonthChart'), {
+          type: 'bar',
+          data: { labels: months, datasets: [{ label: tt('deals'), data: closed, backgroundColor: '#3B82F6' }] },
+          options: defOpts
+        });
+        new Chart(document.getElementById('funnelAnalChart'), {
+          type: 'bar',
+          data: { labels: statusKeys.map(function(k) { return tt(k); }), datasets: [{ data: statusKeys.map(function(k) { return p3[k]; }), backgroundColor: statusKeys.map(function(k) { return statusColors[k]; }) }] },
+          options: Object.assign({}, defOpts, { indexAxis: 'y', scales: { y: { ticks: { font: { size: 9 } } } } })
+        });
+        new Chart(document.getElementById('revTypeChart'), {
+          type: 'doughnut',
+          data: { labels: typeKeys.map(function(k) { return tt(k); }), datasets: [{ data: typeKeys.map(function(k) { return revByType[k]; }), backgroundColor: typeColors }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, animation: { duration: 400 } }
+        });
+        new Chart(document.getElementById('deadlineChart'), {
+          type: 'doughnut',
+          data: { labels: [tt('onTime'), tt('delayed')], datasets: [{ data: [onTimePct, 100 - onTimePct], backgroundColor: ['#10B981','#EF4444'] }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, animation: { duration: 400 } }
+        });
+      }
+    }
+
+    // ===== Prompt bar =====
+    var _promptTitle = {
+      ru: '\u00ab\u0421\u0434\u0435\u043b\u0430\u0439 CRM-\u0434\u0430\u0448\u0431\u043e\u0440\u0434 \u0434\u043b\u044f \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438 \u0441 8 \u0441\u0442\u0430\u0442\u0443\u0441\u0430\u043c\u0438, 15 \u0440\u043e\u043b\u044f\u043c\u0438 \u0438 \u0430\u0432\u0442\u043e\u0437\u0430\u0434\u0430\u0447\u0430\u043c\u0438\u00bb',
+      en: '\u201CBuild a Construction CRM with 8 pipeline stages, 15 roles, auto-tasks and deadline tracking\u201D'
+    };
+    var _fullPrompt = '\u0421\u0434\u0435\u043b\u0430\u0439 CRM-\u0434\u0430\u0448\u0431\u043e\u0440\u0434 \u0434\u043b\u044f \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438: 8 \u0441\u0442\u0430\u0442\u0443\u0441\u043e\u0432 (\u043d\u043e\u0432\u044b\u0439 \u043b\u0438\u0434, \u0440\u0430\u0441\u0447\u0451\u0442, \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442, \u043f\u0440\u043e\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435, \u0441\u0442\u0440\u043e\u0439\u043a\u0430, \u043f\u043e\u0441\u0442\u0430\u0432\u043a\u0430, \u043a\u043e\u043c\u043f\u043b\u0435\u043a\u0441, \u043e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c), 15 \u0440\u043e\u043b\u0435\u0439 \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c, \u0430\u0432\u0442\u043e\u0437\u0430\u0434\u0430\u0447\u0438 \u0441 \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u0430\u043c\u0438, \u043a\u0430\u043b\u0435\u043d\u0434\u0430\u0440\u044c \u0441\u0440\u043e\u043a\u043e\u0432, \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0439 \u0438 \u0432\u044b\u0440\u0443\u0447\u043a\u0438';
+    var _ctaLabel = { ru: '\u0425\u043e\u0447\u0443 \u0442\u0430\u043a\u043e\u0439 \u0436\u0435', en: 'I want the same' };
+
+    function updatePromptBar() {
+      document.getElementById('promptText').textContent = _promptTitle[_lang] || _promptTitle['en'];
+      var btn = document.getElementById('ctaBtn');
+      btn.textContent = _ctaLabel[_lang] || _ctaLabel['en'];
+      btn.href = '/?start=example_construction-crm&prompt=' + encodeURIComponent(_fullPrompt);
+      btn.onclick = function(e) {
+        var insideIframe = false;
+        try { insideIframe = window.parent && window.parent !== window; } catch (_e) {}
+        if (insideIframe) {
+          e.preventDefault();
+          try {
+            window.parent.postMessage({ type: 'open_webchat_prompt', prompt: _fullPrompt }, '*');
+          } catch (_e) {}
+          return;
+        }
+        var extId = '';
+        try { extId = String(new URLSearchParams(window.location.search).get('ext_id') || '').trim(); } catch (_e) {}
+        if (!extId) return;
+        try {
+          if (window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+            e.preventDefault();
+            chrome.runtime.sendMessage(extId, { type: 'open_webchat_prompt', prompt: _fullPrompt });
+          }
+        } catch (_e) {}
+      };
+    }
+
+    // ===== Init =====
+    document.addEventListener('DOMContentLoaded', function() {
+      updateNavLabels();
+      updatePromptBar();
+      if (_isRuBrowser) {
+        var lt = document.getElementById('langToggle');
+        if (lt) lt.style.display = '';
+        document.getElementById('langBtn').textContent = _lang === 'ru' ? '\uD83C\uDF10 \u0420\u0443\u0441\u0441\u043a\u0438\u0439' : '\uD83C\uDF10 English';
+      }
+      var initialPage = location.hash.slice(1) || 'overview';
+      navigateTo(initialPage);
+
+      var _lastScroll = 0;
+      var _bar = document.getElementById('promptBar');
+      var _main = document.querySelector('main');
+      if (_main && _bar) {
+        _main.addEventListener('scroll', function() {
+          var st = _main.scrollTop;
+          _bar.style.transform = st > _lastScroll && st > 40 ? 'translateY(100%)' : 'translateY(0)';
+          _lastScroll = st;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

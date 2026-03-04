@@ -1,0 +1,14 @@
+# Showcase Configuration
+# Product: SimpleSite
+# Created: 2026-02-19
+
+showcase:
+  slug: yoga-studio-hero
+  product: simple_site
+  type: landing
+
+  prompt: "Zen yoga studio hero landing page"
+
+  prompt_title: "Zen yoga studio hero landing page"
+
+  caption: "Yoga Studio Landing"

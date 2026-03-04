@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": [
+    "adminServer.ts",
+    "aiSettings.ts",
+    "bananzabot.ts",
+    "bananzatestbot.ts",
+    "config.ts",
+    "conversationManager.ts",
+    "conversationStore.ts",
+    "promptBuilder.ts",
+    "utilities.ts",
+    "types/**/*.d.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

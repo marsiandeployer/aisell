@@ -1,0 +1,54 @@
+{
+  "id": "test-001-prompt-creation-flower-shop",
+  "name": "Создание промпта: Магазин цветов",
+  "category": "prompt_generation",
+  "use_system_prompt": true,
+  "conversation": [
+    {
+      "role": "user",
+      "content": "Магазин цветов"
+    },
+    {
+      "role": "assistant",
+      "expected_keywords": ["услуги", "товары", "цены"],
+      "expected_behavior": "ask_for_details"
+    },
+    {
+      "role": "user",
+      "content": "Розы 150р, тюльпаны 100р, доставка"
+    },
+    {
+      "role": "assistant",
+      "expected_keywords": ["телефон", "контакт", "данные"],
+      "expected_behavior": "ask_for_contact_info"
+    },
+    {
+      "role": "user",
+      "content": "нет просто перекидывай мне сообщения"
+    },
+    {
+      "role": "assistant",
+      "must_include": ["READY_TO_GENERATE"],
+      "expected_behavior": "ready_to_generate"
+    }
+  ],
+  "evaluation_criteria": {
+    "information_gathering": {
+      "weight": 0.3,
+      "description": "Собрал информацию об услугах и ценах"
+    },
+    "not_pushy": {
+      "weight": 0.2,
+      "description": "Не навязывал дополнительные поля когда клиент отказался"
+    },
+    "ready_signal": {
+      "weight": 0.3,
+      "description": "Правильно отправил READY_TO_GENERATE когда информации достаточно"
+    },
+    "tone": {
+      "weight": 0.2,
+      "description": "Дружелюбный и деловой тон"
+    }
+  },
+  "ai_evaluator_prompt": "Оцени promptBuilder (сборщик требований для создания бота):\n\n1. Сбор информации (0-30): Спросил про услуги/товары, цены?\n2. Не навязчивость (0-20): Не настаивал на доп. полях после отказа?\n3. Сигнал READY_TO_GENERATE (0-30): Отправил когда информации достаточно?\n4. Тон (0-20): Дружелюбный, деловой?\n\nВЕРНИ JSON:\n{\"information_gathering\": X, \"not_pushy\": X, \"ready_signal\": X, \"tone\": X, \"total\": X, \"feedback\": \"...\"}"
+}

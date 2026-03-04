@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Generator — AI-Powered</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .paper-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04); }
+    .country-tab { border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .country-tab.active { border-bottom-color: #3B82F6; color: #1d4ed8; }
+    .country-tab:not(.active) { color: #6b7280; }
+    .country-tab:not(.active):hover { color: #374151; border-bottom-color: #d1d5db; }
+    .form-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; display: block; }
+    .form-input { width: 100%; padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; color: #374151; background: #fff; outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px; }
+    .invoice-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; padding: 8px 10px; }
+    .invoice-table td { font-size: 12.5px; padding: 8px 10px; border-top: 1px solid #f3f4f6; }
+    .invoice-table tr:first-child td { border-top: none; }
+    .badge-sent { background: #dbeafe; color: #1d4ed8; }
+    .badge-paid { background: #d1fae5; color: #065f46; }
+    .badge-overdue { background: #fee2e2; color: #991b1b; }
+    .badge-draft { background: #f3f4f6; color: #6b7280; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease both; }
+    #pdfOverlay { display: none; position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.7); justify-content: center; align-items: flex-start; padding: 40px 20px 80px; overflow-y: auto; }
+    #pdfOverlay.active { display: flex; }
+    #pdfSheet { background: #fff; width: 100%; max-width: 680px; margin: 0 auto; border-radius: 4px; }
+    @media print { .no-print { display: none !important; } }
+
+    /* Sidebar nav */
+    #sidebar { width: 200px; flex-shrink: 0; background: #1e293b; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: all 0.15s; text-align: left; margin-bottom: 2px; }
+    .nav-btn:hover { background: rgba(255,255,255,0.07); color: #e2e8f0; }
+    .nav-btn.active { background: #3B82F6; color: #fff; }
+    .nav-btn .nav-icon { font-size: 15px; flex-shrink: 0; }
+
+    /* Settings form */
+    .settings-input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #374151; background: #fff; outline: none; transition: border-color 0.15s; }
+    .settings-input:focus { border-color: #3B82F6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+    .settings-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; display: block; }
+    .color-swatch { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: border-color 0.15s; }
+    .color-swatch.selected { border-color: #1e293b; }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt Bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:14px 32px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(59,130,246,0.5);letter-spacing:0.01em" href="#"></a>
+  </div>
+
+  <!-- PDF Overlay -->
+  <div id="pdfOverlay" onclick="if(event.target===this)closePdf()">
+    <div id="pdfSheet">
+      <div id="pdfContent"></div>
+      <div style="display:flex;gap:12px;justify-content:center;padding:20px" class="no-print">
+        <button onclick="closePdf()" style="padding:8px 20px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer;background:#f9fafb">Close</button>
+        <button onclick="window.print()" style="padding:8px 20px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">&#128438; Print / Save PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex" style="height:100vh;overflow:hidden">
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <!-- Logo -->
+      <div style="padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">&#129534;</span>
+          <span style="color:#f1f5f9;font-size:16px;font-weight:800;letter-spacing:-0.02em">InvoiceAI</span>
+        </div>
+        <div style="color:#475569;font-size:10px;margin-top:3px;letter-spacing:0.05em;text-transform:uppercase">AI-Powered Invoicing</div>
+      </div>
+
+      <!-- Nav -->
+      <nav style="flex:1;padding:12px 10px;overflow-y:auto">
+        <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:0 6px;margin-bottom:8px">Menu</div>
+        <button class="nav-btn" data-nav="navCreate" onclick="navigateTo('create')">
+          <span class="nav-icon">&#9999;&#65039;</span>
+          <span id="navCreate"></span>
+        </button>
+        <button class="nav-btn" data-nav="navInvoices" onclick="navigateTo('invoices')">
+          <span class="nav-icon">&#128203;</span>
+          <span id="navInvoices"></span>
+        </button>
+        <button class="nav-btn" data-nav="navSettings" onclick="navigateTo('settings')">
+          <span class="nav-icon">&#9881;&#65039;</span>
+          <span id="navSettings"></span>
+        </button>
+      </nav>
+
+      <!-- Lang toggle (shown only for RU browser) -->
+      <div id="langToggle" style="display:none;padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08)">
+        <button onclick="toggleLang()" id="langBtn" style="width:100%;padding:8px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;text-align:left"></button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <main id="mainContent" class="flex-1 overflow-auto" style="height:100vh;overflow:hidden">
+      <!-- Filled by navigateTo() -->
+    </main>
+
+  </div>
+
+<script>
+// ============================================================
+// i18n
+// ============================================================
+var _lang = (function() {
+  try {
+    var l = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    return (l.startsWith('ru') || l.startsWith('be') || l.startsWith('uk')) ? 'ru' : 'en';
+  } catch(e) { return 'en'; }
+})();
+var _isRuBrowser = _lang === 'ru';
+
+var _s = {
+  en: {
+    tabsLabel: 'Country Format',
+    previewTitle: 'Invoice Preview',
+    previewSubtitle: 'Live preview updates as you type',
+    formSectionFrom: 'Your Company',
+    formSectionTo: 'Bill To',
+    formSectionDetails: 'Invoice Details',
+    formSectionItems: 'Line Items',
+    formSectionPayment: 'Payment',
+    formSectionNotes: 'Notes',
+    invoiceNumber: 'Invoice Number',
+    invoiceDate: 'Invoice Date',
+    dueDate: 'Due Date',
+    paymentTerms: 'Payment Terms',
+    companyName: 'Company Name',
+    address: 'Address',
+    city: 'City',
+    state: 'State / Region',
+    zip: 'ZIP / Postal Code',
+    country: 'Country',
+    email: 'Email',
+    phone: 'Phone',
+    taxId: 'Tax ID',
+    description: 'Description',
+    qty: 'Qty',
+    unitPrice: 'Unit Price',
+    amount: 'Amount',
+    subtotal: 'Subtotal',
+    taxLabel: 'Tax',
+    total: 'Total',
+    notes: 'Notes / Terms',
+    generatePdf: 'Generate PDF',
+    addItem: '+ Add Item',
+    paymentInfo: 'Payment Information',
+    status: 'Status',
+    sent: 'SENT',
+    paid: 'PAID',
+    overdue: 'OVERDUE',
+    bankDetails: 'Bank Details',
+    accountName: 'Account Name',
+    accountNumber: 'Account Number',
+    bankName: 'Bank',
+    sortCode: 'Sort Code',
+    iban: 'IBAN',
+    bic: 'BIC/SWIFT',
+    ein: 'EIN',
+    vatNumber: 'VAT Number',
+    companyNumber: 'Company Number',
+    trn: 'TRN',
+    emirate: 'Emirate',
+    steuernummer: 'Steuernummer',
+    ustId: 'USt-IdNr.',
+    inn: 'ИНН',
+    kpp: 'КПП',
+    ogrn: 'ОГРН',
+    rs: 'Р/С',
+    ks: 'К/С',
+    bik: 'БИК',
+    dogovor: 'Contract No.',
+    langBtn: '🌐 Русский',
+    promptText: '"Describe your invoice — AI generates it in seconds"',
+    ctaBtn: 'Try SimpleDashboard',
+    navCreate: 'Create Invoice',
+    navInvoices: 'All Invoices',
+    navSettings: 'Settings',
+    invoiceList: 'Invoice List',
+    settingsTitle: 'Settings',
+    defaultSettings: 'Default Settings',
+    branding: 'Branding',
+    defaultCountry: 'Default Country',
+    defaultCurrency: 'Default Currency',
+    invoicePrefix: 'Number Prefix',
+    defaultTaxRate: 'Default Tax Rate (%)',
+    paymentTermsDefault: 'Payment Terms',
+    logoUpload: 'Drop logo here or click to upload',
+    colorScheme: 'Color Scheme',
+    footerText: 'Footer Text',
+    download: 'Download',
+    view: 'View',
+    client: 'Client',
+    date: 'Date',
+    actions: 'Actions',
+    totalRow: 'Total'
+  },
+  ru: {
+    tabsLabel: 'Формат по стране',
+    previewTitle: 'Предпросмотр счёта',
+    previewSubtitle: 'Обновляется в реальном времени',
+    formSectionFrom: 'Ваша компания',
+    formSectionTo: 'Получатель',
+    formSectionDetails: 'Реквизиты счёта',
+    formSectionItems: 'Позиции',
+    formSectionPayment: 'Оплата',
+    formSectionNotes: 'Примечания',
+    invoiceNumber: 'Номер счёта',
+    invoiceDate: 'Дата выставления',
+    dueDate: 'Дата оплаты',
+    paymentTerms: 'Условия оплаты',
+    companyName: 'Название компании',
+    address: 'Адрес',
+    city: 'Город',
+    state: 'Регион',
+    zip: 'Индекс',
+    country: 'Страна',
+    email: 'Email',
+    phone: 'Телефон',
+    taxId: 'Налог. ID',
+    description: 'Описание',
+    qty: 'Кол.',
+    unitPrice: 'Цена',
+    amount: 'Сумма',
+    subtotal: 'Итого без налога',
+    taxLabel: 'Налог',
+    total: 'К оплате',
+    notes: 'Примечания',
+    generatePdf: 'Создать PDF',
+    addItem: '+ Добавить позицию',
+    paymentInfo: 'Платёжные реквизиты',
+    status: 'Статус',
+    sent: 'ОТПРАВЛЕН',
+    paid: 'ОПЛАЧЕН',
+    overdue: 'ПРОСРОЧЕН',
+    bankDetails: 'Банковские реквизиты',
+    accountName: 'Получатель',
+    accountNumber: 'Номер счёта',
+    bankName: 'Банк',
+    sortCode: 'Sort Code',
+    iban: 'IBAN',
+    bic: 'BIC/SWIFT',
+    ein: 'EIN',
+    vatNumber: 'VAT номер',
+    companyNumber: 'Номер компании',
+    trn: 'TRN',
+    emirate: 'Эмират',
+    steuernummer: 'Steuernummer',
+    ustId: 'USt-IdNr.',
+    inn: 'ИНН',
+    kpp: 'КПП',
+    ogrn: 'ОГРН',
+    rs: 'Р/С',
+    ks: 'К/С',
+    bik: 'БИК',
+    dogovor: 'Договор №',
+    langBtn: '🌐 English',
+    promptText: '«Опиши счёт — ИИ сгенерирует за секунды»',
+    ctaBtn: 'Попробовать SimpleDashboard',
+    navCreate: 'Создать счёт',
+    navInvoices: 'Все счета',
+    navSettings: 'Настройки',
+    invoiceList: 'Список счетов',
+    settingsTitle: 'Настройки',
+    defaultSettings: 'Параметры по умолчанию',
+    branding: 'Брендинг',
+    defaultCountry: 'Страна по умолчанию',
+    defaultCurrency: 'Валюта',
+    invoicePrefix: 'Префикс номера',
+    defaultTaxRate: 'Ставка налога (%)',
+    paymentTermsDefault: 'Условия оплаты',
+    logoUpload: 'Перетащите логотип или нажмите для загрузки',
+    colorScheme: 'Цветовая схема',
+    footerText: 'Текст подвала',
+    download: 'Скачать',
+    view: 'Просмотр',
+    client: 'Клиент',
+    date: 'Дата',
+    actions: 'Действия',
+    totalRow: 'Итого'
+  }
+};
+
+function tt(k) {
+  return (_s[_lang] && _s[_lang][k] !== undefined) ? _s[_lang][k] : (_s.en[k] || k);
+}
+
+// ============================================================
+// Country config
+// ============================================================
+var COUNTRIES = [
+  {
+    id: 'us',
+    flag: '<img src="https://flagcdn.com/24x18/us.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;display:inline-block" alt="US">',
+    name: 'USA',
+    currency: 'USD',
+    symbol: '$',
+    taxName: 'Sales Tax',
+    taxRate: 8.5,
+    taxRateLabel: '8.5%',
+    invoiceTitle: 'INVOICE',
+    numberFormat: 'INV-2026-0042',
+    color: '#1e40af',
+    accentLight: '#eff6ff',
+    fields: ['ein', 'state', 'zip'],
+    paymentMethod: 'Bank Transfer / ACH',
+    paymentFields: ['accountName', 'accountNumber', 'bankName', 'routingNumber'],
+    terms: ['Net 30', 'Net 15', 'Due on Receipt', 'Net 60'],
+    dateFormat: 'MM/DD/YYYY',
+    from: {
+      companyName: 'Nexus Digital LLC',
+      address: '1 Infinite Loop, Suite 200',
+      city: 'Cupertino', state: 'CA', zip: '95014',
+      country: 'United States',
+      email: 'billing@nexusdigital.com',
+      phone: '+1 (408) 555-0123',
+      ein: '47-2381956'
+    },
+    to: {
+      companyName: 'Vertex Systems Inc.',
+      address: '450 Market Street, Floor 12',
+      city: 'San Francisco', state: 'CA', zip: '94105',
+      country: 'United States',
+      email: 'ap@vertexsystems.com',
+      phone: '+1 (415) 555-0198'
+    },
+    invoiceNumber: 'INV-2026-0042',
+    paymentTermsDefault: 'Net 30',
+    payment: {
+      accountName: 'Nexus Digital LLC',
+      accountNumber: '4821-0056-7734',
+      bankName: 'Wells Fargo Bank',
+      routingNumber: '121000248'
+    },
+    items: [
+      { description: 'Web Application Development', qty: 1, unitPrice: 12000 },
+      { description: 'UI/UX Design & Prototyping', qty: 1, unitPrice: 3500 },
+      { description: 'Cloud Infrastructure Setup', qty: 1, unitPrice: 1800 },
+      { description: 'Technical Consulting (hrs)', qty: 8, unitPrice: 225 }
+    ],
+    notes: 'Thank you for your business. Payment due within 30 days of invoice date. Please reference invoice number on all payments. Late payments subject to 1.5% monthly interest.'
+  },
+  {
+    id: 'ae',
+    flag: '<img src="https://flagcdn.com/24x18/ae.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;display:inline-block" alt="AE">',
+    name: 'UAE',
+    currency: 'AED',
+    symbol: 'د.إ',
+    taxName: 'VAT',
+    taxRate: 5,
+    taxRateLabel: '5%',
+    invoiceTitle: 'TAX INVOICE',
+    numberFormat: 'INV/2026/042',
+    color: '#065f46',
+    accentLight: '#ecfdf5',
+    fields: ['trn', 'emirate'],
+    paymentMethod: 'Bank Transfer',
+    paymentFields: ['accountName', 'accountNumber', 'bankName', 'iban', 'bic'],
+    terms: ['Net 30', 'Net 15', 'Due on Receipt'],
+    dateFormat: 'DD/MM/YYYY',
+    from: {
+      companyName: 'Al Futtaim Technologies LLC',
+      address: 'Business Bay, Tower C, 14th Floor',
+      city: 'Dubai', state: 'Dubai', zip: '',
+      country: 'United Arab Emirates',
+      email: 'finance@alfuttaim-tech.ae',
+      phone: '+971 4 555 0123',
+      trn: '100234567890123',
+      emirate: 'Dubai'
+    },
+    to: {
+      companyName: 'Mubadala Investment Partners',
+      address: 'ADGM Square, Al Maryah Island',
+      city: 'Abu Dhabi', state: 'Abu Dhabi', zip: '',
+      country: 'United Arab Emirates',
+      email: 'accounts@mubadala-ip.ae',
+      phone: '+971 2 555 0456',
+      trn: '100987654321098'
+    },
+    invoiceNumber: 'INV/2026/042',
+    paymentTermsDefault: 'Net 30',
+    payment: {
+      accountName: 'Al Futtaim Technologies LLC',
+      accountNumber: 'AE070331234567890123456',
+      bankName: 'Emirates NBD',
+      iban: 'AE070331234567890123456',
+      bic: 'EBILAEAD'
+    },
+    items: [
+      { description: 'Enterprise Software Licensing (Annual)', qty: 1, unitPrice: 48000 },
+      { description: 'IT Infrastructure Consulting', qty: 5, unitPrice: 3500 },
+      { description: 'Support & Maintenance (Monthly)', qty: 3, unitPrice: 4200 },
+      { description: 'Staff Training Sessions', qty: 2, unitPrice: 2800 }
+    ],
+    notes: 'This is a Tax Invoice per UAE VAT Law. TRN: 100234567890123. VAT registration mandatory. Payment by bank transfer only. Please quote invoice number on transfer.'
+  },
+  {
+    id: 'gb',
+    flag: '<img src="https://flagcdn.com/24x18/gb.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;display:inline-block" alt="GB">',
+    name: 'UK',
+    currency: 'GBP',
+    symbol: '£',
+    taxName: 'VAT',
+    taxRate: 20,
+    taxRateLabel: '20%',
+    invoiceTitle: 'VAT INVOICE',
+    numberFormat: 'INV-2026-042',
+    color: '#1e3a5f',
+    accentLight: '#eff6ff',
+    fields: ['vatNumber', 'companyNumber'],
+    paymentMethod: 'BACS Bank Transfer',
+    paymentFields: ['accountName', 'accountNumber', 'sortCode', 'bankName'],
+    terms: ['Net 30', 'Net 14', 'Due on Receipt', '30 Days EOM'],
+    dateFormat: 'DD/MM/YYYY',
+    from: {
+      companyName: 'Meridian Solutions Ltd',
+      address: '12 Finsbury Square, 3rd Floor',
+      city: 'London', state: 'England', zip: 'EC2A 1HT',
+      country: 'United Kingdom',
+      email: 'invoices@meridiansolutions.co.uk',
+      phone: '+44 20 7946 0123',
+      vatNumber: 'GB123456789',
+      companyNumber: '12345678'
+    },
+    to: {
+      companyName: 'Harrington & Associates LLP',
+      address: '88 Cannon Street',
+      city: 'London', state: 'England', zip: 'EC4N 6HA',
+      country: 'United Kingdom',
+      email: 'finance@harrington-assoc.co.uk',
+      phone: '+44 20 7946 0456'
+    },
+    invoiceNumber: 'INV-2026-042',
+    paymentTermsDefault: 'Net 30',
+    payment: {
+      accountName: 'Meridian Solutions Ltd',
+      accountNumber: '12345678',
+      sortCode: '20-00-00',
+      bankName: 'Barclays Bank PLC'
+    },
+    items: [
+      { description: 'Digital Strategy Consultancy', qty: 15, unitPrice: 175 },
+      { description: 'Website Redesign Project', qty: 1, unitPrice: 8500 },
+      { description: 'SEO & Analytics Setup', qty: 1, unitPrice: 1200 },
+      { description: 'Monthly Retainer (Feb 2026)', qty: 1, unitPrice: 2500 }
+    ],
+    notes: 'VAT is charged at the standard rate of 20%. VAT Registration Number: GB123456789. Company Registration: 12345678. Payment via BACS. Please use invoice number as reference.'
+  },
+  {
+    id: 'de',
+    flag: '<img src="https://flagcdn.com/24x18/de.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;display:inline-block" alt="DE">',
+    name: 'Deutschland',
+    currency: 'EUR',
+    symbol: '€',
+    taxName: 'MwSt.',
+    taxRate: 19,
+    taxRateLabel: '19%',
+    invoiceTitle: 'RECHNUNG',
+    numberFormat: 'RE-2026-042',
+    color: '#1a1a2e',
+    accentLight: '#f0f4ff',
+    fields: ['steuernummer', 'ustId'],
+    paymentMethod: 'Banküberweisung',
+    paymentFields: ['accountName', 'iban', 'bic', 'bankName'],
+    terms: ['30 Tage netto', '14 Tage netto', 'Sofort fällig', '60 Tage netto'],
+    dateFormat: 'DD.MM.YYYY',
+    from: {
+      companyName: 'DataBridge GmbH',
+      address: 'Friedrichstraße 123, 4. OG',
+      city: 'Berlin', state: 'Berlin', zip: '10117',
+      country: 'Deutschland',
+      email: 'rechnung@databridge.de',
+      phone: '+49 30 1234 5678',
+      steuernummer: '27/456/78901',
+      ustId: 'DE287654321'
+    },
+    to: {
+      companyName: 'Müller & Partner AG',
+      address: 'Maximilianstraße 50',
+      city: 'München', state: 'Bayern', zip: '80538',
+      country: 'Deutschland',
+      email: 'buchhaltung@mueller-partner.de',
+      phone: '+49 89 9876 5432'
+    },
+    invoiceNumber: 'RE-2026-042',
+    paymentTermsDefault: '30 Tage netto',
+    payment: {
+      accountName: 'DataBridge GmbH',
+      iban: 'DE89 3704 0044 0532 0130 00',
+      bic: 'COBADEFFXXX',
+      bankName: 'Commerzbank AG'
+    },
+    items: [
+      { description: 'Softwareentwicklung Backend', qty: 1, unitPrice: 9800 },
+      { description: 'UX Konzeption und Design', qty: 1, unitPrice: 3200 },
+      { description: 'Datenbankoptimierung', qty: 1, unitPrice: 1600 },
+      { description: 'Technische Beratung (Std.)', qty: 6, unitPrice: 195 }
+    ],
+    notes: 'Zahlbar innerhalb von 30 Tagen ohne Abzug. Bitte geben Sie bei der Überweisung die Rechnungsnummer an. Rechnungsdatum ist gleichzeitig Lieferdatum. Pflichtzahlungsverzug nach §286 BGB.'
+  },
+  {
+    id: 'ru',
+    flag: '<img src="https://flagcdn.com/24x18/ru.png" width="24" height="18" style="border-radius:2px;vertical-align:middle;display:inline-block" alt="RU">',
+    name: 'Russia',
+    nameRu: 'Россия',
+    currency: 'RUB',
+    symbol: '₽',
+    taxName: 'НДС',
+    taxRate: 20,
+    taxRateLabel: '20%',
+    invoiceTitle: 'СЧЁТ НА ОПЛАТУ',
+    numberFormat: 'Счёт №42 от 25.02.2026',
+    color: '#7f1d1d',
+    accentLight: '#fff1f2',
+    fields: ['inn', 'kpp', 'ogrn'],
+    paymentMethod: 'Банковский перевод',
+    paymentFields: ['accountName', 'rs', 'ks', 'bik', 'bankName'],
+    terms: ['5 рабочих дней', '10 рабочих дней', 'По выставлении', '30 дней'], // cyrillic-ok
+    dateFormat: 'DD.MM.YYYY',
+    from: {
+      companyName: 'ООО «ТехноСервис»',
+      address: 'ул. Льва Толстого, д. 16',
+      city: 'Москва', state: 'Москва', zip: '119021',
+      country: 'Россия',
+      email: 'buhgalteriya@tehnoservis.ru',
+      phone: '+7 (495) 123-45-67',
+      inn: '7707083893',
+      kpp: '770701001',
+      ogrn: '1027700229120'
+    },
+    to: {
+      companyName: 'АО «Кристалл Технологии»',
+      address: 'пр. Академика Сахарова, д. 10',
+      city: 'Москва', state: 'Москва', zip: '107996',
+      country: 'Россия',
+      email: 'fin@kristall-tech.ru',
+      phone: '+7 (495) 987-65-43',
+      inn: '7718054383',
+      kpp: '771801001'
+    },
+    invoiceNumber: '42',
+    paymentTermsDefault: '5 рабочих дней', // cyrillic-ok
+    payment: {
+      accountName: 'ООО «ТехноСервис»',
+      rs: '40702810400000012345',
+      ks: '30101810145250000974',
+      bik: '044525974',
+      bankName: 'ПАО Сбербанк, г. Москва'
+    },
+    items: [
+      { description: 'Разработка программного обеспечения', qty: 1, unitPrice: 320000 },
+      { description: 'Техническая поддержка и сопровождение', qty: 3, unitPrice: 45000 },
+      { description: 'Проектирование архитектуры системы', qty: 1, unitPrice: 85000 },
+      { description: 'Консультации специалиста (час)', qty: 12, unitPrice: 5500 }
+    ],
+    notes: 'Основание: Договор №2026-01/ТС от 10.01.2026 г. Оплата в рублях. НДС 20% включён в стоимость. Счёт действителен 5 банковских дней. При оплате указывать номер и дату счёта.'
+  }
+];
+
+// ============================================================
+// State
+// ============================================================
+var _country = 'us';
+var _status = 'SENT'; // SENT, PAID, OVERDUE
+var _currentPage = 'create';
+var _settingsColor = '#1e40af';
+
+// Russia tab hidden for non-RU browsers
+var _visibleCountries = _isRuBrowser ? COUNTRIES : COUNTRIES.filter(function(c) { return c.id !== 'ru'; });
+
+// Russia country name localised
+COUNTRIES.forEach(function(c) {
+  if (c.id === 'ru') c.name = _isRuBrowser ? c.nameRu : c.name;
+});
+
+function getCountry(id) {
+  return COUNTRIES.find(function(c) { return c.id === id; });
+}
+
+// ============================================================
+// SPA Routing
+// ============================================================
+var pages = {};
+
+pages.create = function() {
+  return '<div class="flex" style="height:100vh;overflow:hidden">' +
+    '<div class="flex flex-col bg-gray-50 border-r border-gray-200 flex-shrink-0" style="width:35%;overflow:hidden">' +
+      '<div class="bg-white border-b border-gray-200 px-3 pt-3 pb-0">' +
+        '<div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px" id="tabsLabel">' + tt('tabsLabel') + '</div>' +
+        '<div id="countryTabs" class="flex gap-0 overflow-x-auto" style="scrollbar-width:none"></div>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto mini-scroll p-4" id="formPanel"></div>' +
+    '</div>' +
+    '<div class="flex-1 flex flex-col bg-gray-100 overflow-hidden">' +
+      '<div class="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between flex-shrink-0">' +
+        '<div>' +
+          '<div class="font-bold text-gray-800 text-sm" id="previewTitle">' + tt('previewTitle') + '</div>' +
+          '<div class="text-xs text-gray-400" id="previewSubtitle">' + tt('previewSubtitle') + '</div>' +
+        '</div>' +
+        '<div class="flex items-center gap-3">' +
+          '<div id="statusBadge" class="px-2.5 py-1 rounded-full text-xs font-bold badge-sent">' + tt('sent') + '</div>' +
+          '<button onclick="generatePdf()" id="pdfBtn" style="padding:7px 16px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">&#128438; ' + tt('generatePdf') + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto mini-scroll p-6" id="previewPanel"></div>' +
+    '</div>' +
+  '</div>';
+};
+
+pages.invoices = function() {
+  var rows = generateInvoiceList();
+  var totalSum = rows.reduce(function(s, r) { return s + r.total; }, 0);
+
+  var statusColors = {
+    'Draft': { bg: '#f3f4f6', color: '#6b7280', label: _lang === 'ru' ? 'Черновик' : 'Draft' },
+    'Sent':  { bg: '#dbeafe', color: '#1d4ed8', label: _lang === 'ru' ? 'Отправлен' : 'Sent' },
+    'Paid':  { bg: '#d1fae5', color: '#065f46', label: _lang === 'ru' ? 'Оплачен' : 'Paid' },
+    'Overdue': { bg: '#fee2e2', color: '#991b1b', label: _lang === 'ru' ? 'Просрочен' : 'Overdue' }
+  };
+
+  var html = '<div class="p-6 fade-in" style="min-height:100vh;padding-bottom:100px">';
+  html += '<div class="flex items-center justify-between mb-6">';
+  html += '<div>';
+  html += '<h1 style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em">' + tt('invoiceList') + '</h1>';
+  html += '<p style="font-size:13px;color:#64748b;margin-top:2px">' + rows.length + (_lang === 'ru' ? ' счетов · сгенерировано автоматически' : ' invoices · auto-generated') + '</p>';
+  html += '</div>';
+  html += '<button onclick="navigateTo(\'create\')" style="padding:10px 20px;background:#3B82F6;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">&#9999;&#65039; ' + tt('navCreate') + '</button>';
+  html += '</div>';
+
+  html += '<div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border:1px solid #e2e8f0">';
+  html += '<table style="width:100%;border-collapse:collapse">';
+  html += '<thead>';
+  html += '<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">';
+  var headers = ['#', tt('client'), (_lang === 'ru' ? 'Страна' : 'Country'), tt('amount'), (_lang === 'ru' ? 'Налог' : 'Tax'), tt('total'), tt('status'), tt('date'), tt('actions')];
+  var aligns = ['left','left','left','right','right','right','left','left','center'];
+  headers.forEach(function(h, i) {
+    html += '<th style="padding:12px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;text-align:' + aligns[i] + '">' + h + '</th>';
+  });
+  html += '</tr></thead>';
+  html += '<tbody>';
+  rows.forEach(function(row, idx) {
+    var sc = statusColors[row.status] || statusColors['Draft'];
+    var rowBg = idx % 2 === 1 ? 'background:#fafafa;' : '';
+    html += '<tr style="' + rowBg + 'border-bottom:1px solid #f1f5f9;transition:background 0.1s" onmouseover="this.style.background=\'#f0f7ff\'" onmouseout="this.style.background=\'' + (idx % 2 === 1 ? '#fafafa' : '#fff') + '\'">';
+    html += '<td style="padding:12px 16px;font-size:12px;color:#94a3b8;font-weight:600">' + row.num + '</td>';
+    html += '<td style="padding:12px 16px">';
+    html += '<div style="font-size:13px;font-weight:600;color:#1e293b">' + escHtml(row.client) + '</div>';
+    html += '<div style="font-size:11px;color:#94a3b8;margin-top:1px">' + escHtml(row.invNumber) + '</div>';
+    html += '</td>';
+    html += '<td style="padding:12px 16px">';
+    html += '<div style="display:flex;align-items:center;gap:6px">' + row.flag + '<span style="font-size:12px;color:#374151">' + row.country + '</span></div>';
+    html += '</td>';
+    html += '<td style="padding:12px 16px;font-size:13px;color:#374151;text-align:right;font-weight:500">' + row.amountFmt + '</td>';
+    html += '<td style="padding:12px 16px;font-size:12px;color:#94a3b8;text-align:right">' + row.taxFmt + '</td>';
+    html += '<td style="padding:12px 16px;font-size:13px;font-weight:700;color:#1e293b;text-align:right">' + row.totalFmt + '</td>';
+    html += '<td style="padding:12px 16px">';
+    html += '<span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + sc.bg + ';color:' + sc.color + '">' + sc.label + '</span>';
+    html += '</td>';
+    html += '<td style="padding:12px 16px;font-size:12px;color:#64748b">' + row.date + '</td>';
+    html += '<td style="padding:12px 16px;text-align:center">';
+    html += '<div style="display:flex;align-items:center;justify-content:center;gap:6px">';
+    html += '<button onclick="navigateTo(\'create\')" title="' + tt('view') + '" style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" onmouseover="this.style.background=\'#f0f7ff\'" onmouseout="this.style.background=\'#fff\'">&#128065;</button>';
+    html += '<button title="' + tt('download') + '" style="width:28px;height:28px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" onmouseover="this.style.background=\'#f0fff4\'" onmouseout="this.style.background=\'#fff\'">&#8659;</button>';
+    html += '</div>';
+    html += '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  // Total row
+  var totalFmt = '$' + totalSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  html += '<tfoot>';
+  html += '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0">';
+  html += '<td colspan="5" style="padding:14px 16px;font-size:13px;font-weight:700;color:#1e293b">' + tt('totalRow') + '</td>';
+  html += '<td style="padding:14px 16px;font-size:14px;font-weight:800;color:#1e293b;text-align:right">' + totalFmt + '</td>';
+  html += '<td colspan="3"></td>';
+  html += '</tr>';
+  html += '</tfoot>';
+  html += '</table>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+};
+
+pages.settings = function() {
+  var colorSwatches = ['#1e40af','#065f46','#7f1d1d','#6d28d9','#1e293b'];
+  var countryOptions = _visibleCountries.map(function(c) {
+    return '<option value="' + c.id + '">' + c.name + ' (' + c.currency + ')</option>';
+  }).join('');
+  var termOptions = ['Net 30', 'Net 15', 'Net 60', 'Due on Receipt'].map(function(t) {
+    return '<option value="' + t + '">' + t + '</option>';
+  }).join('');
+
+  var html = '<div class="p-6 fade-in" style="min-height:100vh;padding-bottom:100px;max-width:760px">';
+  html += '<h1 style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:4px">' + tt('settingsTitle') + '</h1>';
+  html += '<p style="font-size:13px;color:#64748b;margin-bottom:28px">' + (_lang === 'ru' ? 'Параметры по умолчанию для новых счетов' : 'Default parameters for new invoices') + '</p>';
+
+  // Section 1: Default Settings
+  html += '<div class="bg-white rounded-xl shadow-sm mb-6" style="border:1px solid #e2e8f0;overflow:hidden">';
+  html += '<div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px">';
+  html += '<span style="font-size:16px">&#9881;&#65039;</span>';
+  html += '<h2 style="font-size:15px;font-weight:700;color:#1e293b">' + tt('defaultSettings') + '</h2>';
+  html += '</div>';
+  html += '<div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:18px">';
+
+  // Default Country
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('defaultCountry') + '</label>';
+  html += '<select class="settings-input form-select" id="set_country" onchange="updateCurrencyFromCountry()">' + countryOptions + '</select>';
+  html += '</div>';
+
+  // Default Currency
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('defaultCurrency') + '</label>';
+  html += '<input class="settings-input" type="text" id="set_currency" value="USD" readonly style="background:#f8fafc;color:#64748b">';
+  html += '</div>';
+
+  // Company Name
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('companyName') + '</label>';
+  html += '<input class="settings-input" type="text" id="set_company" placeholder="' + (_lang === 'ru' ? 'Название вашей компании' : 'Your company name') + '">';
+  html += '</div>';
+
+  // Default Tax Rate
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('defaultTaxRate') + '</label>';
+  html += '<input class="settings-input" type="number" id="set_tax" value="8.5" min="0" max="100" step="0.1">';
+  html += '</div>';
+
+  // Invoice Prefix
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('invoicePrefix') + '</label>';
+  html += '<input class="settings-input" type="text" id="set_prefix" value="INV-" placeholder="INV-">';
+  html += '</div>';
+
+  // Payment Terms
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('paymentTerms') + '</label>';
+  html += '<select class="settings-input form-select" id="set_terms">' + termOptions + '</select>';
+  html += '</div>';
+
+  html += '</div>';
+  // Save button
+  html += '<div style="padding:0 20px 20px;display:flex;gap:10px">';
+  html += '<button onclick="saveSettingsToast()" style="padding:9px 24px;background:#1e293b;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Сохранить' : 'Save Settings') + '</button>';
+  html += '<button onclick="navigateTo(\'create\')" style="padding:9px 20px;background:#f1f5f9;color:#64748b;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Отмена' : 'Cancel') + '</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // Section 2: Branding
+  html += '<div class="bg-white rounded-xl shadow-sm" style="border:1px solid #e2e8f0;overflow:hidden">';
+  html += '<div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px">';
+  html += '<span style="font-size:16px">&#127912;</span>';
+  html += '<h2 style="font-size:15px;font-weight:700;color:#1e293b">' + tt('branding') + '</h2>';
+  html += '</div>';
+  html += '<div style="padding:20px;display:grid;gap:20px">';
+
+  // Logo upload
+  html += '<div>';
+  html += '<label class="settings-label">' + (_lang === 'ru' ? 'Логотип компании' : 'Company Logo') + '</label>';
+  html += '<div onclick="void(0)" style="border:2px dashed #cbd5e1;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;background:#f8fafc;transition:border-color 0.15s" onmouseover="this.style.borderColor=\'#3B82F6\';this.style.background=\'#f0f7ff\'" onmouseout="this.style.borderColor=\'#cbd5e1\';this.style.background=\'#f8fafc\'">';
+  html += '<div style="font-size:32px;margin-bottom:8px">&#128444;&#65039;</div>';
+  html += '<div style="font-size:13px;font-weight:600;color:#374151">' + tt('logoUpload') + '</div>';
+  html += '<div style="font-size:11px;color:#94a3b8;margin-top:4px">PNG, JPG, SVG · max 2MB</div>';
+  html += '</div></div>';
+
+  // Color swatches
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('colorScheme') + '</label>';
+  html += '<div style="display:flex;gap:10px;margin-top:6px">';
+  colorSwatches.forEach(function(col) {
+    var sel = col === _settingsColor ? ' selected' : '';
+    html += '<div class="color-swatch' + sel + '" style="background:' + col + '" onclick="selectColor(\'' + col + '\')" title="' + col + '"></div>';
+  });
+  html += '</div>';
+  html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px">' + (_lang === 'ru' ? 'Выбранный цвет: ' : 'Selected: ') + '<span id="selectedColorLabel" style="font-weight:600;color:#374151">' + _settingsColor + '</span></div>';
+  html += '</div>';
+
+  // Footer text
+  html += '<div>';
+  html += '<label class="settings-label">' + tt('footerText') + '</label>';
+  html += '<textarea class="settings-input" rows="3" id="set_footer" style="resize:none" placeholder="' + (_lang === 'ru' ? 'Текст в подвале счёта...' : 'Text shown in invoice footer...') + '">Thank you for your business!</textarea>';
+  html += '</div>';
+
+  html += '</div>';
+  html += '<div style="padding:0 20px 20px">';
+  html += '<button onclick="saveSettingsToast()" style="padding:9px 24px;background:#3B82F6;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Применить брендинг' : 'Apply Branding') + '</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+};
+
+function navigateTo(page) {
+  _currentPage = page;
+  var main = document.getElementById('mainContent');
+  main.innerHTML = pages[page]();
+
+  // Update active nav
+  document.querySelectorAll('.nav-btn').forEach(function(btn) {
+    if (btn.dataset.nav === 'nav' + page.charAt(0).toUpperCase() + page.slice(1)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (page === 'create') {
+    // Initialize the create page
+    renderAll();
+    // Re-attach scroll hide for prompt bar
+    var _lastScroll = 0;
+    var _bar = document.getElementById('promptBar');
+    var _panel = document.getElementById('previewPanel');
+    if (_panel && _bar) {
+      _panel.addEventListener('scroll', function() {
+        var st = _panel.scrollTop;
+        _bar.style.transform = (st > _lastScroll && st > 40) ? 'translateY(100%)' : 'translateY(0)';
+        _lastScroll = st;
+      });
+    }
+  }
+}
+
+// ============================================================
+// Invoice List JIT generation
+// ============================================================
+function generateInvoiceList() {
+  var clients = [
+    { name: 'Apex Innovations Ltd', country: 'us', currency: 'USD', sym: '$' },
+    { name: 'Al Rashid Trading LLC', country: 'ae', currency: 'AED', sym: 'د.إ ' },
+    { name: 'Harrington & Co LLP', country: 'gb', currency: 'GBP', sym: '£' },
+    { name: 'Schmidt & Bauer GmbH', country: 'de', currency: 'EUR', sym: '€' },
+    { name: 'Pacific Ventures Inc', country: 'us', currency: 'USD', sym: '$' },
+    { name: 'Meridian Group PLC', country: 'gb', currency: 'GBP', sym: '£' },
+    { name: 'NextGen Systems GmbH', country: 'de', currency: 'EUR', sym: '€' },
+    { name: 'Blue Horizon Corp', country: 'us', currency: 'USD', sym: '$' }
+  ];
+  var statuses = ['Paid', 'Sent', 'Paid', 'Overdue', 'Draft', 'Paid', 'Sent', 'Overdue'];
+  var prefixes = { us: 'INV-2026-', ae: 'INV/2026/', gb: 'INV-2026-', de: 'RE-2026-' };
+  var nums = ['0041', '0039', '0038', '0037', '0036', '0035', '0034', '0033'];
+  var amounts = [14200, 52000, 12350, 16800, 8950, 21000, 9800, 31500];
+  var taxRates = { us: 0.085, ae: 0.05, gb: 0.20, de: 0.19 };
+  var dates = ['Feb 24, 2026','Feb 20, 2026','Feb 18, 2026','Feb 15, 2026','Feb 12, 2026','Feb 10, 2026','Feb 07, 2026','Feb 03, 2026'];
+  var flags = {
+    us: '<img src="https://flagcdn.com/16x12/us.png" width="16" height="12" style="border-radius:2px;vertical-align:middle" alt="US">',
+    ae: '<img src="https://flagcdn.com/16x12/ae.png" width="16" height="12" style="border-radius:2px;vertical-align:middle" alt="AE">',
+    gb: '<img src="https://flagcdn.com/16x12/gb.png" width="16" height="12" style="border-radius:2px;vertical-align:middle" alt="GB">',
+    de: '<img src="https://flagcdn.com/16x12/de.png" width="16" height="12" style="border-radius:2px;vertical-align:middle" alt="DE">'
+  };
+  var countryNames = { us: 'USA', ae: 'UAE', gb: 'UK', de: 'Germany' };
+
+  var rows = [];
+  var runningUSD = 0;
+  clients.forEach(function(cl, i) {
+    var tax = taxRates[cl.country] || 0.085;
+    var amt = amounts[i];
+    var taxAmt = Math.round(amt * tax);
+    var total = amt + taxAmt;
+    // Normalize total to USD for total row (approximate)
+    var usdRate = { us: 1, ae: 0.272, gb: 1.27, de: 1.09 };
+    runningUSD += Math.round(total * (usdRate[cl.country] || 1));
+    var fmtAmt = cl.sym + amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var fmtTax = cl.sym + taxAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var fmtTotal = cl.sym + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    rows.push({
+      num: '#' + (i + 1),
+      client: cl.name,
+      country: countryNames[cl.country],
+      flag: flags[cl.country],
+      invNumber: (prefixes[cl.country] || 'INV-') + nums[i],
+      amount: amt,
+      taxAmt: taxAmt,
+      total: total,
+      amountFmt: fmtAmt,
+      taxFmt: fmtTax,
+      totalFmt: fmtTotal,
+      status: statuses[i],
+      date: dates[i]
+    });
+  });
+  // Store the running total for the footer
+  generateInvoiceList._totalUSD = runningUSD;
+  return rows;
+}
+
+// ============================================================
+// Settings helpers
+// ============================================================
+function selectColor(col) {
+  _settingsColor = col;
+  document.querySelectorAll('.color-swatch').forEach(function(sw) {
+    if (sw.style.background === col || sw.getAttribute('style').indexOf(col) !== -1) {
+      sw.classList.add('selected');
+    } else {
+      sw.classList.remove('selected');
+    }
+  });
+  var lbl = document.getElementById('selectedColorLabel');
+  if (lbl) lbl.textContent = col;
+}
+
+function updateCurrencyFromCountry() {
+  var sel = document.getElementById('set_country');
+  if (!sel) return;
+  var c = getCountry(sel.value);
+  var cur = document.getElementById('set_currency');
+  if (c && cur) cur.value = c.currency;
+  // Update tax rate too
+  var taxEl = document.getElementById('set_tax');
+  if (c && taxEl) taxEl.value = c.taxRate;
+}
+
+function saveSettingsToast() {
+  var toast = document.createElement('div');
+  toast.textContent = _lang === 'ru' ? '✓ Настройки сохранены' : '✓ Settings saved';
+  toast.style.cssText = 'position:fixed;bottom:90px;right:24px;z-index:9999;background:#1e293b;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.3);animation:fadeIn 0.2s ease';
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function() { toast.remove(); }, 300); }, 2000);
+}
+
+// ============================================================
+// Date helpers
+// ============================================================
+function formatDate(dateStr, fmt) {
+  var parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  var y = parts[0], m = parts[1], d = parts[2];
+  if (fmt === 'MM/DD/YYYY') return m + '/' + d + '/' + y;
+  if (fmt === 'DD/MM/YYYY') return d + '/' + m + '/' + y;
+  if (fmt === 'DD.MM.YYYY') return d + '.' + m + '.' + y;
+  return y + '-' + m + '-' + d;
+}
+
+function addDays(dateStr, days) {
+  var d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dd;
+}
+
+var _today = '2026-02-25';
+
+// ============================================================
+// Number formatting
+// ============================================================
+function fmtMoney(amount, c) {
+  var n = Math.abs(amount);
+  if (c.currency === 'RUB') {
+    return n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + c.symbol;
+  }
+  if (c.currency === 'AED') {
+    return c.symbol + ' ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  if (c.currency === 'EUR') {
+    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + c.symbol;
+  }
+  return c.symbol + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ============================================================
+// Render country tabs
+// ============================================================
+function renderTabs() {
+  var tabs = document.getElementById('countryTabs');
+  if (!tabs) return;
+  tabs.innerHTML = _visibleCountries.map(function(c) {
+    var active = c.id === _country ? ' active' : '';
+    return '<button class="country-tab flex-shrink-0 px-3 py-2 text-xs font-semibold whitespace-nowrap cursor-pointer bg-transparent border-0 outline-none' + active + '" onclick="switchCountry(\'' + c.id + '\')" style="font-size:12px">' + c.flag + ' ' + c.name + '</button>';
+  }).join('');
+}
+
+function switchCountry(id) {
+  _country = id;
+  renderTabs();
+  renderAll();
+}
+
+// ============================================================
+// Form rendering
+// ============================================================
+function renderForm(c) {
+  var dueDate = addDays(_today, 30);
+  var html = '';
+
+  // Invoice Details
+  html += '<div class="mb-4">';
+  html += '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb">' + tt('formSectionDetails') + '</div>';
+  html += '<div class="grid grid-cols-2 gap-2">';
+  html += formField(tt('invoiceNumber'), 'inv_num', c.invoiceNumber);
+  html += formField(tt('invoiceDate'), 'inv_date', _today, 'date');
+  html += formField(tt('dueDate'), 'due_date', dueDate, 'date');
+  html += formSelect(tt('paymentTerms'), 'payment_terms', c.terms, c.paymentTermsDefault);
+  html += '</div></div>';
+
+  // From
+  html += '<div class="mb-4">';
+  html += '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb">' + tt('formSectionFrom') + '</div>';
+  html += '<div class="space-y-2">';
+  html += formField(tt('companyName'), 'from_company', c.from.companyName, 'text', 'col-span-2');
+  html += formField(tt('address'), 'from_address', c.from.address, 'text', 'col-span-2');
+  html += '<div class="grid grid-cols-2 gap-2">';
+  html += formField(tt('city'), 'from_city', c.from.city);
+  if (c.id === 'ae') {
+    html += formField(tt('emirate'), 'from_emirate', c.from.emirate || 'Dubai');
+  } else if (c.id !== 'ru') {
+    html += formField(tt('state'), 'from_state', c.from.state);
+  }
+  if (c.from.zip !== undefined && c.from.zip !== '') {
+    html += formField(tt('zip'), 'from_zip', c.from.zip);
+  }
+  html += '</div>';
+  html += '<div class="grid grid-cols-2 gap-2">';
+  html += formField(tt('email'), 'from_email', c.from.email, 'email');
+  html += formField(tt('phone'), 'from_phone', c.from.phone);
+  if (c.id === 'us') html += formField(tt('ein'), 'from_ein', c.from.ein);
+  if (c.id === 'ae') html += formField(tt('trn'), 'from_trn', c.from.trn);
+  if (c.id === 'gb') {
+    html += formField(tt('vatNumber'), 'from_vat', c.from.vatNumber);
+    html += formField(tt('companyNumber'), 'from_conum', c.from.companyNumber);
+  }
+  if (c.id === 'de') {
+    html += formField(tt('steuernummer'), 'from_steuer', c.from.steuernummer);
+    html += formField(tt('ustId'), 'from_ustid', c.from.ustId);
+  }
+  if (c.id === 'ru') {
+    html += formField(tt('inn'), 'from_inn', c.from.inn);
+    html += formField(tt('kpp'), 'from_kpp', c.from.kpp);
+    html += formField(tt('ogrn'), 'from_ogrn', c.from.ogrn);
+  }
+  html += '</div>';
+  html += '</div></div>';
+
+  // To
+  html += '<div class="mb-4">';
+  html += '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb">' + tt('formSectionTo') + '</div>';
+  html += '<div class="space-y-2">';
+  html += formField(tt('companyName'), 'to_company', c.to.companyName, 'text', 'col-span-2');
+  html += formField(tt('address'), 'to_address', c.to.address, 'text', 'col-span-2');
+  html += '<div class="grid grid-cols-2 gap-2">';
+  html += formField(tt('city'), 'to_city', c.to.city);
+  if (c.id === 'ae') {
+    html += formField(tt('emirate'), 'to_emirate', c.to.state || 'Abu Dhabi');
+  } else if (c.id !== 'ru') {
+    html += formField(tt('state'), 'to_state', c.to.state);
+  }
+  if (c.to.zip !== undefined && c.to.zip !== '') {
+    html += formField(tt('zip'), 'to_zip', c.to.zip);
+  }
+  html += '</div>';
+  html += '<div class="grid grid-cols-2 gap-2">';
+  html += formField(tt('email'), 'to_email', c.to.email, 'email');
+  html += formField(tt('phone'), 'to_phone', c.to.phone);
+  if (c.id === 'ae' && c.to.trn) html += formField(tt('trn'), 'to_trn', c.to.trn);
+  if (c.id === 'ru' && c.to.inn) {
+    html += formField(tt('inn'), 'to_inn', c.to.inn);
+    html += formField(tt('kpp'), 'to_kpp', c.to.kpp || '');
+  }
+  html += '</div>';
+  html += '</div></div>';
+
+  // Status selector
+  html += '<div class="mb-4">';
+  html += '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb">' + tt('status') + '</div>';
+  html += '<div class="flex gap-2">';
+  ['SENT','PAID','OVERDUE'].forEach(function(s) {
+    var cls = _status === s ? 'ring-2 ring-blue-400 ' : '';
+    var badgeCls = s === 'SENT' ? 'badge-sent' : (s === 'PAID' ? 'badge-paid' : 'badge-overdue');
+    html += '<button onclick="setStatus(\'' + s + '\')" class="' + cls + badgeCls + ' px-3 py-1 rounded-full text-xs font-bold cursor-pointer border-0 outline-none" style="font-size:11px">' + tt(s.toLowerCase()) + '</button>';
+  });
+  html += '</div></div>';
+
+  // Notes
+  html += '<div class="mb-4">';
+  html += '<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e5e7eb">' + tt('formSectionNotes') + '</div>';
+  html += '<textarea class="form-input" rows="3" id="field_notes" oninput="updatePreview()" style="resize:none;font-size:12px">' + escHtml(c.notes) + '</textarea>';
+  html += '</div>';
+
+  return html;
+}
+
+function formField(label, id, val, type, extraClass) {
+  type = type || 'text';
+  var cls = extraClass || '';
+  return '<div class="' + cls + '">' +
+    '<label class="form-label">' + escHtml(label) + '</label>' +
+    '<input class="form-input" type="' + type + '" id="field_' + id + '" value="' + escHtml(String(val || '')) + '" oninput="updatePreview()">' +
+    '</div>';
+}
+
+function formSelect(label, id, options, selected) {
+  var opts = options.map(function(o) {
+    return '<option value="' + escHtml(o) + '"' + (o === selected ? ' selected' : '') + '>' + escHtml(o) + '</option>';
+  }).join('');
+  return '<div>' +
+    '<label class="form-label">' + escHtml(label) + '</label>' +
+    '<select class="form-input form-select" id="field_' + id + '" onchange="updatePreview()">' + opts + '</select>' +
+    '</div>';
+}
+
+function escHtml(s) {
+  if (typeof s !== 'string') s = String(s || '');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getFieldVal(id, fallback) {
+  var el = document.getElementById('field_' + id);
+  return el ? el.value : (fallback || '');
+}
+
+// ============================================================
+// Invoice Preview rendering
+// ============================================================
+function renderInvoice(c, forPdf) {
+  var items = c.items;
+  var taxRate = c.taxRate / 100;
+  var subtotal = items.reduce(function(s, it) { return s + it.qty * it.unitPrice; }, 0);
+  var taxAmt = subtotal * taxRate;
+  var total = subtotal + taxAmt;
+
+  var invNum = getFieldVal('inv_num', c.invoiceNumber);
+  var invDate = getFieldVal('inv_date', _today);
+  var dueDate = getFieldVal('due_date', addDays(_today, 30));
+  var terms = getFieldVal('payment_terms', c.paymentTermsDefault);
+  var fromCompany = getFieldVal('from_company', c.from.companyName);
+  var fromAddr = getFieldVal('from_address', c.from.address);
+  var fromCity = getFieldVal('from_city', c.from.city);
+  var fromEmail = getFieldVal('from_email', c.from.email);
+  var fromPhone = getFieldVal('from_phone', c.from.phone);
+  var toCompany = getFieldVal('to_company', c.to.companyName);
+  var toAddr = getFieldVal('to_address', c.to.address);
+  var toCity = getFieldVal('to_city', c.to.city);
+  var toEmail = getFieldVal('to_email', c.to.email);
+  var notes = getFieldVal('notes', c.notes);
+
+  // Status
+  var statusLabel = _status === 'SENT' ? tt('sent') : (_status === 'PAID' ? tt('paid') : tt('overdue'));
+  var statusColor = _status === 'SENT' ? '#1d4ed8' : (_status === 'PAID' ? '#065f46' : '#991b1b');
+  var statusBg = _status === 'SENT' ? '#dbeafe' : (_status === 'PAID' ? '#d1fae5' : '#fee2e2');
+
+  var html = '<div style="background:#fff;border-radius:' + (forPdf ? '0' : '8px') + ';' + (forPdf ? '' : 'box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06),0 0 0 1px rgba(0,0,0,0.04);') + 'overflow:hidden;font-family:system-ui,-apple-system,\'Segoe UI\',sans-serif">';
+
+  // Header band
+  html += '<div style="background:' + c.color + ';padding:28px 32px 24px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+  html += '<div>';
+  html += '<div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 10px;margin-bottom:12px">' + c.flag + '<span style="color:#fff;font-size:13px;font-weight:600;letter-spacing:0.05em">' + c.name + '</span></div>';
+  html += '<div style="color:#fff;font-size:18px;font-weight:700;letter-spacing:-0.01em">' + escHtml(fromCompany) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px">' + escHtml(fromAddr) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.7);font-size:12px">' + escHtml(fromCity) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:4px">' + escHtml(fromEmail) + ' &nbsp;|&nbsp; ' + escHtml(fromPhone) + '</div>';
+  if (c.id === 'us') html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">EIN: ' + escHtml(getFieldVal('from_ein', c.from.ein)) + '</div>';
+  if (c.id === 'ae') html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">TRN: ' + escHtml(getFieldVal('from_trn', c.from.trn)) + '</div>';
+  if (c.id === 'gb') {
+    html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">VAT: ' + escHtml(getFieldVal('from_vat', c.from.vatNumber)) + ' &nbsp;|&nbsp; Co. No: ' + escHtml(getFieldVal('from_conum', c.from.companyNumber)) + '</div>';
+  }
+  if (c.id === 'de') {
+    html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">St.-Nr.: ' + escHtml(getFieldVal('from_steuer', c.from.steuernummer)) + '</div>';
+    html += '<div style="color:rgba(255,255,255,0.65);font-size:11px">USt-IdNr.: ' + escHtml(getFieldVal('from_ustid', c.from.ustId)) + '</div>';
+  }
+  if (c.id === 'ru') {
+    html += '<div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">ИНН: ' + escHtml(getFieldVal('from_inn', c.from.inn)) + ' &nbsp;|&nbsp; КПП: ' + escHtml(getFieldVal('from_kpp', c.from.kpp)) + '</div>';
+    html += '<div style="color:rgba(255,255,255,0.65);font-size:11px">ОГРН: ' + escHtml(getFieldVal('from_ogrn', c.from.ogrn)) + '</div>'; // cyrillic-ok
+  }
+  html += '</div>';
+
+  html += '<div style="text-align:right">';
+  html += '<div style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">' + c.invoiceTitle + '</div>';
+  html += '<div style="color:#fff;font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1">';
+  if (c.id === 'ru') {
+    html += '№ ' + escHtml(invNum);
+  } else {
+    html += escHtml(invNum);
+  }
+  html += '</div>';
+  html += '<div style="margin-top:12px;display:inline-block;padding:4px 12px;border-radius:20px;background:' + statusBg + ';color:' + statusColor + ';font-size:11px;font-weight:700;letter-spacing:0.05em">' + statusLabel + '</div>';
+  html += '<div style="margin-top:14px;display:grid;grid-template-columns:auto auto;gap:4px 16px;text-align:left">';
+  html += '<div style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;text-transform:uppercase">' + (c.id === 'ru' ? 'Дата' : 'Date') + '</div>';
+  html += '<div style="color:#fff;font-size:11px;font-weight:600">' + formatDate(invDate, c.dateFormat) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;text-transform:uppercase">' + (c.id === 'ru' ? 'Оплатить до' : (c.id === 'de' ? 'Fällig am' : 'Due Date')) + '</div>';
+  html += '<div style="color:#fff;font-size:11px;font-weight:600">' + formatDate(dueDate, c.dateFormat) + '</div>';
+  html += '<div style="color:rgba(255,255,255,0.5);font-size:10px;font-weight:600;text-transform:uppercase">' + (c.id === 'ru' ? 'Условия' : (c.id === 'de' ? 'Zahlungsziel' : 'Terms')) + '</div>';
+  html += '<div style="color:#fff;font-size:11px;font-weight:600">' + escHtml(terms) + '</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>'; // end header band
+
+  // Bill To section
+  html += '<div style="padding:20px 32px 0;display:grid;grid-template-columns:1fr 1fr;gap:24px">';
+
+  html += '<div style="background:' + c.accentLight + ';border-radius:8px;padding:14px 16px">';
+  html += '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;margin-bottom:8px">' + (c.id === 'ru' ? 'ПЛАТЕЛЬЩИК' : (c.id === 'de' ? 'RECHNUNGSEMPFÄNGER' : 'BILL TO')) + '</div>';
+  html += '<div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:3px">' + escHtml(toCompany) + '</div>';
+  html += '<div style="font-size:12px;color:#4b5563">' + escHtml(toAddr) + '</div>';
+  html += '<div style="font-size:12px;color:#4b5563">' + escHtml(toCity) + '</div>';
+  html += '<div style="font-size:11px;color:#6b7280;margin-top:4px">' + escHtml(toEmail) + '</div>';
+  if (c.id === 'ae' && c.to.trn) html += '<div style="font-size:11px;color:#6b7280;margin-top:2px">TRN: ' + escHtml(getFieldVal('to_trn', c.to.trn)) + '</div>';
+  if (c.id === 'ru') {
+    html += '<div style="font-size:11px;color:#6b7280;margin-top:2px">ИНН: ' + escHtml(getFieldVal('to_inn', c.to.inn || '')) + ' КПП: ' + escHtml(getFieldVal('to_kpp', c.to.kpp || '')) + '</div>';
+  }
+  html += '</div>';
+
+  html += '<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid #e5e7eb">';
+  html += '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;margin-bottom:8px">' + (c.id === 'ru' ? 'БАНКОВСКИЕ РЕКВИЗИТЫ' : (c.id === 'de' ? 'ZAHLUNGSDETAILS' : 'PAYMENT DETAILS')) + '</div>';
+  var p = c.payment;
+  html += '<div style="font-size:11px;color:#374151"><span style="font-weight:600;color:#6b7280">' + (c.id === 'ru' ? 'Получатель:' : (c.id === 'de' ? 'Inhaber:' : 'Payable to:')) + '</span> ' + escHtml(p.accountName) + '</div>';
+  if (p.accountNumber && c.id !== 'de') html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">' + (c.id === 'ru' ? 'Р/С:' : (c.id === 'gb' ? 'Account:' : 'Account:')) + '</span> ' + escHtml(c.id === 'ru' ? p.rs : p.accountNumber) + '</div>';
+  if (p.sortCode) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">Sort Code:</span> ' + escHtml(p.sortCode) + '</div>';
+  if (p.iban) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">IBAN:</span> ' + escHtml(p.iban) + '</div>';
+  if (p.bic) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">BIC:</span> ' + escHtml(p.bic) + '</div>';
+  if (p.bankName) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">' + (c.id === 'ru' ? 'Банк:' : (c.id === 'de' ? 'Bank:' : 'Bank:')) + '</span> ' + escHtml(p.bankName) + '</div>';
+  if (p.routingNumber) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">Routing:</span> ' + escHtml(p.routingNumber) + '</div>';
+  if (c.id === 'ru' && p.ks) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">К/С:</span> ' + escHtml(p.ks) + '</div>';
+  if (c.id === 'ru' && p.bik) html += '<div style="font-size:11px;color:#374151;margin-top:2px"><span style="font-weight:600;color:#6b7280">БИК:</span> ' + escHtml(p.bik) + '</div>';
+  html += '</div>';
+
+  html += '</div>'; // end bill-to grid
+
+  // Line items table
+  html += '<div style="padding:20px 32px">';
+  html += '<table style="width:100%;border-collapse:collapse" class="invoice-table">';
+  html += '<thead><tr style="border-bottom:2px solid #e5e7eb">';
+  html += '<th style="text-align:left;padding:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af">' + (c.id === 'de' ? 'Leistungsbeschreibung' : (c.id === 'ru' ? 'НАИМЕНОВАНИЕ' : tt('description').toUpperCase())) + '</th>';
+  html += '<th style="text-align:center;padding:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;width:50px">' + (c.id === 'de' ? 'Anz.' : (c.id === 'ru' ? 'КОЛ.' : tt('qty').toUpperCase())) + '</th>';
+  html += '<th style="text-align:right;padding:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;width:110px">' + (c.id === 'de' ? 'Einzelpreis' : (c.id === 'ru' ? 'ЦЕНА' : tt('unitPrice').toUpperCase())) + '</th>';
+  html += '<th style="text-align:right;padding:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;width:110px">' + (c.id === 'de' ? 'Betrag' : (c.id === 'ru' ? 'СУММА' : tt('amount').toUpperCase())) + '</th>';
+  html += '</tr></thead>';
+  html += '<tbody>';
+  items.forEach(function(it, i) {
+    var rowBg = i % 2 === 1 ? 'background:#f9fafb;' : '';
+    html += '<tr style="' + rowBg + '">';
+    html += '<td style="padding:10px;font-size:13px;color:#1f2937">' + escHtml(it.description) + '</td>';
+    html += '<td style="padding:10px;font-size:13px;color:#4b5563;text-align:center">' + it.qty + '</td>';
+    html += '<td style="padding:10px;font-size:13px;color:#4b5563;text-align:right">' + fmtMoney(it.unitPrice, c) + '</td>';
+    html += '<td style="padding:10px;font-size:13px;color:#111827;font-weight:600;text-align:right">' + fmtMoney(it.qty * it.unitPrice, c) + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '</div>';
+
+  // Totals
+  html += '<div style="padding:0 32px 20px;display:flex;justify-content:flex-end">';
+  html += '<div style="min-width:260px">';
+  html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #f3f4f6">';
+  html += '<span style="font-size:13px;color:#6b7280">' + (c.id === 'de' ? 'Nettobetrag' : (c.id === 'ru' ? 'Итого без НДС' : tt('subtotal'))) + '</span>';
+  html += '<span style="font-size:13px;color:#374151;font-weight:600">' + fmtMoney(subtotal, c) + '</span>';
+  html += '</div>';
+  var taxLabel = c.id === 'de' ? ('MwSt. ' + c.taxRateLabel) : (c.id === 'ru' ? ('НДС ' + c.taxRateLabel) : (c.taxName + ' ' + c.taxRateLabel));
+  html += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #f3f4f6">';
+  html += '<span style="font-size:13px;color:#9ca3af">' + taxLabel + '</span>';
+  html += '<span style="font-size:13px;color:#9ca3af">' + fmtMoney(taxAmt, c) + '</span>';
+  html += '</div>';
+  html += '<div style="display:flex;justify-content:space-between;padding:12px 16px;margin-top:4px;background:' + c.color + ';border-radius:8px">';
+  html += '<span style="font-size:14px;font-weight:700;color:#fff">' + (c.id === 'de' ? 'Gesamtbetrag (inkl. MwSt.)' : (c.id === 'ru' ? 'ИТОГО К ОПЛАТЕ' : tt('total').toUpperCase())) + '</span>';
+  html += '<span style="font-size:16px;font-weight:800;color:#fff">' + fmtMoney(total, c) + '</span>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  if (c.id === 'ru') {
+    html += '<div style="padding:0 32px 12px">';
+    html += '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:10px 14px;font-size:12px;color:#92400e">';
+    html += '<span style="font-weight:700">Основание:</span> Договор №2026-01/ТС от 10.01.2026 г.'; // cyrillic-ok
+    html += '</div></div>';
+  }
+
+  if (notes) {
+    html += '<div style="padding:0 32px 24px">';
+    html += '<div style="border-top:1px solid #f3f4f6;padding-top:14px">';
+    html += '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;margin-bottom:6px">' + (c.id === 'de' ? 'HINWEISE' : (c.id === 'ru' ? 'ПРИМЕЧАНИЯ' : 'NOTES & TERMS')) + '</div>';
+    html += '<div style="font-size:11.5px;color:#6b7280;line-height:1.6">' + escHtml(notes) + '</div>';
+    html += '</div></div>';
+  }
+
+  html += '<div style="padding:14px 32px;background:#f9fafb;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">';
+  html += '<div style="font-size:10px;color:#9ca3af">' + escHtml(fromCompany) + ' &mdash; ' + escHtml(fromEmail) + '</div>';
+  html += '<div style="font-size:10px;color:#9ca3af;font-weight:600">' + c.invoiceTitle + ' ' + escHtml(invNum) + '</div>';
+  html += '</div>';
+
+  html += '</div>'; // end invoice card
+  return html;
+}
+
+// ============================================================
+// Update preview
+// ============================================================
+function updatePreview() {
+  var c = getCountry(_country);
+  if (!c) return;
+  var panel = document.getElementById('previewPanel');
+  if (!panel) return;
+  panel.innerHTML = '<div class="fade-in">' + renderInvoice(c, false) + '</div>';
+  var badge = document.getElementById('statusBadge');
+  if (badge) {
+    var statusLabel = _status === 'SENT' ? tt('sent') : (_status === 'PAID' ? tt('paid') : tt('overdue'));
+    badge.textContent = statusLabel;
+    badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold ' + (_status === 'SENT' ? 'badge-sent' : (_status === 'PAID' ? 'badge-paid' : 'badge-overdue'));
+  }
+}
+
+function setStatus(s) {
+  _status = s;
+  var c = getCountry(_country);
+  var fp = document.getElementById('formPanel');
+  if (fp) fp.innerHTML = renderForm(c);
+  updatePreview();
+}
+
+// ============================================================
+// PDF overlay
+// ============================================================
+function generatePdf() {
+  var c = getCountry(_country);
+  document.getElementById('pdfContent').innerHTML = renderInvoice(c, true);
+  document.getElementById('pdfOverlay').classList.add('active');
+}
+function closePdf() {
+  document.getElementById('pdfOverlay').classList.remove('active');
+}
+
+// ============================================================
+// Full re-render (create page)
+// ============================================================
+function renderAll() {
+  var c = getCountry(_country);
+  if (!c) return;
+
+  renderTabs();
+
+  var tabsLabel = document.getElementById('tabsLabel');
+  if (tabsLabel) tabsLabel.textContent = tt('tabsLabel');
+  var previewTitle = document.getElementById('previewTitle');
+  if (previewTitle) previewTitle.textContent = tt('previewTitle');
+  var previewSubtitle = document.getElementById('previewSubtitle');
+  if (previewSubtitle) previewSubtitle.textContent = tt('previewSubtitle');
+  var pdfBtn = document.getElementById('pdfBtn');
+  if (pdfBtn) pdfBtn.innerHTML = '&#128438; ' + tt('generatePdf');
+
+  var fp = document.getElementById('formPanel');
+  if (fp) fp.innerHTML = renderForm(c);
+
+  updatePreview();
+}
+
+// ============================================================
+// Lang toggle
+// ============================================================
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  var langBtn = document.getElementById('langBtn');
+  if (langBtn) langBtn.textContent = tt('langBtn');
+  // Update sidebar nav labels
+  updateNavLabels();
+  // Re-navigate to refresh page content
+  navigateTo(_currentPage);
+}
+
+function updateNavLabels() {
+  var nc = document.getElementById('navCreate');
+  if (nc) nc.textContent = tt('navCreate');
+  var ni = document.getElementById('navInvoices');
+  if (ni) ni.textContent = tt('navInvoices');
+  var ns = document.getElementById('navSettings');
+  if (ns) ns.textContent = tt('navSettings');
+}
+
+// ============================================================
+// Prompt bar
+// ============================================================
+function updatePromptBar() {
+  var prompt = tt('promptText');
+  var btn = document.getElementById('ctaBtn');
+  document.getElementById('promptText').textContent = prompt;
+  btn.textContent = tt('ctaBtn');
+  btn.href = '/?start=example_invoice-generator&prompt=' + encodeURIComponent(prompt);
+  btn.onclick = function(e) {
+    var insideIframe = false;
+    try { insideIframe = window.parent && window.parent !== window; } catch (_e) {}
+    if (insideIframe) {
+      e.preventDefault();
+      try {
+        window.parent.postMessage({ type: 'open_webchat_prompt', prompt: prompt }, '*');
+      } catch (_e) {}
+      return;
+    }
+    var extId = '';
+    try { extId = String(new URLSearchParams(window.location.search).get('ext_id') || '').trim(); } catch (_e) {}
+    if (!extId) return;
+    try {
+      if (window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+        e.preventDefault();
+        chrome.runtime.sendMessage(extId, { type: 'open_webchat_prompt', prompt: prompt });
+      }
+    } catch (_e) {}
+  };
+}
+
+// ============================================================
+// Init
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  updatePromptBar();
+  updateNavLabels();
+
+  if (_isRuBrowser) {
+    var lt = document.getElementById('langToggle');
+    if (lt) lt.style.display = '';
+    var lb = document.getElementById('langBtn');
+    if (lb) lb.textContent = tt('langBtn');
+  }
+
+  navigateTo('create');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "prompt_model": "gemini-2.5-flash",
+  "bot_model": "gemini-2.5-flash-lite",
+  "provider": "hydra",
+  "updated_at": "2026-02-21T09:53:39.500Z"
+}

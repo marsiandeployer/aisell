@@ -1,0 +1,52 @@
+{
+  "id": "test-004-api-token-validation",
+  "name": "Валидация API токена: Неправильный и правильный",
+  "category": "bot_creation",
+  "use_system_prompt": true,
+  "conversation": [
+    {
+      "role": "user",
+      "content": "Тестовый бот"
+    },
+    {
+      "role": "assistant",
+      "expected_keywords": ["токен", "api", "botfather"],
+      "expected_behavior": "ask_for_token"
+    },
+    {
+      "role": "user",
+      "content": "123456:INVALID_TOKEN"
+    },
+    {
+      "role": "assistant",
+      "must_not_include": ["готов", "успешно", "отлично", "READY_TO_GENERATE"],
+      "expected_keywords": ["ошибк", "неверн", "некорректн", "проверьте"],
+      "expected_behavior": "reject_invalid_token"
+    },
+    {
+      "role": "user",
+      "content": "8498906759:AAFU-f6TO5_SKIlh7-FEDLx9e8BFDSdn_58"
+    },
+    {
+      "role": "assistant",
+      "must_include": ["READY_TO_GENERATE"],
+      "must_not_include": ["ошибк", "неверн"],
+      "expected_behavior": "accept_valid_token"
+    }
+  ],
+  "evaluation_criteria": {
+    "invalid_token_detection": {
+      "weight": 0.4,
+      "description": "Распознал и отклонил неправильный токен"
+    },
+    "valid_token_acceptance": {
+      "weight": 0.4,
+      "description": "Принял правильный токен и отправил READY_TO_GENERATE"
+    },
+    "error_messages": {
+      "weight": 0.2,
+      "description": "Дал понятное сообщение об ошибке"
+    }
+  },
+  "ai_evaluator_prompt": "Оцени promptBuilder при валидации API токена:\n\n1. Отклонение неправильного токена (0-40): Распознал ли \"123456:INVALID_TOKEN\" как неверный? Дал ли понятное сообщение об ошибке?\n2. Принятие правильного токена (0-40): Принял ли валидный токен \"8498906759:AAFU-f6TO5_SKIlh7-FEDLx9e8BFDSdn_58\"? Отправил ли READY_TO_GENERATE?\n3. Качество сообщений (0-20): Были ли сообщения об ошибках понятными и конструктивными?\n\nВЕРНИ JSON:\n{\"invalid_token_detection\": X, \"valid_token_acceptance\": X, \"error_messages\": X, \"total\": X, \"feedback\": \"...\"}"
+}

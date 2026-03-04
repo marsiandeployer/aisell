@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment
+.env
+*.session
+*.session-journal
+
+# Databases and user data
+bananzabot/bots_database/
+bananzabot/user_data/
+bananzabot/analytics/
+noxonbot/data/
+botplatform/group_data/
+
+# Build artifacts
+dist/
+build/
+
+# Logs
+*.log
+logs/
+healthcheck_logs/
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Test artifacts
+tests/e2e_test_session.session
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+.entire/
+
+# Internal product files (not for public repo)
+products/*/product.yaml
+products/*/CLAUDE.md
+products/*/.claude/
+bananzabot/.env
+botplatform/.env.coderbox

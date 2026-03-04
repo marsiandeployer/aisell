@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleDashboard - Showcases</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .showcase-img {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+      aspect-ratio: 16 / 10;
+    }
+    @media (max-width: 640px) {
+      body {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+      }
+      .gallery-grid {
+        gap: 14px !important;
+      }
+      .showcase-img {
+        height: 250px;
+        aspect-ratio: auto;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen text-white px-4 sm:px-8 pt-6 sm:pt-8 pb-24">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-start mb-2">
+      <div class="flex-1"></div>
+      <h1 class="text-3xl sm:text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">SimpleDashboard</h1>
+      <div class="flex-1 flex justify-end">
+        <button id="langToggle" style="display:none" class="text-sm text-slate-400 hover:text-white border border-white/10 hover:border-white/20 rounded-full px-4 py-1.5 transition-all"></button>
+      </div>
+    </div>
+    <p data-i18n="subtitle" class="text-center text-slate-300 mb-8 sm:mb-12 max-w-4xl mx-auto">Examples of ready dashboard demos and the prompts that generated them.</p>
+
+    <div class="gallery-grid grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-blue-500/30 hover:border-blue-400/50 transition-all ring-1 ring-blue-500/10">
+        <a href="/?start=blank" target="_blank" rel="noopener" class="block relative group">
+          <div class="showcase-img flex flex-col items-center justify-center bg-gradient-to-br from-slate-800/80 to-slate-900/80 text-center px-8" style="aspect-ratio:16/10">
+            <svg class="w-12 h-12 text-blue-400 mb-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <span data-i18n="blankHint" class="text-slate-300 text-base leading-relaxed max-w-xs">Just describe what you need in plain words</span>
+          </div>
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="blankCta" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">Start from scratch</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="blankTitle" class="font-semibold text-slate-100">Blank Template</p>
+          <p data-i18n="blankDesc" class="mt-2 text-sm text-slate-300 leading-relaxed">No template needed. Describe your dashboard in plain words — AI builds it.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/construction-crm/demo" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/construction-crm/screenshot-1280x800.png" data-img-en="/showcases/construction-crm/screenshot-1280x800.png" data-img-ru="/showcases/construction-crm/screenshot-1280x800-ru.png" alt="Construction CRM" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseConstructionTitle" class="font-semibold text-slate-100">Construction CRM Dashboard</p>
+          <p data-i18n="caseConstructionPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Build a construction CRM with 8 pipeline stages, 15 roles, auto-tasks and conversion/revenue analytics.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/sales-analytics-utm/demo" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/sales-analytics-utm/screenshot-1280x800.png" data-img-en="/showcases/sales-analytics-utm/screenshot-1280x800.png" data-img-ru="/showcases/sales-analytics-utm/screenshot-1280x800-ru.png" alt="Sales Analytics" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseSalesTitle" class="font-semibold text-slate-100">Sales Analytics + UTM</p>
+          <p data-i18n="caseSalesPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Build sales analytics for my course with traffic-source breakdown by UTM tags.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/funnel-analytics/demo" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/funnel-analytics/screenshot-1280x800.png" data-img-en="/showcases/funnel-analytics/screenshot-1280x800.png" data-img-ru="/showcases/funnel-analytics/screenshot-1280x800-ru.png" alt="Funnel Analytics" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseFunnelTitle" class="font-semibold text-slate-100">Full Funnel Analytics</p>
+          <p data-i18n="caseFunnelPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Automate analytics across the full funnel from ad spend to invoices, payments, deposits and conversions.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/invoice-generator/demo.html" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/invoice-generator/screenshot-1280x800.png" alt="Invoice Generator" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseInvoiceTitle" class="font-semibold text-slate-100">Invoice Generator</p>
+          <p data-i18n="caseInvoicePrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Create an invoice dashboard with statuses, due dates, totals and quick actions.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/lead-tracker/demo.html" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/lead-tracker/screenshot-1280x800.png" alt="Lead Tracker" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseLeadTitle" class="font-semibold text-slate-100">Lead Tracker</p>
+          <p data-i18n="caseLeadPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Build a lead-tracker CRM with pipeline stages, follow-ups and manager performance metrics.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/project-kanban/demo.html" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/project-kanban/screenshot-1280x800.png" alt="Project Kanban" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseKanbanTitle" class="font-semibold text-slate-100">Project Kanban</p>
+          <p data-i18n="caseKanbanPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Generate a project kanban with task owners, statuses, deadlines and workload analytics.</p>
+        </div>
+      </div>
+
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/client-report/demo" target="_blank" rel="noopener" class="block relative group">
+          <img src="/showcases/client-report/screenshot-1280x800.png" data-img-en="/showcases/client-report/screenshot-1280x800.png" data-img-ru="/showcases/client-report/screenshot-1280x800-ru.png" alt="Client Report" class="showcase-img">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-white/10">
+          <p data-i18n="caseClientReportTitle" class="font-semibold text-slate-100">Client Work Report</p>
+          <p data-i18n="caseClientReportPrompt" class="mt-2 text-sm text-slate-300 leading-relaxed">Prompt: Create a work progress report for client — spec with sections, sprint checklist and PDF export.</p>
+        </div>
+      </div>
+    </div>
+
+    <p data-i18n="footer" class="text-center text-slate-500 mt-10 sm:mt-12">These are generated examples. Prompt text is shown below each screenshot.</p>
+  </div>
+
+  <!-- Prompt bar (fixed bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 24px;background:rgba(0,0,0,0.65);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font-size:17px;font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,0.4)">
+    <span data-i18n="promptText">Describe your dashboard — AI builds it in seconds</span>
+    <a id="ctaBtn" data-i18n="ctaLabel" href="/?start=examples" style="flex-shrink:0;padding:10px 24px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;transition:background 0.2s" onmouseover="this.style.background='#2563EB'" onmouseout="this.style.background='#3B82F6'">Try SimpleDashboard</a>
+  </div>
+
+  <script>
+  (function() {
+    var strings = {
+      en: {
+        subtitle: 'Examples of ready dashboard demos and the prompts that generated them.',
+        viewDemo: 'View Live Demo',
+        footer: 'These are generated examples. Prompt text is shown below each screenshot.',
+        promptText: 'Describe your dashboard — AI builds it in seconds',
+        ctaLabel: 'Try SimpleDashboard',
+        langLabel: '🌐 English',
+        caseConstructionTitle: 'Construction CRM Dashboard',
+        caseConstructionPrompt: 'Prompt: Build a construction CRM with 8 pipeline stages, 15 roles, auto-tasks and conversion/revenue analytics.',
+        caseSalesTitle: 'Sales Analytics + UTM',
+        caseSalesPrompt: 'Prompt: Build sales analytics for my course with traffic-source breakdown by UTM tags.',
+        caseFunnelTitle: 'Full Funnel Analytics',
+        caseFunnelPrompt: 'Prompt: Automate analytics across the full funnel from ad spend to invoices, payments, deposits and conversions.',
+        caseInvoiceTitle: 'Invoice Generator',
+        caseInvoicePrompt: 'Prompt: Create an invoice dashboard with statuses, due dates, totals and quick actions.',
+        caseLeadTitle: 'Lead Tracker',
+        caseLeadPrompt: 'Prompt: Build a lead-tracker CRM with pipeline stages, follow-ups and manager performance metrics.',
+        caseKanbanTitle: 'Project Kanban',
+        caseKanbanPrompt: 'Prompt: Generate a project kanban with task owners, statuses, deadlines and workload analytics.',
+        caseClientReportTitle: 'Client Work Report',
+        caseClientReportPrompt: 'Prompt: Create a work progress report for client — spec with sections, sprint checklist and PDF export.',
+        blankTitle: 'Blank Template',
+        blankDesc: 'No template needed. Describe your dashboard in plain words — AI builds it.',
+        blankHint: 'Just describe what you need in plain words',
+        blankCta: 'Start from scratch'
+      },
+      ru: {
+        subtitle: 'Примеры готовых дашбордов и промптов, по которым они были сгенерированы.',
+        viewDemo: 'Смотреть демо',
+        footer: 'Это сгенерированные примеры. Текст промпта указан под каждым скриншотом.',
+        promptText: 'Опишите дашборд — AI соберёт за секунды',
+        ctaLabel: 'Попробовать SimpleDashboard',
+        langLabel: '🌐 Русский',
+        caseConstructionTitle: 'CRM-дашборд для стройки',
+        caseConstructionPrompt: 'Промпт: Сделай CRM для строительной компании с 8 статусами, 15 ролями, автозадачами и аналитикой конверсии/выручки.',
+        caseSalesTitle: 'Аналитика продаж + UTM',
+        caseSalesPrompt: 'Промпт: Сделай аналитику продаж курса с разбивкой источников трафика по UTM-меткам.',
+        caseFunnelTitle: 'Аналитика всей воронки',
+        caseFunnelPrompt: 'Промпт: Автоматизируй аналитику по всей воронке от рекламного расхода до счетов, оплат, депозитов и конверсий.',
+        caseInvoiceTitle: 'Генератор счетов',
+        caseInvoicePrompt: 'Промпт: Создай дашборд по счетам со статусами, датами оплаты, суммами и быстрыми действиями.',
+        caseLeadTitle: 'Трекер лидов',
+        caseLeadPrompt: 'Промпт: Сделай CRM-трекер лидов с этапами пайплайна, фоллоуапами и метриками по менеджерам.',
+        caseKanbanTitle: 'Канбан проектов',
+        caseKanbanPrompt: 'Промпт: Сгенерируй проектный канбан с владельцами задач, статусами, дедлайнами и аналитикой загрузки.',
+        caseClientReportTitle: 'Отчёт для заказчика',
+        caseClientReportPrompt: 'Промпт: Сделай отчёт о ходе работ для заказчика — ТЗ с разделами, чеклист спринта и экспорт в PDF.',
+        blankTitle: 'Чистый шаблон',
+        blankDesc: 'Шаблон не нужен. Опишите дашборд простыми словами — AI соберёт.',
+        blankHint: 'Просто опишите что вам нужно своими словами',
+        blankCta: 'Начать с нуля'
+      }
+    };
+
+    var isRuBrowser = false;
+    try { isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+
+    function getExtensionIdFromQuery() {
+      try {
+        return String(new URLSearchParams(window.location.search).get('ext_id') || '').trim();
+      } catch (_e) {
+        return '';
+      }
+    }
+
+    function propagateExtensionIdToDemoLinks(extId) {
+      if (!extId) return;
+      var links = document.querySelectorAll('a[href^=\"/showcases/\"]');
+      for (var i = 0; i < links.length; i++) {
+        try {
+          var rawHref = links[i].getAttribute('href') || '';
+          if (!rawHref) continue;
+          var url = new URL(rawHref, window.location.origin);
+          url.searchParams.set('ext_id', extId);
+          links[i].setAttribute('href', url.pathname + url.search + url.hash);
+        } catch (_e) {}
+      }
+    }
+
+    function applyChatCtaLink(extId) {
+      var cta = document.getElementById('ctaBtn');
+      if (!cta) return;
+      try {
+        var url = new URL('/?start=examples', window.location.origin);
+        if (extId) url.searchParams.set('ext_id', extId);
+        cta.setAttribute('href', url.toString());
+      } catch (_e) {}
+    }
+
+    var currentExtId = getExtensionIdFromQuery();
+    propagateExtensionIdToDemoLinks(currentExtId);
+    applyChatCtaLink(currentExtId);
+    if (!isRuBrowser) return;
+
+    var lang = 'ru';
+    try {
+      var stored = localStorage.getItem('showcases_lang');
+      if (stored === 'en' || stored === 'ru') lang = stored;
+    } catch(_e) {}
+
+    function apply(l) {
+      lang = l;
+      try { localStorage.setItem('showcases_lang', l); } catch(_e) {}
+      var s = strings[l] || strings['en'];
+      var els = document.querySelectorAll('[data-i18n]');
+      for (var i = 0; i < els.length; i++) {
+        var key = els[i].getAttribute('data-i18n');
+        if (s[key]) els[i].textContent = s[key];
+      }
+      // Swap screenshot images
+      var imgs = document.querySelectorAll('[data-img-' + l + ']');
+      for (var i = 0; i < imgs.length; i++) {
+        imgs[i].src = imgs[i].getAttribute('data-img-' + l);
+      }
+      // Swap screenshot links
+      var links = document.querySelectorAll('[data-href-' + l + ']');
+      for (var i = 0; i < links.length; i++) {
+        links[i].href = links[i].getAttribute('data-href-' + l);
+      }
+      var btn = document.getElementById('langToggle');
+      if (btn) btn.textContent = s.langLabel;
+    }
+
+    var btn = document.getElementById('langToggle');
+    if (btn) {
+      btn.style.display = '';
+      btn.addEventListener('click', function() {
+        apply(lang === 'ru' ? 'en' : 'ru');
+      });
+    }
+    apply(lang);
+  })();
+  </script>
+</body>
+</html>

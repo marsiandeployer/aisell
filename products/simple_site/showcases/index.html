@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleSite - Showcases</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white p-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-start mb-2">
+      <div class="flex-1"></div>
+      <h1 class="text-5xl font-bold text-center bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">SimpleSite</h1>
+      <div class="flex-1 flex justify-end">
+        <button id="langToggle" style="display:none" class="text-sm text-slate-400 hover:text-white border border-white/10 hover:border-white/20 rounded-full px-4 py-1.5 transition-all"></button>
+      </div>
+    </div>
+    <p data-i18n="subtitle" class="text-center text-slate-400 mb-12">AI-powered showcase gallery</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:-translate-y-1">
+        <img src="/showcases/hair-salon-hero.png" alt="Hair Salon" class="w-full">
+        <p data-i18n="promptHair" class="p-4 text-slate-300 italic">"Premium hair stylist full-screen hero landing page"</p>
+      </div>
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:-translate-y-1">
+        <img src="/showcases/coffee-menu.png" alt="Coffee Menu" class="w-full">
+        <p data-i18n="promptCoffee" class="p-4 text-slate-300 italic">"Cozy coffee shop menu online with 'Print QR code' function"</p>
+      </div>
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all">
+        <a href="/showcases/yoga-promo/demo" target="_blank" data-href-en="/showcases/yoga-promo/screenshot-1280x800.png" data-href-ru="/showcases/yoga-promo/screenshot-1280x800-ru.png" class="block relative group">
+          <img src="/showcases/yoga-promo/screenshot-640x400.png" data-img-en="/showcases/yoga-promo/screenshot-640x400.png" data-img-ru="/showcases/yoga-promo/screenshot-640x400-ru.png" alt="Yoga Studio" class="w-full">
+          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <span data-i18n="viewDemo" class="bg-purple-500 text-white px-6 py-3 rounded-full font-semibold">View Live Demo</span>
+          </div>
+        </a>
+        <div class="p-4">
+          <p data-i18n="promptYoga" class="text-slate-300 italic mb-3">"Zen yoga studio landing page with schedule and pricing"</p>
+          <div class="flex gap-2">
+            <a href="/showcases/yoga-promo/demo" target="_blank" class="flex-1 text-center bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-sm font-medium transition">
+              <span data-i18n="liveDemo">🚀 Live Demo</span>
+            </a>
+            <a href="/showcases/yoga-promo/screenshot-1280x800.png" data-href-en="/showcases/yoga-promo/screenshot-1280x800.png" data-href-ru="/showcases/yoga-promo/screenshot-1280x800-ru.png" target="_blank" class="flex-1 text-center bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-medium transition">
+              <span data-i18n="screenshot">📸 Screenshot</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:-translate-y-1">
+        <img src="/showcases/photo-contact.png" alt="Photographer" class="w-full">
+        <p data-i18n="promptPhoto" class="p-4 text-slate-300 italic">"Photographer portfolio card"</p>
+      </div>
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:-translate-y-1">
+        <img src="/showcases/dentist-services.png" alt="Dental Clinic" class="w-full">
+        <p data-i18n="promptDentist" class="p-4 text-slate-300 italic">"SmileCare dental clinic landing page"</p>
+      </div>
+      <div class="bg-white/5 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:-translate-y-1">
+        <img src="/showcases/pizza-order.png" alt="Pizza Menu" class="w-full">
+        <p data-i18n="promptPizza" class="p-4 text-slate-300 italic">"Tony's Pizzeria menu"</p>
+      </div>
+    </div>
+
+    <p data-i18n="footer" class="text-center text-slate-500 mt-12">All screenshots 1280x800px - Chrome Web Store ready</p>
+  </div>
+
+  <script>
+  (function() {
+    var strings = {
+      en: {
+        subtitle: 'AI-powered showcase gallery',
+        viewDemo: 'View Live Demo',
+        liveDemo: '🚀 Live Demo',
+        screenshot: '📸 Screenshot',
+        promptHair: '"Premium hair stylist full-screen hero landing page"',
+        promptCoffee: '"Cozy coffee shop menu online with \'Print QR code\' function"',
+        promptYoga: '"Zen yoga studio landing page with schedule and pricing"',
+        promptPhoto: '"Photographer portfolio card"',
+        promptDentist: '"SmileCare dental clinic landing page"',
+        promptPizza: '"Tony\'s Pizzeria menu"',
+        footer: 'All screenshots 1280x800px - Chrome Web Store ready',
+        langLabel: 'RU'
+      },
+      ru: {
+        subtitle: 'Галерея AI-сайтов',
+        viewDemo: 'Смотреть демо',
+        liveDemo: '🚀 Демо',
+        screenshot: '📸 Скриншот',
+        promptHair: '«Премиальный лендинг для стилиста — полноэкранный hero»',
+        promptCoffee: '«Уютное онлайн-меню кофейни с функцией печати QR-кода»',
+        promptYoga: '«Лендинг йога-студии с расписанием и тарифами»',
+        promptPhoto: '«Визитка-портфолио фотографа»',
+        promptDentist: '«Лендинг стоматологической клиники SmileCare»',
+        promptPizza: '«Меню пиццерии Tony\'s Pizzeria»',
+        footer: 'Все скриншоты 1280x800px — готовы для Chrome Web Store',
+        langLabel: 'EN'
+      }
+    };
+
+    var isRuBrowser = false;
+    try { isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+    if (!isRuBrowser) return;
+
+    var lang = 'ru';
+    try {
+      var stored = localStorage.getItem('showcases_lang');
+      if (stored === 'en' || stored === 'ru') lang = stored;
+    } catch(_e) {}
+
+    function apply(l) {
+      lang = l;
+      try { localStorage.setItem('showcases_lang', l); } catch(_e) {}
+      var s = strings[l] || strings['en'];
+      var els = document.querySelectorAll('[data-i18n]');
+      for (var i = 0; i < els.length; i++) {
+        var key = els[i].getAttribute('data-i18n');
+        if (s[key]) els[i].textContent = s[key];
+      }
+      var btn = document.getElementById('langToggle');
+      if (btn) btn.textContent = s.langLabel;
+      // Swap bilingual images
+      var imgs = document.querySelectorAll('[data-img-en]');
+      for (var j = 0; j < imgs.length; j++) {
+        var src = imgs[j].getAttribute(l === 'ru' ? 'data-img-ru' : 'data-img-en');
+        if (src) imgs[j].src = src;
+      }
+      // Swap bilingual links
+      var links = document.querySelectorAll('[data-href-en]');
+      for (var k = 0; k < links.length; k++) {
+        var href = links[k].getAttribute(l === 'ru' ? 'data-href-ru' : 'data-href-en');
+        if (href) links[k].href = href;
+      }
+    }
+
+    var btn = document.getElementById('langToggle');
+    if (btn) {
+      btn.style.display = '';
+      btn.addEventListener('click', function() {
+        apply(lang === 'ru' ? 'en' : 'ru');
+      });
+    }
+    apply(lang);
+  })();
+  </script>
+</body>
+</html>

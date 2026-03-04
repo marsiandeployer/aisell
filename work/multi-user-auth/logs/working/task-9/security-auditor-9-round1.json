@@ -1,0 +1,45 @@
+{
+  "reviewer": "security-auditor-9",
+  "task": 9,
+  "round": 1,
+  "timestamp": "2026-03-04T12:00:00Z",
+  "files_reviewed": [
+    "botplatform/src/webchat.ts"
+  ],
+  "status": "pass",
+  "findings": [
+    {
+      "severity": "low",
+      "type": "security",
+      "location": "webchat.ts:4147",
+      "description": "ownerAddress is interpolated into the auth widget script via template literal: var ownerAddress = '${chatSettings.ownerAddress}'. If ownerAddress contained a single quote, it could break the script. However, ownerAddress is validated elsewhere (regex ^0x[0-9a-fA-F]{40}$) so it can never contain a quote.",
+      "action": "no_change",
+      "reason": "ownerAddress is validated at write time (bot.ts) with Ethereum address regex. No injection risk."
+    },
+    {
+      "severity": "info",
+      "type": "security",
+      "location": "webchat.ts:4126",
+      "description": "Nonce is generated with crypto.randomBytes(16).toString('hex') producing 32 hex characters. This is 128 bits of entropy, sufficient for CSRF protection.",
+      "action": "no_change",
+      "reason": "Adequate entropy for CSRF nonce."
+    },
+    {
+      "severity": "info",
+      "type": "security",
+      "location": "webchat.ts:4131-4137",
+      "description": "Nonce is stored in session only if webchat_session cookie exists and matches a valid session. If no session exists, nonce is still embedded in HTML but not stored server-side, meaning the OAuth callback will fail nonce validation. This is correct per spec: anonymous visitors without sessions cannot complete OAuth flow with nonce protection.",
+      "action": "no_change",
+      "reason": "By design: session-less visitors get a new nonce on next page load after session creation."
+    },
+    {
+      "severity": "info",
+      "type": "security",
+      "location": "webchat.ts:4092-4094",
+      "description": "CSP connect-src is extended only for protected dashboards. Unprotected dashboards retain strict 'self' only. This minimizes attack surface.",
+      "action": "no_change",
+      "reason": "Correct conditional CSP tightening."
+    }
+  ],
+  "summary": "No security vulnerabilities found. Nonce generation uses crypto.randomBytes (CSPRNG), ownerAddress is pre-validated, CSP is conditionally extended only when needed. The GOOGLE_CLIENT_ID is a public-safe value (standard for OAuth client_id in browser apps). The state parameter in the OAuth redirect is properly base64-encoded with nonce for CSRF protection."
+}

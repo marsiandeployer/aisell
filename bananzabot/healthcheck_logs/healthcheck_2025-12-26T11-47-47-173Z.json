@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-12-26T11:47:47.173Z",
+  "allOk": true,
+  "results": [
+    {
+      "name": "PM2 Process Running",
+      "ok": true,
+      "message": "Process online"
+    },
+    {
+      "name": "Bots Database Accessible",
+      "ok": true,
+      "message": "Database OK"
+    },
+    {
+      "name": "Active Bots Running",
+      "ok": true,
+      "message": "9/9 bots active"
+    },
+    {
+      "name": "Memory Usage",
+      "ok": true,
+      "message": "0MB"
+    },
+    {
+      "name": "Recent Restarts Check",
+      "ok": true,
+      "message": "1 restarts"
+    }
+  ]
+}

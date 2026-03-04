@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-12-26T11:47:16.450Z",
+  "allOk": false,
+  "results": [
+    {
+      "name": "PM2 Process Running",
+      "ok": false,
+      "message": "PM2 error: Command failed: pm2 describe bananzabot --json\n\n  error: unknown option `--json'\n\n"
+    },
+    {
+      "name": "Bots Database Accessible",
+      "ok": true,
+      "message": "Database OK"
+    },
+    {
+      "name": "Active Bots Running",
+      "ok": true,
+      "message": "9/9 bots active"
+    },
+    {
+      "name": "Memory Usage",
+      "ok": false,
+      "message": "Memory check error: Command failed: pm2 describe bananzabot --json\n\n  error: unknown option `--json'\n\n"
+    },
+    {
+      "name": "Recent Restarts Check",
+      "ok": false,
+      "message": "Restart check error: Command failed: pm2 describe bananzabot --json\n\n  error: unknown option `--json'\n\n"
+    }
+  ]
+}

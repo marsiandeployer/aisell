@@ -1,0 +1,131 @@
+# Showcase Configuration
+# Product: SimpleSite
+# Created: 2026-02-19
+
+showcase:
+  slug: yoga-promo
+  product: simple_site
+  type: landing  # SPA | landing
+
+  prompt: "Zen yoga studio minimalist hero landing page with serene nature photo background"
+
+  prompt_title: "Zen yoga studio hero landing page"
+
+  caption: "Zen Yoga Studio"
+
+demo:
+  format: multi_section_landing
+  navigation: smooth_scroll  # smooth_scroll | hash_based
+
+  sections:
+    - id: home
+      title: "Hero Section"
+      type: hero_with_background
+      features:
+        - AI-generated background image
+        - Dark gradient overlay for text readability
+        - CTA buttons (First Class Free, View Schedule)
+        - Contact info footer
+
+    - id: classes
+      title: "Our Classes"
+      type: grid_cards
+      features:
+        - 3-column grid layout
+        - Hatha Yoga, Power Yoga, Yin Yoga
+        - Duration and level indicators
+
+    - id: schedule
+      title: "Weekly Schedule"
+      type: schedule_table
+      features:
+        - 7 days of week
+        - 3 daily time slots
+        - Book buttons for each day
+
+    - id: pricing
+      title: "Membership Plans"
+      type: pricing_cards
+      features:
+        - 3 pricing tiers (Drop-In, Monthly, Annual)
+        - "Most Popular" badge on Monthly plan
+        - Feature comparison
+
+    - id: contact
+      title: "Get In Touch"
+      type: contact_form
+      features:
+        - Contact information (address, hours, phone/email)
+        - Contact form with validation
+
+  design:
+    scroll_behavior: smooth
+    scroll_snap: true  # CSS scroll-snap-type: y mandatory
+    header: fixed_with_nav
+    sections_height: 100vh
+
+    colors:
+      gradients:
+        - "from-slate-900 via-purple-900 to-slate-900"
+        - "from-gray-900 via-blue-900 to-gray-900"
+        - "from-slate-900 via-indigo-900 to-slate-900"
+      accent: amber-500
+      text: white
+
+    fonts:
+      heading: "font-extralight tracking-wider"
+      body: "font-light"
+
+background:
+  type: ai_generated
+  generator: hydra_ai
+  model: flux-schnell-uncensored
+
+  prompt: |
+    Beautiful serene zen yoga studio interior, large windows with natural sunlight,
+    wooden floor, green bamboo plants in corners, rolled yoga mats, peaceful meditation space,
+    warm golden hour lighting, professional architectural photography, ultra realistic,
+    minimalist wellness aesthetic, soft beige and green tones, calming atmosphere, high detail
+
+  file: bg.jpg
+  size: 1024x1024
+
+  overlay: "bg-gradient-to-b from-black/45 via-black/35 to-black/50"
+  reasoning: "Dark overlay ensures text readability on photo background"
+
+screenshot:
+  resolution: 1280x800
+  format: PNG
+  caption_height: 50px  # Height reserved for prompt caption
+  content_height: 750px # Actual demo content height
+
+  variants:
+    - screenshot.png           # Original from Puppeteer
+    - screenshot-1280x800.png  # Chrome Web Store format
+    - screenshot-640x400.png   # Thumbnail format
+
+files:
+  - demo.html      # Full interactive demo
+  - bg.jpg         # AI-generated background
+  - config.yaml    # This file
+
+deployment:
+  demo_url: "/showcases/yoga-promo/demo"
+  screenshot_url: "/showcases/yoga-promo.png"
+  gallery_page: "/showcases"
+
+technical_notes:
+  - "Uses CSS scroll-snap for better UX"
+  - "All sections are full-screen (100vh)"
+  - "Fixed header with anchor navigation"
+  - "Background image served from /preview/bg.jpg route"
+  - "Template literals for dynamic schedule generation"
+
+reproduction_steps:
+  - "1. Generate AI background using Hydra AI with prompt above"
+  - "2. Create demo.html with 5 sections (home, classes, schedule, pricing, contact)"
+  - "3. Add smooth scroll CSS (scroll-behavior: smooth, scroll-snap-type: y mandatory)"
+  - "4. Create page.html wrapper (1280x800) with 50px prompt caption at bottom"
+  - "5. Take screenshot using Puppeteer"
+  - "6. Resize to multiple formats using ImageMagick"
+  - "7. Update gallery index.html with Live Demo and Screenshot buttons"

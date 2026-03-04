@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bean & Brew - Craft Coffee & Fresh Pastries</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { scroll-behavior: smooth; }
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+    .font-serif { font-family: 'Playfair Display', Georgia, serif; }
+    .font-sans { font-family: 'Inter', system-ui, sans-serif; }
+    section { min-height: 100vh; }
+  </style>
+</head>
+<body class="text-stone-900 font-sans" style="margin:0">
+  <!-- Fixed Header -->
+  <header class="fixed w-full p-5 flex justify-between items-center z-50 bg-amber-950/90 backdrop-blur-md">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">&#x2615;</span>
+      <span class="text-xl font-serif font-bold text-amber-100 tracking-wide">Bean &amp; Brew</span>
+    </div>
+    <nav class="flex gap-6 text-sm tracking-wide items-center text-amber-200">
+      <a href="#home" data-i18n="navHome" class="hover:text-white transition">Home</a>
+      <a href="#menu" data-i18n="navMenu" class="hover:text-white transition">Menu</a>
+      <a href="#about" data-i18n="navAbout" class="hover:text-white transition">About</a>
+      <a href="#contact" data-i18n="navContact" class="hover:text-white transition">Contact</a>
+      <button id="langToggle" style="display:none" class="text-sm text-amber-300 hover:text-white transition cursor-pointer"></button>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="home" class="relative bg-amber-950 flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0" style="background:linear-gradient(135deg, #1a0e05 0%, #3d1c0a 30%, #5c2e12 60%, #2c1508 100%)"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-amber-950/30 to-amber-950/70"></div>
+    <div class="relative z-10 text-center text-white px-4">
+      <p data-i18n="heroTag" class="text-amber-300 tracking-[0.3em] uppercase text-sm mb-4">Craft Coffee & Fresh Pastries</p>
+      <h1 data-i18n="heroTitle" class="font-serif text-6xl md:text-7xl font-bold mb-6" style="text-shadow:0 4px 30px rgba(0,0,0,0.4)">Every Cup Tells a Story</h1>
+      <p data-i18n="heroSub" class="text-xl text-amber-100/80 mb-10 max-w-xl mx-auto">Hand-roasted beans, artisan pastries, and a warm atmosphere since 2015</p>
+      <div class="flex gap-4 justify-center">
+        <a href="#menu" data-i18n="heroCta1" class="bg-amber-600 hover:bg-amber-500 text-white px-8 py-4 rounded-full font-semibold transition text-lg">View Menu</a>
+        <a href="#contact" data-i18n="heroCta2" class="border-2 border-white/30 hover:border-white/60 text-white px-8 py-4 rounded-full font-semibold transition text-lg">Visit Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu Section -->
+  <section id="menu" class="bg-amber-50 py-24 px-4">
+    <div class="max-w-5xl mx-auto">
+      <h2 data-i18n="menuTitle" class="font-serif text-5xl font-bold text-center mb-3 text-amber-950">Our Menu</h2>
+      <p data-i18n="menuSub" class="text-center text-stone-500 mb-12 text-lg">Freshly prepared every morning</p>
+
+      <!-- Coffee -->
+      <h3 data-i18n="menuCoffee" class="font-serif text-2xl font-bold mb-6 text-amber-800 border-b-2 border-amber-200 pb-2">&#x2615; Coffee</h3>
+      <div id="coffeeItems" class="grid md:grid-cols-2 gap-4 mb-12"></div>
+
+      <!-- Pastries -->
+      <h3 data-i18n="menuPastry" class="font-serif text-2xl font-bold mb-6 text-amber-800 border-b-2 border-amber-200 pb-2">&#x1F950; Pastries</h3>
+      <div id="pastryItems" class="grid md:grid-cols-2 gap-4 mb-12"></div>
+
+      <!-- Special -->
+      <h3 data-i18n="menuSpecial" class="font-serif text-2xl font-bold mb-6 text-amber-800 border-b-2 border-amber-200 pb-2">&#x2B50; Specials</h3>
+      <div id="specialItems" class="grid md:grid-cols-2 gap-4 mb-10"></div>
+
+      <div class="text-center">
+        <button onclick="window.printQR()" data-i18n="printQR" class="bg-amber-800 hover:bg-amber-700 text-white px-8 py-3 rounded-full font-semibold transition inline-flex items-center gap-2">
+          &#x1F4F1; Print QR Code
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="bg-amber-950 text-white py-24 px-4 flex items-center">
+    <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+      <div>
+        <h2 data-i18n="aboutTitle" class="font-serif text-5xl font-bold mb-6 text-amber-100">Our Story</h2>
+        <p data-i18n="aboutP1" class="text-amber-200/80 text-lg mb-4 leading-relaxed">We started Bean & Brew with a simple belief: great coffee brings people together. Every bean is carefully sourced from small farms and roasted in-house.</p>
+        <p data-i18n="aboutP2" class="text-amber-200/80 text-lg mb-8 leading-relaxed">Our pastries are baked fresh each morning by our head baker. No preservatives, no shortcuts — just honest, delicious food.</p>
+        <div class="grid grid-cols-3 gap-6 text-center">
+          <div>
+            <div class="text-3xl font-bold text-amber-400">8+</div>
+            <div data-i18n="aboutYears" class="text-sm text-amber-300/60">Years open</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-amber-400">12</div>
+            <div data-i18n="aboutOrigins" class="text-sm text-amber-300/60">Bean origins</div>
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-amber-400">5K+</div>
+            <div data-i18n="aboutCups" class="text-sm text-amber-300/60">Cups daily</div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-amber-900/50 rounded-3xl p-8 border border-amber-800/50">
+        <div class="text-6xl text-center mb-4">&#x2615;</div>
+        <blockquote data-i18n="aboutQuote" class="text-center text-amber-200 italic text-lg">"The best coffee in town. Period. I come here every single morning."</blockquote>
+        <p data-i18n="aboutQuoteAuthor" class="text-center text-amber-400 mt-4 font-medium">— Sarah M., regular since 2016</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="bg-amber-50 py-24 px-4 flex items-center">
+    <div class="max-w-5xl mx-auto w-full">
+      <h2 data-i18n="contactTitle" class="font-serif text-5xl font-bold text-center mb-3 text-amber-950">Visit Us</h2>
+      <p data-i18n="contactSub" class="text-center text-stone-500 mb-12 text-lg">We'd love to see you</p>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white p-8 rounded-2xl shadow-sm text-center">
+          <div class="text-4xl mb-3">&#x1F4CD;</div>
+          <h3 data-i18n="contactAddr" class="font-semibold text-lg mb-2">Address</h3>
+          <p class="text-stone-500">42 Roast Avenue<br>Beanville, BV 10001</p>
+        </div>
+        <div class="bg-white p-8 rounded-2xl shadow-sm text-center">
+          <div class="text-4xl mb-3">&#x1F552;</div>
+          <h3 data-i18n="contactHours" class="font-semibold text-lg mb-2">Hours</h3>
+          <p data-i18n="contactHoursVal" class="text-stone-500">Mon-Fri: 7AM - 8PM<br>Sat-Sun: 8AM - 9PM</p>
+        </div>
+        <div class="bg-white p-8 rounded-2xl shadow-sm text-center">
+          <div class="text-4xl mb-3">&#x1F4DE;</div>
+          <h3 data-i18n="contactPhone" class="font-semibold text-lg mb-2">Contact</h3>
+          <p class="text-stone-500">(555) 234-BREW<br>hello@beanandbrew.cafe</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QR Print Overlay -->
+  <div id="qrOverlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center">
+    <div class="bg-white rounded-3xl p-10 text-center max-w-sm mx-4">
+      <button onclick="window.closeQR()" style="position:absolute;top:16px;right:20px;font-size:24px;background:none;border:none;cursor:pointer;color:#666">&times;</button>
+      <h3 data-i18n="qrTitle" class="font-serif text-2xl font-bold mb-2 text-amber-950">Scan for Menu</h3>
+      <p data-i18n="qrSub" class="text-stone-500 mb-6">Point your camera at the QR code</p>
+      <div id="qrCode" class="inline-block p-4 bg-amber-50 rounded-2xl mb-6">
+        <svg viewBox="0 0 200 200" width="180" height="180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#FFF8F0"/>
+          <rect x="20" y="20" width="60" height="60" rx="4" fill="none" stroke="#44250E" stroke-width="6"/>
+          <rect x="35" y="35" width="30" height="30" rx="2" fill="#44250E"/>
+          <rect x="120" y="20" width="60" height="60" rx="4" fill="none" stroke="#44250E" stroke-width="6"/>
+          <rect x="135" y="35" width="30" height="30" rx="2" fill="#44250E"/>
+          <rect x="20" y="120" width="60" height="60" rx="4" fill="none" stroke="#44250E" stroke-width="6"/>
+          <rect x="35" y="135" width="30" height="30" rx="2" fill="#44250E"/>
+          <rect x="92" y="20" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="92" y="50" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="92" y="92" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="120" y="92" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="150" y="92" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="92" y="120" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="120" y="120" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="150" y="120" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="120" y="150" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="150" y="150" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="92" y="160" width="16" height="16" rx="2" fill="#44250E"/>
+          <rect x="170" y="160" width="16" height="16" rx="2" fill="#44250E"/>
+        </svg>
+      </div>
+      <br>
+      <button onclick="window.doPrintQR()" data-i18n="qrPrint" class="bg-amber-800 hover:bg-amber-700 text-white px-8 py-3 rounded-full font-semibold transition">&#x1F5A8; Print</button>
+    </div>
+  </div>
+
+  <!-- Prompt bar (bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 24px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:22px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,0.4);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:10px 24px;background:#fff;color:#111;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none;white-space:nowrap" href="https://simplesite.wpmix.net"></a>
+  </div>
+
+  <script>
+  (function() {
+    var _s = {
+      en: {
+        navHome: 'Home', navMenu: 'Menu', navAbout: 'About', navContact: 'Contact',
+        heroTag: 'Craft Coffee & Fresh Pastries',
+        heroTitle: 'Every Cup Tells a Story',
+        heroSub: 'Hand-roasted beans, artisan pastries, and a warm atmosphere since 2015',
+        heroCta1: 'View Menu', heroCta2: 'Visit Us',
+        menuTitle: 'Our Menu', menuSub: 'Freshly prepared every morning',
+        menuCoffee: '\u2615 Coffee', menuPastry: '\uD83E\uDD50 Pastries', menuSpecial: '\u2B50 Specials',
+        printQR: '\uD83D\uDCF1 Print QR Code',
+        coffeeItems: [
+          ['Espresso', 'Rich and bold single shot', '$3.00'],
+          ['Americano', 'Espresso with hot water', '$3.50'],
+          ['Latte', 'Espresso with steamed milk', '$4.50'],
+          ['Cappuccino', 'Equal parts espresso, milk, foam', '$4.50'],
+          ['Flat White', 'Double espresso, velvety milk', '$5.00'],
+          ['Cold Brew', 'Slow-steeped 18 hours', '$4.00']
+        ],
+        pastryItems: [
+          ['Croissant', 'Buttery, flaky, golden', '$2.50'],
+          ['Almond Danish', 'Puff pastry with almond cream', '$3.50'],
+          ['Blueberry Muffin', 'Loaded with wild blueberries', '$3.00'],
+          ['Cinnamon Roll', 'Warm with cream cheese glaze', '$4.00']
+        ],
+        specialItems: [
+          ['Affogato', 'Vanilla gelato drowned in espresso', '$6.00'],
+          ['Matcha Latte', 'Ceremonial grade matcha', '$5.50'],
+          ['Lavender Honey Latte', 'Floral, sweet, dreamy', '$5.50'],
+          ['Chai Spice Latte', 'House-blended spice mix', '$5.00']
+        ],
+        aboutTitle: 'Our Story',
+        aboutP1: 'We started Bean & Brew with a simple belief: great coffee brings people together. Every bean is carefully sourced from small farms and roasted in-house.',
+        aboutP2: 'Our pastries are baked fresh each morning by our head baker. No preservatives, no shortcuts \u2014 just honest, delicious food.',
+        aboutYears: 'Years open', aboutOrigins: 'Bean origins', aboutCups: 'Cups daily',
+        aboutQuote: '\u201CThe best coffee in town. Period. I come here every single morning.\u201D',
+        aboutQuoteAuthor: '\u2014 Sarah M., regular since 2016',
+        contactTitle: 'Visit Us', contactSub: 'We\'d love to see you',
+        contactAddr: 'Address', contactHours: 'Hours', contactPhone: 'Contact',
+        contactHoursVal: 'Mon-Fri: 7AM - 8PM\nSat-Sun: 8AM - 9PM',
+        qrTitle: 'Scan for Menu', qrSub: 'Point your camera at the QR code', qrPrint: '\uD83D\uDDA8 Print',
+        promptText: '\u201CCozy coffee shop menu with Print QR code function\u201D',
+        ctaLabel: 'I want the same',
+        langLabel: 'RU'
+      },
+      ru: {
+        navHome: '\u0413\u043B\u0430\u0432\u043D\u0430\u044F', navMenu: '\u041C\u0435\u043D\u044E', navAbout: '\u041E \u043D\u0430\u0441', navContact: '\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B',
+        heroTag: '\u0410\u0432\u0442\u043E\u0440\u0441\u043A\u0438\u0439 \u043A\u043E\u0444\u0435 \u0438 \u0441\u0432\u0435\u0436\u0430\u044F \u0432\u044B\u043F\u0435\u0447\u043A\u0430',
+        heroTitle: '\u041A\u0430\u0436\u0434\u0430\u044F \u0447\u0430\u0448\u043A\u0430 \u2014 \u0438\u0441\u0442\u043E\u0440\u0438\u044F',
+        heroSub: '\u0417\u0451\u0440\u043D\u0430 \u0440\u0443\u0447\u043D\u043E\u0439 \u043E\u0431\u0436\u0430\u0440\u043A\u0438, \u0430\u0432\u0442\u043E\u0440\u0441\u043A\u0430\u044F \u0432\u044B\u043F\u0435\u0447\u043A\u0430 \u0438 \u0443\u044E\u0442\u043D\u0430\u044F \u0430\u0442\u043C\u043E\u0441\u0444\u0435\u0440\u0430 \u0441 2015 \u0433\u043E\u0434\u0430',
+        heroCta1: '\u041C\u0435\u043D\u044E', heroCta2: '\u041A\u0430\u043A \u043D\u0430\u0441 \u043D\u0430\u0439\u0442\u0438',
+        menuTitle: '\u041D\u0430\u0448\u0435 \u043C\u0435\u043D\u044E', menuSub: '\u0413\u043E\u0442\u043E\u0432\u0438\u043C \u0441\u0432\u0435\u0436\u0435\u0435 \u043A\u0430\u0436\u0434\u043E\u0435 \u0443\u0442\u0440\u043E',
+        menuCoffee: '\u2615 \u041A\u043E\u0444\u0435', menuPastry: '\uD83E\uDD50 \u0412\u044B\u043F\u0435\u0447\u043A\u0430', menuSpecial: '\u2B50 \u0421\u043F\u0435\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0435',
+        printQR: '\uD83D\uDCF1 \u0420\u0430\u0441\u043F\u0435\u0447\u0430\u0442\u0430\u0442\u044C QR-\u043A\u043E\u0434',
+        coffeeItems: [
+          ['\u042D\u0441\u043F\u0440\u0435\u0441\u0441\u043E', '\u041D\u0430\u0441\u044B\u0449\u0435\u043D\u043D\u044B\u0439 \u043E\u0434\u0438\u043D\u0430\u0440\u043D\u044B\u0439 \u0448\u043E\u0442', '250 \u20BD'],
+          ['\u0410\u043C\u0435\u0440\u0438\u043A\u0430\u043D\u043E', '\u042D\u0441\u043F\u0440\u0435\u0441\u0441\u043E \u0441 \u0433\u043E\u0440\u044F\u0447\u0435\u0439 \u0432\u043E\u0434\u043E\u0439', '280 \u20BD'],
+          ['\u041B\u0430\u0442\u0442\u0435', '\u042D\u0441\u043F\u0440\u0435\u0441\u0441\u043E \u0441\u043E \u0432\u0437\u0431\u0438\u0442\u044B\u043C \u043C\u043E\u043B\u043E\u043A\u043E\u043C', '350 \u20BD'],
+          ['\u041A\u0430\u043F\u0443\u0447\u0438\u043D\u043E', '\u042D\u0441\u043F\u0440\u0435\u0441\u0441\u043E, \u043C\u043E\u043B\u043E\u043A\u043E, \u043F\u0435\u043D\u043A\u0430 \u043F\u043E\u0440\u043E\u0432\u043D\u0443', '350 \u20BD'],
+          ['\u0424\u043B\u044D\u0442 \u0443\u0430\u0439\u0442', '\u0414\u0432\u043E\u0439\u043D\u043E\u0439 \u044D\u0441\u043F\u0440\u0435\u0441\u0441\u043E, \u0431\u0430\u0440\u0445\u0430\u0442\u043D\u043E\u0435 \u043C\u043E\u043B\u043E\u043A\u043E', '390 \u20BD'],
+          ['\u041A\u043E\u043B\u0434-\u0431\u0440\u044E', '\u0425\u043E\u043B\u043E\u0434\u043D\u0430\u044F \u0437\u0430\u0432\u0430\u0440\u043A\u0430 18 \u0447\u0430\u0441\u043E\u0432', '320 \u20BD']
+        ],
+        pastryItems: [
+          ['\u041A\u0440\u0443\u0430\u0441\u0441\u0430\u043D', '\u0421\u043B\u043E\u0451\u043D\u044B\u0439, \u043C\u0430\u0441\u043B\u044F\u043D\u044B\u0439, \u0437\u043E\u043B\u043E\u0442\u0438\u0441\u0442\u044B\u0439', '200 \u20BD'],
+          ['\u0414\u0430\u0442\u0441\u043A\u0438\u0439 \u0441 \u043C\u0438\u043D\u0434\u0430\u043B\u0451\u043C', '\u0421\u043B\u043E\u0451\u043D\u043E\u0435 \u0442\u0435\u0441\u0442\u043E \u0441 \u043C\u0438\u043D\u0434\u0430\u043B\u044C\u043D\u044B\u043C \u043A\u0440\u0435\u043C\u043E\u043C', '280 \u20BD'],
+          ['\u041C\u0430\u0444\u0444\u0438\u043D \u0441 \u0447\u0435\u0440\u043D\u0438\u043A\u043E\u0439', '\u0421 \u043B\u0435\u0441\u043D\u043E\u0439 \u0447\u0435\u0440\u043D\u0438\u043A\u043E\u0439', '240 \u20BD'],
+          ['\u0421\u0438\u043D\u043D\u0430\u0431\u043E\u043D', '\u0422\u0451\u043F\u043B\u044B\u0439, \u0441 \u043A\u0440\u0435\u043C\u043E\u0432\u043E\u0439 \u0433\u043B\u0430\u0437\u0443\u0440\u044C\u044E', '320 \u20BD']
+        ],
+        specialItems: [
+          ['\u0410\u0444\u0444\u043E\u0433\u0430\u0442\u043E', '\u0412\u0430\u043D\u0438\u043B\u044C\u043D\u043E\u0435 \u0434\u0436\u0435\u043B\u0430\u0442\u043E \u0441 \u044D\u0441\u043F\u0440\u0435\u0441\u0441\u043E', '450 \u20BD'],
+          ['\u041C\u0430\u0442\u0447\u0430-\u043B\u0430\u0442\u0442\u0435', '\u0426\u0435\u0440\u0435\u043C\u043E\u043D\u0438\u0430\u043B\u044C\u043D\u044B\u0439 \u043C\u0430\u0442\u0447\u0430', '420 \u20BD'],
+          ['\u041B\u0430\u0432\u0430\u043D\u0434\u043E\u0432\u044B\u0439 \u043B\u0430\u0442\u0442\u0435', '\u0426\u0432\u0435\u0442\u043E\u0447\u043D\u044B\u0439, \u043C\u0435\u0434\u043E\u0432\u044B\u0439, \u043D\u0435\u0436\u043D\u044B\u0439', '420 \u20BD'],
+          ['\u0427\u0430\u0439-\u043B\u0430\u0442\u0442\u0435', '\u0410\u0432\u0442\u043E\u0440\u0441\u043A\u0430\u044F \u0441\u043C\u0435\u0441\u044C \u0441\u043F\u0435\u0446\u0438\u0439', '380 \u20BD']
+        ],
+        aboutTitle: '\u041D\u0430\u0448\u0430 \u0438\u0441\u0442\u043E\u0440\u0438\u044F',
+        aboutP1: '\u041C\u044B \u043E\u0441\u043D\u043E\u0432\u0430\u043B\u0438 Bean & Brew \u0441 \u043F\u0440\u043E\u0441\u0442\u043E\u0439 \u0438\u0434\u0435\u0435\u0439: \u043E\u0442\u043B\u0438\u0447\u043D\u044B\u0439 \u043A\u043E\u0444\u0435 \u043E\u0431\u044A\u0435\u0434\u0438\u043D\u044F\u0435\u0442 \u043B\u044E\u0434\u0435\u0439. \u041A\u0430\u0436\u0434\u043E\u0435 \u0437\u0435\u0440\u043D\u043E \u0442\u0449\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u043E\u0442\u043E\u0431\u0440\u0430\u043D\u043E \u043D\u0430 \u043D\u0435\u0431\u043E\u043B\u044C\u0448\u0438\u0445 \u0444\u0435\u0440\u043C\u0430\u0445 \u0438 \u043E\u0431\u0436\u0430\u0440\u0435\u043D\u043E \u0443 \u043D\u0430\u0441.',
+        aboutP2: '\u0412\u044B\u043F\u0435\u0447\u043A\u0430 \u0433\u043E\u0442\u043E\u0432\u0438\u0442\u0441\u044F \u0441\u0432\u0435\u0436\u0435\u0439 \u043A\u0430\u0436\u0434\u043E\u0435 \u0443\u0442\u0440\u043E. \u0411\u0435\u0437 \u043A\u043E\u043D\u0441\u0435\u0440\u0432\u0430\u043D\u0442\u043E\u0432, \u0431\u0435\u0437 \u043A\u043E\u043C\u043F\u0440\u043E\u043C\u0438\u0441\u0441\u043E\u0432 \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0447\u0435\u0441\u0442\u043D\u0430\u044F, \u0432\u043A\u0443\u0441\u043D\u0430\u044F \u0435\u0434\u0430.',
+        aboutYears: '\u041B\u0435\u0442 \u0440\u0430\u0431\u043E\u0442\u044B', aboutOrigins: '\u0421\u043E\u0440\u0442\u043E\u0432 \u0437\u0451\u0440\u0435\u043D', aboutCups: '\u0427\u0430\u0448\u0435\u043A \u0432 \u0434\u0435\u043D\u044C',
+        aboutQuote: '\u00AB\u041B\u0443\u0447\u0448\u0438\u0439 \u043A\u043E\u0444\u0435 \u0432 \u0433\u043E\u0440\u043E\u0434\u0435. \u0422\u043E\u0447\u043A\u0430. \u042F \u043F\u0440\u0438\u0445\u043E\u0436\u0443 \u0441\u044E\u0434\u0430 \u043A\u0430\u0436\u0434\u043E\u0435 \u0443\u0442\u0440\u043E.\u00BB',
+        aboutQuoteAuthor: '\u2014 \u0421\u0430\u0440\u0430 \u041C., \u043F\u043E\u0441\u0442\u043E\u044F\u043D\u043D\u044B\u0439 \u0433\u043E\u0441\u0442\u044C \u0441 2016',
+        contactTitle: '\u041A\u0430\u043A \u043D\u0430\u0441 \u043D\u0430\u0439\u0442\u0438', contactSub: '\u0411\u0443\u0434\u0435\u043C \u0440\u0430\u0434\u044B \u0432\u0430\u0441 \u0432\u0438\u0434\u0435\u0442\u044C',
+        contactAddr: '\u0410\u0434\u0440\u0435\u0441', contactHours: '\u0427\u0430\u0441\u044B \u0440\u0430\u0431\u043E\u0442\u044B', contactPhone: '\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u044B',
+        contactHoursVal: '\u041F\u043D-\u041F\u0442: 7:00 - 20:00\n\u0421\u0431-\u0412\u0441: 8:00 - 21:00',
+        qrTitle: '\u041C\u0435\u043D\u044E \u043F\u043E QR', qrSub: '\u041D\u0430\u0432\u0435\u0434\u0438\u0442\u0435 \u043A\u0430\u043C\u0435\u0440\u0443 \u043D\u0430 QR-\u043A\u043E\u0434', qrPrint: '\uD83D\uDDA8 \u0420\u0430\u0441\u043F\u0435\u0447\u0430\u0442\u0430\u0442\u044C',
+        promptText: '\u00AB\u041C\u0435\u043D\u044E \u043A\u043E\u0444\u0435\u0439\u043D\u0438 \u0441 \u0444\u0443\u043D\u043A\u0446\u0438\u0435\u0439 \u043F\u0435\u0447\u0430\u0442\u0438 QR-\u043A\u043E\u0434\u0430\u00BB',
+        ctaLabel: '\u0425\u043E\u0447\u0443 \u0442\u0430\u043A\u043E\u0439 \u0436\u0435',
+        langLabel: 'EN'
+      }
+    };
+
+    var _lang = 'en';
+    var _isRuBrowser = false;
+    try { _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+
+    function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+    function renderMenuItems(containerId, key) {
+      var items = tt(key);
+      if (!Array.isArray(items)) return;
+      var html = '';
+      for (var i = 0; i < items.length; i++) {
+        html += '<div class="flex justify-between items-start p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition">' +
+          '<div class="flex-1"><span class="font-semibold text-amber-950">' + items[i][0] + '</span>' +
+          '<p class="text-sm text-stone-400 mt-1">' + items[i][1] + '</p></div>' +
+          '<span class="font-bold text-amber-700 ml-4 whitespace-nowrap">' + items[i][2] + '</span></div>';
+      }
+      document.getElementById(containerId).innerHTML = html;
+    }
+
+    function applyI18n() {
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var val = tt(key);
+        if (typeof val === 'string') {
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = val;
+          else el.textContent = val;
+        }
+      });
+      document.getElementById('promptText').textContent = tt('promptText');
+      var ctaBtn = document.getElementById('ctaBtn');
+      ctaBtn.textContent = tt('ctaLabel');
+      ctaBtn.href = 'https://simplesite.wpmix.net/?prompt=' + encodeURIComponent('Cozy coffee shop menu online with Print QR code function');
+      renderMenuItems('coffeeItems', 'coffeeItems');
+      renderMenuItems('pastryItems', 'pastryItems');
+      renderMenuItems('specialItems', 'specialItems');
+      var langBtn = document.getElementById('langToggle');
+      if (langBtn) langBtn.textContent = tt('langLabel');
+    }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+      applyI18n();
+    }
+
+    // QR overlay
+    window.printQR = function() {
+      var overlay = document.getElementById('qrOverlay');
+      overlay.style.display = 'flex';
+      document.getElementById('qrTitle') && (document.querySelector('#qrOverlay [data-i18n="qrTitle"]').textContent = tt('qrTitle'));
+      document.querySelector('#qrOverlay [data-i18n="qrSub"]').textContent = tt('qrSub');
+      document.querySelector('#qrOverlay [data-i18n="qrPrint"]').textContent = tt('qrPrint');
+      document.body.style.overflow = 'hidden';
+    };
+    window.closeQR = function() {
+      document.getElementById('qrOverlay').style.display = 'none';
+      document.body.style.overflow = '';
+    };
+    window.doPrintQR = function() {
+      var qr = document.getElementById('qrCode').innerHTML;
+      var w = window.open('', '_blank');
+      w.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0">' + qr + '</body></html>');
+      w.document.close();
+      w.print();
+    };
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+      applyI18n();
+      if (_isRuBrowser) {
+        var langBtn = document.getElementById('langToggle');
+        if (langBtn) {
+          langBtn.style.display = '';
+          langBtn.onclick = toggleLang;
+        }
+      }
+      // Scroll hide/show promptBar
+      var lastSt = 0;
+      window.addEventListener('scroll', function() {
+        var st = window.pageYOffset || document.documentElement.scrollTop;
+        var bar = document.getElementById('promptBar');
+        if (st > lastSt && st > 100) {
+          bar.style.transform = 'translateY(100%)';
+        } else {
+          bar.style.transform = 'translateY(0)';
+        }
+        lastSt = st <= 0 ? 0 : st;
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

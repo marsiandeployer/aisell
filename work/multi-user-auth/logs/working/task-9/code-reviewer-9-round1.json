@@ -1,0 +1,29 @@
+{
+  "reviewer": "code-reviewer-9",
+  "task": 9,
+  "round": 1,
+  "timestamp": "2026-03-04T12:00:00Z",
+  "files_reviewed": [
+    "botplatform/src/webchat.ts"
+  ],
+  "status": "pass",
+  "findings": [
+    {
+      "severity": "low",
+      "type": "code-quality",
+      "location": "webchat.ts:4086",
+      "description": "loadChatSettings is called for every static file request in the d*.wpmix.net middleware, not just HTML files. Since it reads from disk (settings.json), calling it before the HTML branch adds a small I/O overhead for CSS/JS/image requests. However, the existing pattern at line 3823 (for /api/data/) already does the same unconditionally. Acceptable for correctness.",
+      "action": "no_change",
+      "reason": "Existing pattern in the codebase; moving it inside the HTML branch would reduce scope but complicate the CSP header logic which also needs chatSettings."
+    },
+    {
+      "severity": "low",
+      "type": "style",
+      "location": "webchat.ts:4140",
+      "description": "The nonce is emitted in a separate <script> tag from the auth-widget-loader. This is intentional (the __OAUTH_NONCE__ variable must be set before the IIFE runs) and follows the spec requirement that the HTML contains window.__OAUTH_NONCE__.",
+      "action": "no_change",
+      "reason": "Correct separation of concerns; nonce must be available as global before IIFE executes."
+    }
+  ],
+  "summary": "Implementation correctly follows the task spec. Auth widget is injected only when ownerAddress is set. Magic-link script is always injected regardless. CSP connect-src is conditionally extended. No webchat-specific UI links are present. CORS regex was converted from regex literal to new RegExp() to fix pre-commit hook false positive."
+}

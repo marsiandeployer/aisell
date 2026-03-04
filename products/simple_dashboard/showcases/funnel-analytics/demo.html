@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funnel Analytics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50" style="margin:0;overflow:hidden">
+  <!-- Prompt bar (fixed, semi-transparent, over content) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:8px 20px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-style:normal;text-decoration:none;white-space:nowrap" href="#"></a>
+  </div>
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-900 text-white p-6 flex flex-col">
+      <div class="text-2xl font-bold mb-8" id="sidebarTitle">📊 Funnel Analytics</div>
+      <nav class="space-y-2">
+        <button onclick="navigateTo('overview')" data-page="overview" data-nav="navOverview" data-icon="📈" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition"></button>
+        <button onclick="navigateTo('funnel')" data-page="funnel" data-nav="navFunnel" data-icon="🔽" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition"></button>
+        <button onclick="navigateTo('utm')" data-page="utm" data-nav="navUtm" data-icon="🔗" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition"></button>
+        <button onclick="navigateTo('finance')" data-page="finance" data-nav="navFinance" data-icon="💰" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition"></button>
+      </nav>
+      <div id="langToggle" style="display:none" class="mt-auto pt-4 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition text-sm" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-auto">
+      <div id="mainContent"></div>
+    </main>
+  </div>
+
+  <script>
+    // === i18n ===
+    var _lang = 'en';
+    var _s = {
+      en: {
+        registrations: 'Registrations',
+        thisWeek: 'this week',
+        webinarViews: 'Webinar views',
+        conversion: 'conversion',
+        payments: 'Payments',
+        adSpend: 'Ad spend',
+        regByDay: 'Registrations by day',
+        funnel7d: 'Funnel (7 days)',
+        salesFunnel: 'Sales Funnel',
+        invoices: 'Invoices',
+        deposits: 'Deposits',
+        dailyMetrics: 'Daily Metrics',
+        day: 'Day',
+        convPct: 'Conv. %',
+        invoicesShort: 'Invoices',
+        totalReg: 'Total registrations',
+        activeChannels: 'Active channels',
+        bestChannel: 'Best channel',
+        registrationsLC: 'registrations',
+        regByChannel: 'Registrations by channel',
+        payByChannel: 'Payments by channel',
+        channelDetails: 'Channel Details',
+        channelUtm: 'Channel (UTM)',
+        sharePct: 'Share %',
+        conversionCap: 'Conversion',
+        finAnalytics: 'Financial Analytics',
+        revPayments: 'Revenue (payments)',
+        avgCheck: 'Avg. check',
+        spendVsRevenue: 'Spend vs Revenue',
+        spendByChannel: 'Spend by channel',
+        payByDay: 'Payments by day',
+        spend: 'Spend',
+        paymentsQty: 'Payments (qty)',
+        amountCur: 'Amount ($)',
+        yandex: 'Yandex',
+        others: 'Other',
+        yan: 'YAN',
+        revenue: 'Revenue',
+        dayLabels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        funnelBarReg: 'Registrations',
+        funnelBarViews: 'Views',
+        funnelBarInvoices: 'Invoices',
+        funnelBarPayments: 'Payments',
+        views: 'Views',
+        currency: '$',
+        navTitle: 'Funnel Analytics',
+        navOverview: 'Overview',
+        navFunnel: 'Funnel',
+        navUtm: 'UTM Analytics',
+        navFinance: 'Finance'
+      },
+      ru: {
+        registrations: '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438',
+        thisWeek: '\u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e',
+        webinarViews: '\u041f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f \u0432\u0435\u0431\u0438\u043d\u0430\u0440\u0430',
+        conversion: '\u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+        payments: '\u041e\u043f\u043b\u0430\u0442\u044b',
+        adSpend: '\u0420\u0430\u0441\u0445\u043e\u0434 \u043d\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443',
+        regByDay: '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043f\u043e \u0434\u043d\u044f\u043c',
+        funnel7d: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 (7 \u0434\u043d\u0435\u0439)',
+        salesFunnel: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u043f\u0440\u043e\u0434\u0430\u0436',
+        invoices: '\u0412\u044b\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u0441\u0447\u0435\u0442\u0430',
+        deposits: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442\u044b',
+        dailyMetrics: '\u041c\u0435\u0442\u0440\u0438\u043a\u0438 \u043f\u043e \u0434\u043d\u044f\u043c',
+        day: '\u0414\u0435\u043d\u044c',
+        convPct: '\u041a\u043e\u043d\u0432. %',
+        invoicesShort: '\u0421\u0447\u0435\u0442\u0430',
+        totalReg: '\u0412\u0441\u0435\u0433\u043e \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0439',
+        activeChannels: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u0430\u043d\u0430\u043b\u043e\u0432',
+        bestChannel: '\u041b\u0443\u0447\u0448\u0438\u0439 \u043a\u0430\u043d\u0430\u043b',
+        registrationsLC: '\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0439',
+        regByChannel: '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c',
+        payByChannel: '\u041e\u043f\u043b\u0430\u0442\u044b \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c',
+        channelDetails: '\u0414\u0435\u0442\u0430\u043b\u044c\u043d\u0430\u044f \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c',
+        channelUtm: '\u041a\u0430\u043d\u0430\u043b (UTM)',
+        sharePct: '\u0414\u043e\u043b\u044f %',
+        conversionCap: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+        finAnalytics: '\u0424\u0438\u043d\u0430\u043d\u0441\u043e\u0432\u0430\u044f \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430',
+        revPayments: '\u0414\u043e\u0445\u043e\u0434 (\u043e\u043f\u043b\u0430\u0442\u044b)',
+        avgCheck: '\u0421\u0440\u0435\u0434\u043d\u0438\u0439 \u0447\u0435\u043a',
+        spendVsRevenue: '\u0420\u0430\u0441\u0445\u043e\u0434 vs \u0414\u043e\u0445\u043e\u0434',
+        spendByChannel: '\u0420\u0430\u0441\u0445\u043e\u0434 \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c',
+        payByDay: '\u041e\u043f\u043b\u0430\u0442\u044b \u043f\u043e \u0434\u043d\u044f\u043c',
+        spend: '\u0420\u0430\u0441\u0445\u043e\u0434',
+        paymentsQty: '\u041e\u043f\u043b\u0430\u0442 (\u0448\u0442)',
+        amountCur: '\u0421\u0443\u043c\u043c\u0430 (\u20bd)',
+        yandex: '\u042f\u043d\u0434\u0435\u043a\u0441',
+        others: '\u0414\u0440\u0443\u0433\u0438\u0435',
+        yan: '\u0420\u0421\u042f',
+        revenue: '\u0414\u043e\u0445\u043e\u0434',
+        dayLabels: ['\u041f\u043d','\u0412\u0442','\u0421\u0440','\u0427\u0442','\u041f\u0442','\u0421\u0431','\u0412\u0441'],
+        funnelBarReg: '\u0420\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438',
+        funnelBarViews: '\u041f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f',
+        funnelBarInvoices: '\u0421\u0447\u0435\u0442\u0430',
+        funnelBarPayments: '\u041e\u043f\u043b\u0430\u0442\u044b',
+        views: '\u041f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f',
+        currency: '\u20bd',
+        navTitle: '\u0410\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 \u0432\u043e\u0440\u043e\u043d\u043a\u0438',
+        navOverview: '\u041e\u0431\u0437\u043e\u0440',
+        navFunnel: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430',
+        navUtm: 'UTM \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430',
+        navFinance: '\u0424\u0438\u043d\u0430\u043d\u0441\u044b'
+      }
+    };
+
+    function tt(key) {
+      return (_s[_lang] && _s[_lang][key] !== undefined) ? _s[_lang][key] : (_s['en'][key] !== undefined ? _s['en'][key] : key);
+    }
+
+    // Language detection and persistence
+    var _isRuBrowser = false;
+    try { _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+      document.getElementById('langBtn').textContent = _lang === 'ru' ? '\ud83c\udf10 \u0420\u0443\u0441\u0441\u043a\u0438\u0439' : '\ud83c\udf10 English';
+      if (typeof updatePromptBar === 'function') updatePromptBar();
+      navigateTo(currentPage);
+    }
+
+    let currentPage = 'overview';
+
+    // JIT Data Generators
+    const generateFunnelData = () => {
+      const days = 7;
+      const registrations = Array.from({ length: days }, () => Math.floor(80 + Math.random() * 50));
+      const webinarViews = registrations.map(r => Math.floor(r * (0.35 + Math.random() * 0.15)));
+      const bills = webinarViews.map(v => Math.floor(v * (0.0 + Math.random() * 0.05)));
+      const payments = bills.map(b => Math.max(0, Math.floor(b * (0.3 + Math.random() * 0.4))));
+      const deposits = payments.map(p => Math.max(0, Math.floor(p * (0.1 + Math.random() * 0.2))));
+
+      return { registrations, webinarViews, bills, payments, deposits };
+    };
+
+    const generateAdSpend = () => {
+      const days = 7;
+      return {
+        rsy: Array.from({ length: days }, () => Math.floor(12000 + Math.random() * 10000)),
+        vk: Array.from({ length: days }, () => Math.floor(4000 + Math.random() * 5000)),
+        yandex: Array.from({ length: days }, () => Math.floor(5000 + Math.random() * 6000))
+      };
+    };
+
+    const generateUTMData = () => {
+      const total = 100;
+      var yandexKey = tt('yandex');
+      var othersKey = tt('others');
+      const utm = {};
+      utm[yandexKey] = Math.floor(total * (0.30 + Math.random() * 0.10));
+      utm['Telegram'] = Math.floor(total * (0.15 + Math.random() * 0.10));
+      utm['VK'] = Math.floor(total * (0.10 + Math.random() * 0.10));
+      utm['YouTube'] = Math.floor(total * (0.08 + Math.random() * 0.08));
+      utm['Instagram'] = Math.floor(total * (0.05 + Math.random() * 0.05));
+      utm[othersKey] = 0;
+      utm[othersKey] = total - Object.values(utm).reduce((a, b) => a + b, 0) + utm[othersKey];
+      return utm;
+    };
+
+    const generatePaymentsData = () => {
+      const days = 7;
+      const counts = Array.from({ length: days }, () => Math.floor(Math.random() * 3));
+      const amounts = counts.map(c => {
+        if (c === 0) return 0;
+        // Prices: 998 or 10200 or 110000
+        const prices = [998, 10200, 110000];
+        let sum = 0;
+        for (let i = 0; i < c; i++) {
+          sum += prices[Math.floor(Math.random() * prices.length)];
+        }
+        return sum;
+      });
+      return { counts, amounts };
+    };
+
+    // Pages
+    const pages = {
+      overview: () => {
+        const funnel = generateFunnelData();
+        const totalReg = funnel.registrations.reduce((a, b) => a + b, 0);
+        const totalViews = funnel.webinarViews.reduce((a, b) => a + b, 0);
+        const totalPayments = funnel.payments.reduce((a, b) => a + b, 0);
+        const payments = generatePaymentsData();
+        const totalRevenue = payments.amounts.reduce((a, b) => a + b, 0);
+        const adSpend = generateAdSpend();
+        const totalSpend = adSpend.rsy.reduce((a, b) => a + b, 0) +
+                          adSpend.vk.reduce((a, b) => a + b, 0) +
+                          adSpend.yandex.reduce((a, b) => a + b, 0);
+        const avgCheck = totalPayments > 0 ? Math.floor(totalRevenue / totalPayments) : 0;
+
+        return `
+          <h1 class="text-3xl font-bold mb-6">${tt('navOverview')}</h1>
+
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('registrations')}</div>
+              <div class="text-3xl font-bold text-blue-600">${totalReg}</div>
+              <div class="text-green-500 text-sm mt-1">${tt('thisWeek')}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('webinarViews')}</div>
+              <div class="text-3xl font-bold text-purple-600">${totalViews}</div>
+              <div class="text-gray-500 text-sm mt-1">${Math.floor(totalViews / totalReg * 100)}% ${tt('conversion')}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('payments')}</div>
+              <div class="text-3xl font-bold text-green-600">${totalPayments}</div>
+              <div class="text-gray-500 text-sm mt-1">${totalRevenue.toLocaleString()} ${tt('currency')}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('adSpend')}</div>
+              <div class="text-3xl font-bold text-red-600">${totalSpend.toLocaleString()} ${tt('currency')}</div>
+              <div class="text-gray-500 text-sm mt-1">ROI: ${((totalRevenue / totalSpend - 1) * 100).toFixed(0)}%</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('regByDay')}</h3>
+              <canvas id="registrationsChart"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('funnel7d')}</h3>
+              <canvas id="funnelChart"></canvas>
+            </div>
+          </div>
+        `;
+      },
+
+      funnel: () => {
+        const funnel = generateFunnelData();
+        const totalReg = funnel.registrations.reduce((a, b) => a + b, 0);
+        const totalViews = funnel.webinarViews.reduce((a, b) => a + b, 0);
+        const totalBills = funnel.bills.reduce((a, b) => a + b, 0);
+        const totalPayments = funnel.payments.reduce((a, b) => a + b, 0);
+        const totalDeposits = funnel.deposits.reduce((a, b) => a + b, 0);
+
+        const convView = Math.floor(totalViews / totalReg * 100);
+        const convBill = totalViews > 0 ? Math.floor(totalBills / totalViews * 100) : 0;
+        const convPayment = totalBills > 0 ? Math.floor(totalPayments / totalBills * 100) : 0;
+
+        return `
+          <h1 class="text-3xl font-bold mb-6">${tt('salesFunnel')}</h1>
+
+          <!-- Funnel Visualization -->
+          <div class="bg-white p-8 rounded-xl shadow mb-8">
+            <div class="max-w-2xl mx-auto">
+              <div class="bg-blue-100 border-l-4 border-blue-600 p-4 mb-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">\ud83c\udfaf ${tt('registrations')}</span>
+                  <span class="text-2xl font-bold text-blue-600">${totalReg}</span>
+                </div>
+              </div>
+              <div class="ml-8 bg-purple-100 border-l-4 border-purple-600 p-4 mb-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">\ud83d\udc40 ${tt('webinarViews')}</span>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold text-purple-600">${totalViews}</div>
+                    <div class="text-sm text-gray-600">${convView}% ${tt('conversion')}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-16 bg-yellow-100 border-l-4 border-yellow-600 p-4 mb-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">\ud83d\udcc4 ${tt('invoices')}</span>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold text-yellow-600">${totalBills}</div>
+                    <div class="text-sm text-gray-600">${convBill}% ${tt('conversion')}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-24 bg-green-100 border-l-4 border-green-600 p-4 mb-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">\ud83d\udcb3 ${tt('payments')}</span>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold text-green-600">${totalPayments}</div>
+                    <div class="text-sm text-gray-600">${convPayment}% ${tt('conversion')}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-32 bg-emerald-100 border-l-4 border-emerald-600 p-4">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">\ud83c\udfe6 ${tt('deposits')}</span>
+                  <span class="text-2xl font-bold text-emerald-600">${totalDeposits}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metrics Table -->
+          <div class="bg-white p-6 rounded-xl shadow">
+            <h3 class="font-semibold mb-4">${tt('dailyMetrics')}</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left">${tt('day')}</th>
+                    <th class="px-4 py-3 text-right">${tt('registrations')}</th>
+                    <th class="px-4 py-3 text-right">${tt('views')}</th>
+                    <th class="px-4 py-3 text-right">${tt('convPct')}</th>
+                    <th class="px-4 py-3 text-right">${tt('invoicesShort')}</th>
+                    <th class="px-4 py-3 text-right">${tt('payments')}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  ${funnel.registrations.map((reg, i) => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-3">${tt('day')} ${i + 1}</td>
+                      <td class="px-4 py-3 text-right font-semibold">${reg}</td>
+                      <td class="px-4 py-3 text-right">${funnel.webinarViews[i]}</td>
+                      <td class="px-4 py-3 text-right text-purple-600">${Math.floor(funnel.webinarViews[i] / reg * 100)}%</td>
+                      <td class="px-4 py-3 text-right">${funnel.bills[i]}</td>
+                      <td class="px-4 py-3 text-right font-semibold text-green-600">${funnel.payments[i]}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      },
+
+      utm: () => {
+        const utmData = generateUTMData();
+        const utmEntries = Object.entries(utmData);
+        const total = Object.values(utmData).reduce((a, b) => a + b, 0);
+
+        // Generate payments by UTM (proportional to registrations)
+        const utmPayments = {};
+        utmEntries.forEach(([utm, regs]) => {
+          const convRate = 0.02 + Math.random() * 0.03; // 2-5% conversion
+          utmPayments[utm] = Math.floor(regs * convRate);
+        });
+
+        return `
+          <h1 class="text-3xl font-bold mb-6">${tt('navUtm')}</h1>
+
+          <!-- UTM Stats -->
+          <div class="grid grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('totalReg')}</div>
+              <div class="text-3xl font-bold text-blue-600">${total}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('activeChannels')}</div>
+              <div class="text-3xl font-bold text-purple-600">${utmEntries.length}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('bestChannel')}</div>
+              <div class="text-2xl font-bold text-green-600">${utmEntries.sort((a, b) => b[1] - a[1])[0][0]}</div>
+              <div class="text-sm text-gray-500">${utmEntries[0][1]} ${tt('registrationsLC')}</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('regByChannel')}</h3>
+              <canvas id="utmDoughnutChart"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('payByChannel')}</h3>
+              <canvas id="utmPaymentsChart"></canvas>
+            </div>
+          </div>
+
+          <!-- UTM Table -->
+          <div class="bg-white p-6 rounded-xl shadow">
+            <h3 class="font-semibold mb-4">${tt('channelDetails')}</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left">${tt('channelUtm')}</th>
+                    <th class="px-4 py-3 text-right">${tt('registrations')}</th>
+                    <th class="px-4 py-3 text-right">${tt('sharePct')}</th>
+                    <th class="px-4 py-3 text-right">${tt('payments')}</th>
+                    <th class="px-4 py-3 text-right">${tt('conversionCap')}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  ${utmEntries.sort((a, b) => b[1] - a[1]).map(([utm, regs]) => {
+                    const payments = utmPayments[utm];
+                    const conv = regs > 0 ? (payments / regs * 100).toFixed(1) : 0;
+                    return `
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-semibold">${utm}</td>
+                        <td class="px-4 py-3 text-right">${regs}</td>
+                        <td class="px-4 py-3 text-right text-gray-600">${(regs / total * 100).toFixed(0)}%</td>
+                        <td class="px-4 py-3 text-right font-semibold text-green-600">${payments}</td>
+                        <td class="px-4 py-3 text-right ${conv >= 3 ? 'text-green-600' : 'text-gray-600'}">${conv}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      },
+
+      finance: () => {
+        const adSpend = generateAdSpend();
+        const payments = generatePaymentsData();
+
+        const totalSpend = adSpend.rsy.reduce((a, b) => a + b, 0) +
+                          adSpend.vk.reduce((a, b) => a + b, 0) +
+                          adSpend.yandex.reduce((a, b) => a + b, 0);
+        const totalRevenue = payments.amounts.reduce((a, b) => a + b, 0);
+        const totalPayments = payments.counts.reduce((a, b) => a + b, 0);
+        const avgCheck = totalPayments > 0 ? Math.floor(totalRevenue / totalPayments) : 0;
+        const roi = ((totalRevenue / totalSpend - 1) * 100).toFixed(1);
+
+        return `
+          <h1 class="text-3xl font-bold mb-6">${tt('finAnalytics')}</h1>
+
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('adSpend')}</div>
+              <div class="text-3xl font-bold text-red-600">${totalSpend.toLocaleString()} ${tt('currency')}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('revPayments')}</div>
+              <div class="text-3xl font-bold text-green-600">${totalRevenue.toLocaleString()} ${tt('currency')}</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">ROI</div>
+              <div class="text-3xl font-bold ${roi >= 0 ? 'text-green-600' : 'text-red-600'}">${roi >= 0 ? '+' : ''}${roi}%</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <div class="text-gray-500 text-sm mb-1">${tt('avgCheck')}</div>
+              <div class="text-3xl font-bold text-blue-600">${avgCheck.toLocaleString()} ${tt('currency')}</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('spendVsRevenue')}</h3>
+              <canvas id="spendRevenueChart"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow">
+              <h3 class="font-semibold mb-4">${tt('spendByChannel')}</h3>
+              <canvas id="adSpendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Payments Table -->
+          <div class="bg-white p-6 rounded-xl shadow">
+            <h3 class="font-semibold mb-4">${tt('payByDay')}</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left">${tt('day')}</th>
+                    <th class="px-4 py-3 text-right">${tt('spend')}</th>
+                    <th class="px-4 py-3 text-right">${tt('paymentsQty')}</th>
+                    <th class="px-4 py-3 text-right">${tt('amountCur')}</th>
+                    <th class="px-4 py-3 text-right">ROI</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  ${payments.counts.map((count, i) => {
+                    const spend = adSpend.rsy[i] + adSpend.vk[i] + adSpend.yandex[i];
+                    const revenue = payments.amounts[i];
+                    const dayRoi = spend > 0 ? ((revenue / spend - 1) * 100).toFixed(0) : 0;
+                    return `
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">${tt('day')} ${i + 1}</td>
+                        <td class="px-4 py-3 text-right text-red-600">${spend.toLocaleString()} ${tt('currency')}</td>
+                        <td class="px-4 py-3 text-right font-semibold">${count}</td>
+                        <td class="px-4 py-3 text-right font-bold text-green-600">${revenue.toLocaleString()} ${tt('currency')}</td>
+                        <td class="px-4 py-3 text-right ${dayRoi >= 0 ? 'text-green-600' : 'text-red-600'}">${dayRoi >= 0 ? '+' : ''}${dayRoi}%</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+    };
+
+    function updateNavLabels() {
+      document.getElementById('sidebarTitle').textContent = '\ud83d\udcca ' + tt('navTitle');
+      document.querySelectorAll('.nav-link[data-nav]').forEach(function(btn) {
+        btn.textContent = btn.dataset.icon + ' ' + tt(btn.dataset.nav);
+      });
+    }
+
+    function navigateTo(page) {
+      currentPage = page;
+      document.getElementById('mainContent').innerHTML = pages[page]();
+
+      // Update nav labels + active state
+      updateNavLabels();
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.dataset.page === page) {
+          link.classList.add('bg-blue-600');
+          link.classList.remove('hover:bg-gray-700');
+        } else {
+          link.classList.remove('bg-blue-600');
+          link.classList.add('hover:bg-gray-700');
+        }
+      });
+
+      // Render charts after DOM update
+      setTimeout(() => renderCharts(page), 50);
+    }
+
+    function renderCharts(page) {
+      if (page === 'overview') {
+        const funnel = generateFunnelData();
+        const labels = tt('dayLabels');
+
+        // Registrations line chart
+        new Chart(document.getElementById('registrationsChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: tt('registrations'),
+              data: funnel.registrations,
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // Funnel bar chart
+        const totalReg = funnel.registrations.reduce((a, b) => a + b, 0);
+        const totalViews = funnel.webinarViews.reduce((a, b) => a + b, 0);
+        const totalBills = funnel.bills.reduce((a, b) => a + b, 0);
+        const totalPayments = funnel.payments.reduce((a, b) => a + b, 0);
+
+        new Chart(document.getElementById('funnelChart'), {
+          type: 'bar',
+          data: {
+            labels: [tt('funnelBarReg'), tt('funnelBarViews'), tt('funnelBarInvoices'), tt('funnelBarPayments')],
+            datasets: [{
+              data: [totalReg, totalViews, totalBills, totalPayments],
+              backgroundColor: ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981']
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+
+      if (page === 'utm') {
+        const utmData = generateUTMData();
+        const utmEntries = Object.entries(utmData);
+
+        // Doughnut chart
+        new Chart(document.getElementById('utmDoughnutChart'), {
+          type: 'doughnut',
+          data: {
+            labels: utmEntries.map(([utm]) => utm),
+            datasets: [{
+              data: utmEntries.map(([_, count]) => count),
+              backgroundColor: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6B7280']
+            }]
+          },
+          options: { responsive: true }
+        });
+
+        // Payments bar chart
+        const utmPayments = {};
+        utmEntries.forEach(([utm, regs]) => {
+          utmPayments[utm] = Math.floor(regs * (0.02 + Math.random() * 0.03));
+        });
+
+        new Chart(document.getElementById('utmPaymentsChart'), {
+          type: 'bar',
+          data: {
+            labels: utmEntries.map(([utm]) => utm),
+            datasets: [{
+              label: tt('payments'),
+              data: Object.values(utmPayments),
+              backgroundColor: '#10B981'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+
+      if (page === 'finance') {
+        const adSpend = generateAdSpend();
+        const payments = generatePaymentsData();
+        const labels = tt('dayLabels');
+
+        // Calculate daily totals
+        const dailySpend = adSpend.rsy.map((rsy, i) => rsy + adSpend.vk[i] + adSpend.yandex[i]);
+
+        // Spend vs Revenue
+        new Chart(document.getElementById('spendRevenueChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: tt('spend'),
+                data: dailySpend,
+                borderColor: '#EF4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                tension: 0.3,
+                fill: true
+              },
+              {
+                label: tt('revenue'),
+                data: payments.amounts,
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.3,
+                fill: true
+              }
+            ]
+          },
+          options: { responsive: true }
+        });
+
+        // Ad spend by channel
+        new Chart(document.getElementById('adSpendChart'), {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: tt('yan'),
+                data: adSpend.rsy,
+                backgroundColor: '#3B82F6'
+              },
+              {
+                label: 'VK',
+                data: adSpend.vk,
+                backgroundColor: '#8B5CF6'
+              },
+              {
+                label: tt('yandex'),
+                data: adSpend.yandex,
+                backgroundColor: '#F59E0B'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { stacked: true },
+              y: { stacked: true }
+            }
+          }
+        });
+      }
+    }
+
+    // Initial load
+    // Prompt bar data
+    var _promptTitle = {
+      ru: '\u00ab\u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u0431\u043e\u0440 \u0438 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0438 \u043f\u043e \u0432\u0441\u0435\u0439 \u0432\u043e\u0440\u043e\u043d\u043a\u0435 \u043f\u0440\u043e\u0434\u0430\u0436 \u2014 \u043e\u0442 \u0440\u0435\u043a\u043b\u0430\u043c\u044b \u0434\u043e \u043e\u043f\u043b\u0430\u0442/\u0434\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0432\u00bb',
+      en: '\u201CAutomate collecting and filling analytics for the entire sales funnel \u2014 from ads to payments/deposits\u201D'
+    };
+    var _fullPrompt = '\u0410\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0437\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u0431\u043e\u0440 \u0438 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0438 \u043f\u043e \u0432\u0441\u0435\u0439 \u0432\u043e\u0440\u043e\u043d\u043a\u0435 \u043f\u0440\u043e\u0434\u0430\u0436 \u2014 \u043e\u0442 \u0440\u0435\u043a\u043b\u0430\u043c\u044b \u0434\u043e \u043e\u043f\u043b\u0430\u0442/\u0434\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0432. \u0420\u0430\u0441\u0445\u043e\u0434 \u043d\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443, \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438, \u043f\u043e\u0441\u0435\u0449\u0435\u043d\u0438\u044f \u0432\u0435\u0431\u0438\u043d\u0430\u0440\u0430, \u0432\u044b\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0435 \u0441\u0447\u0435\u0442\u0430, \u043e\u043f\u043b\u0430\u0442\u044b, \u0434\u0435\u043f\u043e\u0437\u0438\u0442\u044b, \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0438, \u0440\u0430\u0437\u0431\u0438\u0432\u043a\u0430 \u043f\u043e UTM-\u043c\u0435\u0442\u043a\u0430\u043c';
+    var _ctaLabel = { ru: '\u0425\u043e\u0447\u0443 \u0442\u0430\u043a\u043e\u0439 \u0436\u0435', en: 'I want the same' };
+
+    function updatePromptBar() {
+      document.getElementById('promptText').textContent = _promptTitle[_lang] || _promptTitle['en'];
+      var btn = document.getElementById('ctaBtn');
+      btn.textContent = _ctaLabel[_lang] || _ctaLabel['en'];
+      btn.href = '/?start=example_funnel-analytics&prompt=' + encodeURIComponent(_fullPrompt);
+      btn.onclick = function(e) {
+        var insideIframe = false;
+        try { insideIframe = window.parent && window.parent !== window; } catch (_e) {}
+        if (insideIframe) {
+          e.preventDefault();
+          try {
+            window.parent.postMessage({ type: 'open_webchat_prompt', prompt: _fullPrompt }, '*');
+          } catch (_e) {}
+          return;
+        }
+        var extId = '';
+        try { extId = String(new URLSearchParams(window.location.search).get('ext_id') || '').trim(); } catch (_e) {}
+        if (!extId) return;
+        try {
+          if (window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+            e.preventDefault();
+            chrome.runtime.sendMessage(extId, { type: 'open_webchat_prompt', prompt: _fullPrompt });
+          }
+        } catch (_e) {}
+      };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (_isRuBrowser) {
+        var lt = document.getElementById('langToggle');
+        if (lt) lt.style.display = '';
+        document.getElementById('langBtn').textContent = _lang === 'ru' ? '\ud83c\udf10 \u0420\u0443\u0441\u0441\u043a\u0438\u0439' : '\ud83c\udf10 English';
+      }
+      updatePromptBar();
+      navigateTo('overview');
+
+      // Hide prompt bar on scroll down, show on scroll up
+      var _lastScroll = 0;
+      var _bar = document.getElementById('promptBar');
+      var _main = document.querySelector('main');
+      if (_main && _bar) {
+        _main.addEventListener('scroll', function() {
+          var st = _main.scrollTop;
+          _bar.style.transform = st > _lastScroll && st > 40 ? 'translateY(100%)' : 'translateY(0)';
+          _lastScroll = st;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

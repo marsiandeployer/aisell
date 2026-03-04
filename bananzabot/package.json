@@ -1,0 +1,36 @@
+{
+  "name": "bananzabot",
+  "version": "1.0.0",
+  "description": "Telegram Bot Constructor with Analytics",
+  "main": "bananzabot.ts",
+  "scripts": {
+    "start": "tsx bananzabot.ts",
+    "start:testbot": "tsx bananzatestbot.ts",
+    "test": "node tests/analytics.test.js && node tests/notifications.test.js && tsx tests/inline_buttons.test.ts && node tests/history_persistence.test.js && node tests/bots_manager_dedupe.test.js && node tests/bots_manager_metadata.test.js && node tests/input_limits.test.js && node tests/utilities.test.js && node tests/retry_429.test.js",
+    "test:e2e": "node tests/runE2ETests.js",
+    "test:e2e:crm": "node tests/crm_followup_e2e.test.js",
+    "test:pyrogram:create": "python3 tests/e2e_pyrogram_test.py",
+    "test:pyrogram:ready": "python3 tests/e2e_pyrogram_ready_bot_test.py",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "healthcheck": "node healthcheck.js",
+    "analytics": "node -e \"const a = require('./analytics'); console.log(a.formatMetricsForTelegram(a.collectBotMetrics()));\"",
+    "pm2:start": "pm2 start ecosystem.config.js --only bananzabot",
+    "pm2:restart": "pm2 restart bananzabot",
+    "pm2:stop": "pm2 stop bananzabot",
+    "pm2:logs": "pm2 logs bananzabot --lines 100"
+  },
+  "dependencies": {
+    "@types/node-cron": "^3.0.11",
+    "axios": "^1.8.4",
+    "dotenv": "^16.4.7",
+    "node-cron": "^4.2.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "telegram": "^2.26.22"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@types/node-telegram-bot-api": "^0.64.13",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,63 @@
+# Showcase Configuration
+# Created: 2026-03-04
+
+showcase:
+  slug: client-report
+  product: simple_dashboard
+  type: spa
+  prompt: "Create a work progress report for client — spec (TZ) with numbered sections, completed tasks, sprint report and PDF export"
+  prompt_title: "Generate client report — specs, tasks, timelines"
+  caption: "Client Work Report — spec completion, sprint report and PDF export in one dashboard"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+
+  pages:
+    - id: overview
+      title: "Overview"
+      components: [kpi_cards, donut_chart, bar_chart, activity_feed, budget_tracker]
+    - id: spec
+      title: "Specification (TZ)"
+      components: [progress_bar, filter_buttons, doc_sections_tree]
+    - id: report
+      title: "Sprint Report"
+      components: [sprint_header, completed_checklist, in_progress_list, planned_list]
+    - id: export
+      title: "Export PDF"
+      components: [print_preview, letterhead, summary_table, task_tables, print_button]
+
+  business_context:
+    domain: freelance / agency / project management
+    data_sources:
+      - Google Sheets (default)
+      - GitHub Issues
+      - Manual entry
+    project_type: web development / any project
+    sample_project: Corporate website redesign (5 sections, 18 spec items, 5 sprints)
+    sample_spec_sections: [Goals, Design, Technical, Pages, Integrations]
+
+  design:
+    sidebar: dark (#1e293b)
+    main: light (#f1f5f9)
+    primary: "#3b82f6"
+    success: "#10b981"
+    font: system-ui
+
+jit_data_generation:
+  approach: "Spec items and stats computed from static data array on each page load"
+  spec_items: 18
+  sections: 5
+  sprint_current: 3
+  sprint_total: 5
+  progress_pct: 67
+  budget: { allocated: 150000, spent: 97500 }
+
+screenshot:
+  resolution: 1280x800
+  default_page: overview
+
+reproduction_steps:
+  - "1. Copy demo.html to target showcase directory"
+  - "2. Run screenshot_bilingual.js to generate EN + RU screenshots"
+  - "3. Add card to showcases/index.html with data-img-en / data-img-ru"

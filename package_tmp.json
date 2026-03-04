@@ -1,0 +1,7 @@
+{
+  "name": "screenshot-tmp",
+  "version": "1.0.0",
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}

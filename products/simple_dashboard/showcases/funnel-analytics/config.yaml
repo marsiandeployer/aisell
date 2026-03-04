@@ -1,0 +1,328 @@
+# Showcase Configuration
+# Product: SimpleDashboard
+# Created: 2026-02-19
+
+showcase:
+  slug: funnel-analytics
+  product: simple_dashboard
+  type: spa
+
+  prompt: "Автоматизировать сбор и заполнение аналитики по всей воронке продаж — от рекламы до оплат/депозитов. Расход на рекламу, регистрации, посещения вебинара, выставленные счета, оплаты, депозиты, конверсии, разбивка по UTM-меткам"
+
+  prompt_title: "Автоматизировать сбор и заполнение аналитики по всей воронке продаж — от рекламы до оплат/депозитов"
+
+  caption: "Funnel Analytics Dashboard - Sales & UTM Tracking"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  data_generation: jit  # JIT (Just-in-Time) approach
+
+  pages:
+    - id: overview
+      title: "Overview"
+      icon: "📈"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics:
+            - label: "Регистрации"
+              format: number
+              trend: positive
+            - label: "Посещения вебинара"
+              format: number
+              conversion: true
+            - label: "Оплаты"
+              format: number
+              with_revenue: true
+            - label: "Расход на рекламу"
+              format: currency
+              roi: true
+
+        - type: line_chart
+          title: "Регистрации по дням"
+          data: 7_days_registrations
+
+        - type: bar_chart
+          title: "Воронка (7 дней)"
+          data: funnel_stages
+
+    - id: funnel
+      title: "Воронка продаж"
+      icon: "🔽"
+      components:
+        - type: funnel_visualization
+          stages:
+            - Регистрации
+            - Посещения вебинара
+            - Выставленные счета
+            - Оплаты
+            - Депозиты
+
+        - type: table
+          title: "Метрики по дням"
+          columns:
+            - День
+            - Регистрации
+            - Посещения
+            - Конв. %
+            - Счета
+            - Оплаты
+
+    - id: utm
+      title: "UTM Analytics"
+      icon: "🔗"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics:
+            - label: "Всего регистраций"
+              format: number
+            - label: "Активных каналов"
+              format: number
+            - label: "Лучший канал"
+              format: text
+
+        - type: doughnut_chart
+          title: "Регистрации по каналам"
+          utm_sources:
+            - Яндекс
+            - Telegram
+            - VK
+            - YouTube
+            - Instagram
+            - Другие
+
+        - type: bar_chart
+          title: "Оплаты по каналам"
+          data: utm_payments
+
+        - type: table
+          title: "Детальная статистика по каналам"
+          columns:
+            - Канал (UTM)
+            - Регистрации
+            - Доля %
+            - Оплаты
+            - Конверсия
+
+    - id: finance
+      title: "Финансовая аналитика"
+      icon: "💰"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics:
+            - label: "Расход на рекламу"
+              format: currency
+            - label: "Доход (оплаты)"
+              format: currency
+            - label: "ROI"
+              format: percentage
+            - label: "Средний чек"
+              format: currency
+
+        - type: line_chart
+          title: "Расход vs Доход"
+          datasets:
+            - Расход (красный)
+            - Доход (зелёный)
+
+        - type: bar_chart
+          title: "Расход по каналам"
+          channels:
+            - РСЯ
+            - VK
+            - Яндекс
+          stacked: true
+
+        - type: table
+          title: "Оплаты по дням"
+          columns:
+            - День
+            - Расход
+            - Оплат (шт)
+            - Сумма (₽)
+            - ROI
+
+  design:
+    layout: sidebar_left
+    sidebar_width: 256px
+    sidebar_color: "bg-gray-900"
+    main_area_color: "bg-gray-50"
+
+    colors:
+      primary: "blue-600"
+      success: "green-500"
+      warning: "yellow-500"
+      danger: "red-500"
+      chart_palette:
+        - "#3B82F6"  # Blue
+        - "#10B981"  # Green
+        - "#F59E0B"  # Yellow
+        - "#EF4444"  # Red
+        - "#8B5CF6"  # Purple
+        - "#6B7280"  # Gray
+
+    fonts:
+      heading: "font-bold"
+      body: "font-normal"
+      metrics: "font-bold text-3xl"
+
+  interactivity:
+    page_switching: instant  # Hash-based routing, no reload
+    chart_animations: true
+    hover_effects: true
+    active_nav_highlight: bg-blue-600
+
+jit_data_generation:
+  approach: "Generate random but realistic data based on real Google Sheets structure"
+
+  real_data_reference:
+    source: "Google Sheets funnel analytics"
+    spreadsheet_id: "1A9hgTKQERni-_SB0hQMOQCNQ-FP2pJhXrdaR068CB_o"
+
+    structure:
+      registrations_daily: "~80-130 per day"
+      webinar_views_conversion: "35-50%"
+      bills_conversion: "0-5% of views"
+      payments_conversion: "30-70% of bills"
+      payment_amounts: [998, 10200, 110000]  # RUB
+
+      ad_spend_channels:
+        rsy: "12000-22000 RUB/day"
+        vk: "4000-9000 RUB/day"
+        yandex: "5000-11000 RUB/day"
+
+      utm_sources:
+        - name: "Яндекс"
+          share: 0.30-0.40
+        - name: "Telegram"
+          share: 0.15-0.25
+        - name: "VK"
+          share: 0.10-0.20
+        - name: "YouTube"
+          share: 0.08-0.16
+        - name: "Instagram"
+          share: 0.05-0.10
+
+  generators:
+    funnel_data:
+      algorithm: |
+        const days = 7;
+        const registrations = Array.from({ length: days }, () => Math.floor(80 + Math.random() * 50));
+        const webinarViews = registrations.map(r => Math.floor(r * (0.35 + Math.random() * 0.15)));
+        const bills = webinarViews.map(v => Math.floor(v * (0.0 + Math.random() * 0.05)));
+        const payments = bills.map(b => Math.max(0, Math.floor(b * (0.3 + Math.random() * 0.4))));
+        return { registrations, webinarViews, bills, payments };
+
+    ad_spend:
+      algorithm: |
+        const days = 7;
+        return {
+          rsy: Array.from({ length: days }, () => Math.floor(12000 + Math.random() * 10000)),
+          vk: Array.from({ length: days }, () => Math.floor(4000 + Math.random() * 5000)),
+          yandex: Array.from({ length: days }, () => Math.floor(5000 + Math.random() * 6000))
+        };
+
+    utm_data:
+      algorithm: |
+        const total = 100;
+        const utm = {
+          'Яндекс': Math.floor(total * (0.30 + Math.random() * 0.10)),
+          'Telegram': Math.floor(total * (0.15 + Math.random() * 0.10)),
+          'VK': Math.floor(total * (0.10 + Math.random() * 0.10)),
+          'YouTube': Math.floor(total * (0.08 + Math.random() * 0.08)),
+          'Instagram': Math.floor(total * (0.05 + Math.random() * 0.05))
+        };
+        utm['Другие'] = total - Object.values(utm).reduce((a, b) => a + b, 0) + utm['Другие'];
+        return utm;
+
+    payments_data:
+      algorithm: |
+        const days = 7;
+        const counts = Array.from({ length: days }, () => Math.floor(Math.random() * 3));
+        const amounts = counts.map(c => {
+          if (c === 0) return 0;
+          const prices = [998, 10200, 110000];
+          let sum = 0;
+          for (let i = 0; i < c; i++) {
+            sum += prices[Math.floor(Math.random() * prices.length)];
+          }
+          return sum;
+        });
+        return { counts, amounts };
+
+screenshot:
+  resolution: 1280x800
+  format: PNG
+  caption_height: 50px
+  content_height: 750px
+
+  variants:
+    - screenshot.png           # Original from Puppeteer
+    - screenshot-1280x800.png  # Chrome Web Store format
+    - screenshot-640x400.png   # Thumbnail format
+
+files:
+  - demo.html      # Full interactive SPA demo with 4 pages
+  - page.html      # Static screenshot page (Overview screen)
+  - config.yaml    # This file (prompt, prompt_title, caption)
+
+deployment:
+  demo_url: "/showcases/funnel-analytics/demo"
+  screenshot_url: "/showcases/funnel-analytics/screenshot-1280x800.png"
+  gallery_page: "/showcases"
+
+technical_notes:
+  - "SPA with hash-based routing (#overview, #funnel, #utm, #finance)"
+  - "JIT data generation using real Google Sheets patterns"
+  - "Instant page switching without reload (navigateTo function)"
+  - "Chart.js for all visualizations"
+  - "Active navigation highlighting (bg-blue-600)"
+  - "Responsive grid layouts for KPI cards"
+  - "setTimeout(50ms) before chart rendering for DOM update"
+  - "Real data structure based on actual funnel: registrations → webinar → bills → payments → deposits"
+  - "UTM breakdown based on actual channels: Яндекс, Telegram, VK, YouTube, Instagram"
+
+automation_potential:
+  data_sources:
+    - name: "GetCourse API"
+      endpoints:
+        - /api/user/user/index?segment_id=33412587  # Регистрации
+        - /api/user/user/index?segment_id=33412588  # Посещения вебинара
+        - /api/sales/deal/index?segment_id=33412601  # Выставленные счета
+        - /api/sales/control/payment/index?segment_id=33412602  # Платежи
+      notes: "Can fetch real-time data instead of manual entry"
+
+    - name: "Яндекс.Директ API"
+      purpose: "Automatic ad spend tracking by channel"
+      notes: "Current manual entry from /ad-spend spreadsheet"
+
+    - name: "Gmail/Telegram API"
+      purpose: "Parse email/Telegram campaign metrics"
+      notes: "Currently tracked in separate 'Письма' / 'Письма ТГ' tabs"
+
+  implementation:
+    approach: "Google Apps Script with timed triggers"
+    frequency: "Every 6-24 hours"
+    output: "Update Google Sheets cells via Sheets API"
+
+reproduction_steps:
+  - "1. Read Google Sheets funnel structure (row 9-21 for metrics, row 44+ for UTM)"
+  - "2. Create demo.html SPA with 4 pages using hash routing"
+  - "3. Implement JIT generators matching real data patterns"
+  - "4. Add Chart.js visualizations (line, bar, doughnut)"
+  - "5. Create page.html wrapper (1280x800) with 50px prompt caption"
+  - "6. Take screenshot using Puppeteer with domcontentloaded"
+  - "7. Resize to multiple formats using ImageMagick"
+  - "8. Update gallery index.html with Live Demo and Screenshot buttons"
+
+related_google_sheets:
+  - id: "1A9hgTKQERni-_SB0hQMOQCNQ-FP2pJhXrdaR068CB_o"
+    name: "Funnel Analytics (копия)"
+    tabs:
+      - "Февраль 2026" - основная воронка
+      - "UTM" - список меток
+      - "Письма" - email статистика
+      - "Письма ТГ" - Telegram статистика

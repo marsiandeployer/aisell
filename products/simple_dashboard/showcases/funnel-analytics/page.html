@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Funnel Analytics Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html, body {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    .showcase-container {
+      height: 100%;
+      position: relative;
+    }
+    .prompt-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px 24px;
+      background: rgba(0,0,0,0.78);
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 600;
+      font-style: italic;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+    .prompt-overlay .cta-btn {
+      flex-shrink: 0;
+      padding: 8px 20px;
+      background: #3B82F6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      font-style: normal;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="showcase-container">
+    <div class="flex h-full">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-gray-900 text-white p-6">
+        <div class="text-2xl font-bold mb-8">📊 Funnel Analytics</div>
+        <nav class="space-y-2">
+          <button onclick="navigateTo('overview')" data-page="overview" class="nav-link w-full text-left px-4 py-3 rounded-lg bg-blue-600">
+            📈 Overview
+          </button>
+          <button onclick="navigateTo('funnel')" data-page="funnel" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition">
+            🔽 Funnel
+          </button>
+          <button onclick="navigateTo('utm')" data-page="utm" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition">
+            🔗 UTM Analytics
+          </button>
+          <button onclick="navigateTo('finance')" data-page="finance" class="nav-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition">
+            💰 Finance
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Main Content - Overview Page -->
+      <main class="flex-1 p-6 overflow-auto">
+        <h1 class="text-3xl font-bold mb-6">Overview</h1>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-white p-5 rounded-xl shadow">
+            <div class="text-gray-500 text-sm mb-1">Регистрации</div>
+            <div class="text-3xl font-bold text-blue-600">693</div>
+            <div class="text-green-500 text-sm mt-1">за неделю</div>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow">
+            <div class="text-gray-500 text-sm mb-1">Посещения вебинара</div>
+            <div class="text-3xl font-bold text-purple-600">292</div>
+            <div class="text-gray-500 text-sm mt-1">42% конверсия</div>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow">
+            <div class="text-gray-500 text-sm mb-1">Оплаты</div>
+            <div class="text-3xl font-bold text-green-600">5</div>
+            <div class="text-gray-500 text-sm mt-1">123 194 ₽</div>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow">
+            <div class="text-gray-500 text-sm mb-1">Расход на рекламу</div>
+            <div class="text-3xl font-bold text-red-600">150 429 ₽</div>
+            <div class="text-gray-500 text-sm mt-1">ROI: -18%</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white p-5 rounded-xl shadow">
+            <h3 class="font-semibold mb-3 text-sm">Регистрации по дням</h3>
+            <div style="position:relative;height:280px"><canvas id="registrationsChart"></canvas></div>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow">
+            <h3 class="font-semibold mb-3 text-sm">Воронка (7 дней)</h3>
+            <div style="position:relative;height:280px"><canvas id="funnelChart"></canvas></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="prompt-overlay" id="promptOverlay">
+    <span id="promptText"></span>
+    <a id="ctaBtn" class="cta-btn" href="#"></a>
+  </div>
+
+  <script>
+    // Промпт-заголовок (bilingual) + full prompt for CTA
+    var _promptTitle = {
+      ru: 'Автоматизировать сбор и заполнение аналитики по всей воронке продаж — от рекламы до оплат/депозитов',
+      en: 'Automate collecting and filling analytics for the entire sales funnel — from ads to payments/deposits'
+    };
+    var _fullPrompt = 'Автоматизировать сбор и заполнение аналитики по всей воронке продаж — от рекламы до оплат/депозитов. Расход на рекламу, регистрации, посещения вебинара, выставленные счета, оплаты, депозиты, конверсии, разбивка по UTM-меткам';
+    var _ctaLabel = { ru: 'Хочу такой же', en: 'I want the same' };
+    var _pLang = (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+    document.getElementById('promptText').textContent = '\u201C' + _promptTitle[_pLang] + '\u201D';
+    var btn = document.getElementById('ctaBtn');
+    btn.textContent = _ctaLabel[_pLang];
+    btn.href = '/?prompt=' + encodeURIComponent(_fullPrompt);
+  </script>
+
+  <script>
+    // Simple data for screenshot
+    const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const registrations = [124, 101, 83, 103, 98, 97, 87];
+
+    // Registrations line chart
+    new Chart(document.getElementById('registrationsChart'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Регистрации',
+          data: registrations,
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    // Funnel bar chart
+    new Chart(document.getElementById('funnelChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Регистрации', 'Посещения', 'Счета', 'Оплаты'],
+        datasets: [{
+          data: [693, 292, 2, 5],
+          backgroundColor: ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    function navigateTo(page) {
+      console.log('Navigate to:', page);
+    }
+  </script>
+</body>
+</html>

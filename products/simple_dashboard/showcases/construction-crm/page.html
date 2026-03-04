@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Construction CRM Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    html, body { width: 1280px; height: 800px; overflow: hidden; margin: 0; padding: 0; }
+    .showcase-container { height: 100%; position: relative; }
+    .prompt-overlay {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: center; gap: 20px;
+      padding: 10px 24px; background: rgba(0,0,0,0.78);
+      color: #fff; font-size: 22px; font-weight: 600;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4); z-index: 100;
+    }
+    .prompt-overlay .cta-btn {
+      flex-shrink: 0; padding: 8px 20px; background: #3B82F6; color: #fff;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none; white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="showcase-container">
+    <div class="flex h-full">
+      <aside class="w-56 bg-gray-900 text-white p-4">
+        <div class="text-lg font-bold mb-6">&#127959;&#65039; CRM Dashboard</div>
+        <nav class="space-y-1.5">
+          <div class="px-3 py-2 rounded-lg bg-blue-600 text-sm">&#128200; Overview</div>
+          <div class="px-3 py-2 rounded-lg text-gray-300 text-sm">&#128640; Pipeline</div>
+          <div class="px-3 py-2 rounded-lg text-gray-300 text-sm">&#128101; Team</div>
+          <div class="px-3 py-2 rounded-lg text-gray-300 text-sm">&#128202; Analytics</div>
+        </nav>
+      </aside>
+      <main class="flex-1 p-5 overflow-hidden">
+        <h1 class="text-xl font-bold mb-4">Overview</h1>
+        <div class="grid grid-cols-4 gap-3 mb-4">
+          <div class="bg-white p-3 rounded-xl shadow">
+            <div class="text-gray-500 text-xs mb-1">Active Deals</div>
+            <div class="text-2xl font-bold text-blue-600">47</div>
+            <div class="text-green-500 text-xs mt-1">&#8593; 12% from last month</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl shadow">
+            <div class="text-gray-500 text-xs mb-1">Total Revenue</div>
+            <div class="text-2xl font-bold text-green-600">$8,450,000</div>
+            <div class="text-green-500 text-xs mt-1">&#8593; 18% from last month</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl shadow">
+            <div class="text-gray-500 text-xs mb-1">Avg. Deal</div>
+            <div class="text-2xl font-bold text-purple-600">$179,787</div>
+          </div>
+          <div class="bg-white p-3 rounded-xl shadow">
+            <div class="text-gray-500 text-xs mb-1">Conversion</div>
+            <div class="text-2xl font-bold text-orange-600">8.5%</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="bg-white p-3 rounded-xl shadow">
+            <h3 class="font-semibold text-sm mb-2">Deals by Status</h3>
+            <div style="position:relative;height:200px"><canvas id="statusChart"></canvas></div>
+          </div>
+          <div class="bg-white p-3 rounded-xl shadow">
+            <h3 class="font-semibold text-sm mb-2">Deals by Service Type</h3>
+            <div style="position:relative;height:200px"><canvas id="typeChart"></canvas></div>
+          </div>
+        </div>
+        <div class="bg-white p-3 rounded-xl shadow">
+          <h3 class="font-semibold text-sm mb-2">Recent Deals</h3>
+          <table class="w-full text-xs">
+            <thead class="bg-gray-50"><tr><th class="px-2 py-1.5 text-left">Client</th><th class="px-2 py-1.5 text-left">Type</th><th class="px-2 py-1.5 text-left">Status</th><th class="px-2 py-1.5 text-right">Budget</th><th class="px-2 py-1.5 text-right">Deadline</th></tr></thead>
+            <tbody class="divide-y">
+              <tr><td class="px-2 py-1.5">Sokolov A.</td><td class="px-2 py-1.5">Construction</td><td class="px-2 py-1.5"><span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700">In Progress</span></td><td class="px-2 py-1.5 text-right">$2,850,000</td><td class="px-2 py-1.5 text-right text-gray-500">2026-05-15</td></tr>
+              <tr><td class="px-2 py-1.5">Petrov D.</td><td class="px-2 py-1.5">Design</td><td class="px-2 py-1.5"><span class="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Cost Calc</span></td><td class="px-2 py-1.5 text-right">$1,200,000</td><td class="px-2 py-1.5 text-right text-gray-500">2026-03-20</td></tr>
+              <tr><td class="px-2 py-1.5">Ivanova M.</td><td class="px-2 py-1.5">Supply</td><td class="px-2 py-1.5"><span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Contract</span></td><td class="px-2 py-1.5 text-right">$680,000</td><td class="px-2 py-1.5 text-right text-gray-500">2026-04-10</td></tr>
+              <tr><td class="px-2 py-1.5">Smirnov K.</td><td class="px-2 py-1.5">Complex</td><td class="px-2 py-1.5"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">New Lead</span></td><td class="px-2 py-1.5 text-right">$4,100,000</td><td class="px-2 py-1.5 text-right text-gray-500">2026-06-01</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="prompt-overlay" id="promptOverlay">
+    <span id="promptText"></span>
+    <a id="ctaBtn" class="cta-btn" href="#"></a>
+  </div>
+
+  <script>
+    var _promptTitle = {
+      ru: '\u0421\u0434\u0435\u043b\u0430\u0439 CRM-\u0434\u0430\u0448\u0431\u043e\u0440\u0434 \u0434\u043b\u044f \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438 \u0441 \u0432\u043e\u0440\u043e\u043d\u043a\u043e\u0439 \u0441\u0434\u0435\u043b\u043e\u043a \u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u043e\u0439 \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u043e\u0432',
+      en: 'Build a CRM dashboard for a construction company with deal pipeline and team workload'
+    };
+    var _fullPrompt = '\u0421\u0434\u0435\u043b\u0430\u0439 CRM-\u0434\u0430\u0448\u0431\u043e\u0440\u0434 \u0434\u043b\u044f \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u043d\u043e\u0439 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438 \u0441 \u0432\u043e\u0440\u043e\u043d\u043a\u043e\u0439 \u0441\u0434\u0435\u043b\u043e\u043a \u043f\u043e \u0441\u0442\u0430\u0442\u0443\u0441\u0430\u043c (\u043d\u043e\u0432\u044b\u0439 \u043b\u0438\u0434, \u0440\u0430\u0441\u0447\u0435\u0442 \u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u0438, \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442, \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0440\u0430\u0431\u043e\u0442, \u043e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c), \u0442\u0438\u043f\u0430\u043c\u0438 \u0443\u0441\u043b\u0443\u0433 (\u043f\u0440\u043e\u0435\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435, \u0441\u0442\u0440\u043e\u0438\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e, \u043f\u043e\u0441\u0442\u0430\u0432\u043a\u0430), \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u043e\u0439 \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u043e\u0432 \u043f\u043e \u0440\u043e\u043b\u044f\u043c \u0438 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u043e\u0439 \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0439';
+    var _ctaLabel = { ru: '\u0425\u043e\u0447\u0443 \u0442\u0430\u043a\u043e\u0439 \u0436\u0435', en: 'I want the same' };
+    var _pLang = (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+    document.getElementById('promptText').textContent = '\u201C' + _promptTitle[_pLang] + '\u201D';
+    var btn = document.getElementById('ctaBtn');
+    btn.textContent = _ctaLabel[_pLang];
+    btn.href = '/?prompt=' + encodeURIComponent(_fullPrompt);
+  </script>
+
+  <script>
+    new Chart(document.getElementById('statusChart'), {
+      type: 'bar',
+      data: {
+        labels: ['New Leads', 'Cost Calc', 'Contract', 'In Progress', 'Feedback', 'Rejected'],
+        datasets: [{ data: [42, 28, 15, 11, 4, 14], backgroundColor: ['#3B82F6','#F59E0B','#8B5CF6','#10B981','#6B7280','#EF4444'] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('typeChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Design', 'Construction', 'Supply', 'Complex'],
+        datasets: [{ data: [18, 14, 22, 5], backgroundColor: ['#3B82F6','#F59E0B','#10B981','#8B5CF6'] }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  </script>
+</body>
+</html>

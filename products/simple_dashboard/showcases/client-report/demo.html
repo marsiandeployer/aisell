@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClientReport — Work Progress Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:#334155;color:#fff; }
+    .nav-link.active { background:#2563EB;color:#fff; }
+    .kpi-card { background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+    .badge { display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600; }
+    .badge-done { background:#d1fae5;color:#065f46; }
+    .badge-prog { background:#dbeafe;color:#1d4ed8; }
+    .badge-pend { background:#f3f4f6;color:#6b7280; }
+    .badge-sprint { background:#ede9fe;color:#5b21b6; }
+    .doc-section { border-left:3px solid #e5e7eb;padding-left:14px;margin-bottom:16px; }
+    .doc-section.s-done { border-left-color:#10b981; }
+    .doc-section.s-prog { border-left-color:#3b82f6; }
+    .doc-section.s-pend { border-left-color:#d1d5db; }
+    .spec-row { display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9; }
+    .spec-row:last-child { border-bottom:none; }
+    .spec-num { font-size:11px;color:#9ca3af;font-weight:700;min-width:32px; }
+    .spec-title { flex:1;font-size:13px;color:#374151; }
+    .check-item { display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;background:#f9fafb;margin-bottom:6px; }
+    .check-icon { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px; }
+    .check-done { background:#d1fae5;color:#065f46; }
+    .check-prog { background:#dbeafe;color:#1d4ed8; }
+    .check-pend { background:#f3f4f6;color:#9ca3af; }
+    .filter-btn { padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all 0.15s; }
+    .filter-btn.active { background:#2563EB;color:#fff;border-color:#2563EB; }
+    .filter-btn:hover:not(.active) { background:#f3f4f6;color:#374151; }
+    .source-chip { display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;font-size:11px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;cursor:pointer; }
+    .source-chip.active { background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; }
+    .progress-ring { transform:rotate(-90deg); }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.2s ease both; }
+    /* print export page */
+    .print-doc { background:#fff;max-width:720px;margin:0 auto;border-radius:8px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,0.08); }
+    .print-section { border-bottom:1px solid #f1f5f9;padding:16px 0; }
+    .print-section:last-child { border-bottom:none; }
+    @media print {
+      #promptBar { display:none !important; }
+      aside { display:none !important; }
+      .no-print { display:none !important; }
+      body { overflow:visible !important; background:#fff !important; }
+      #mainContent { padding:0 !important; background:#fff !important; overflow:visible !important; }
+      .print-doc { box-shadow:none !important; border:none !important; max-width:100% !important; border-radius:0 !important; }
+      .fade-in { animation:none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:14px 32px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(59,130,246,0.5)" href="https://simpledashboard.wpmix.net"></a>
+  </div>
+
+  <div class="flex" style="height:100vh;overflow:hidden">
+    <!-- Sidebar -->
+    <aside class="flex flex-col flex-shrink-0 text-white" style="width:196px;background:#1e293b">
+      <!-- Logo -->
+      <div style="padding:18px 14px 14px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">📋</span>
+          <span style="color:#f1f5f9;font-size:15px;font-weight:800;letter-spacing:-0.02em" id="sidebarApp"></span>
+        </div>
+        <div style="color:#64748b;font-size:10px;margin-top:3px;letter-spacing:0.04em;text-transform:uppercase" id="sidebarSub"></div>
+      </div>
+
+      <!-- Nav -->
+      <nav style="padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <button class="nav-link" data-page="overview" onclick="navigateTo('overview')">
+          <span>📊</span><span data-nav="navOverview"></span>
+        </button>
+        <button class="nav-link" data-page="spec" onclick="navigateTo('spec')">
+          <span>📄</span><span data-nav="navSpec"></span>
+        </button>
+        <button class="nav-link" data-page="report" onclick="navigateTo('report')">
+          <span>📝</span><span data-nav="navReport"></span>
+        </button>
+        <button class="nav-link" data-page="export" onclick="navigateTo('export')">
+          <span>📤</span><span data-nav="navExport"></span>
+        </button>
+      </nav>
+
+      <!-- Project info -->
+      <div style="padding:12px 14px;flex:1">
+        <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px" id="sidebarProjectLabel"></div>
+        <div style="color:#e2e8f0;font-size:12px;font-weight:600;margin-bottom:2px" id="sidebarProjectName"></div>
+        <div style="color:#64748b;font-size:11px" id="sidebarClientName"></div>
+        <div style="margin-top:10px;padding:8px;background:rgba(59,130,246,0.12);border-radius:8px;border:1px solid rgba(59,130,246,0.2)">
+          <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px" id="sidebarSourceLabel"></div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div class="source-chip active" id="srcSheets">🔗 <span id="srcSheetsLabel"></span></div>
+            <div class="source-chip" id="srcGithub">⚙️ <span id="srcGithubLabel"></span></div>
+            <div class="source-chip" id="srcManual">✏️ <span id="srcManualLabel"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lang toggle -->
+      <div id="langToggle" style="display:none;padding:10px 8px;border-top:1px solid rgba(255,255,255,0.06)">
+        <button onclick="toggleLang()" class="nav-link" style="font-size:11px" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="mainContent" class="flex-1 mini-scroll" style="overflow-y:auto;padding:18px 20px 80px 20px;background:#f1f5f9">
+    </main>
+  </div>
+
+  <script>
+  // ===== i18n =====
+  var _s = {
+    en: {
+      appName: 'ClientReport',
+      appSub: 'Work Progress Report',
+      navOverview: 'Overview',
+      navSpec: 'Specification',
+      navReport: 'Sprint Report',
+      navExport: 'Export PDF',
+      projectLabel: 'Project',
+      sourceLabel: 'Data Source',
+      srcSheets: 'Google Sheets',
+      srcGithub: 'GitHub Issues',
+      srcManual: 'Manual Entry',
+      langBtn: '🌐 Русский',
+      // Overview
+      overviewTitle: 'Project Overview',
+      kpiProgressLabel: 'Overall Progress',
+      kpiDoneLabel: 'Tasks Done',
+      kpiSprintLabel: 'Current Sprint',
+      kpiDeadlineLabel: 'Days Left',
+      progressChart: 'Task Status Breakdown',
+      sprintChart: 'Progress by Sprint',
+      activityTitle: 'Recent Activity',
+      budgetTitle: 'Budget',
+      budgetAllocated: 'Allocated',
+      budgetSpent: 'Spent',
+      budgetRemain: 'Remaining',
+      lastUpdated: 'Updated',
+      // Spec
+      specTitle: 'Project Specification',
+      specProgress: 'Completion',
+      specFilter: 'Filter:',
+      filterAll: 'All',
+      filterDone: 'Done',
+      filterProg: 'In Progress',
+      filterPend: 'Pending',
+      specSections: 'sections',
+      specItems: 'items',
+      statusDone: 'Done',
+      statusProg: 'In Progress',
+      statusPend: 'Pending',
+      // Report
+      reportTitle: 'Sprint Report',
+      reportPeriod: 'Period',
+      reportCompleted: 'Completed this sprint',
+      reportInProg: 'In Progress',
+      reportPlanned: 'Planned for Next Sprint',
+      reportExportBtn: 'Export Report',
+      reportSpecRef: 'Spec',
+      // Export
+      exportTitle: 'Report Preview',
+      exportSubtitle: 'Ready to send to client',
+      exportPrint: '🖨️ Print / Save PDF',
+      exportClose: 'Back',
+      exportDocTitle: 'Work Progress Report',
+      exportPrepared: 'Prepared by',
+      exportFor: 'For',
+      exportSprintRow: 'Sprint',
+      exportPeriodRow: 'Period',
+      exportProgressRow: 'Progress',
+      exportTasksRow: 'Tasks completed',
+      exportSection1: 'Completed Work',
+      exportSection2: 'In Progress',
+      exportSection3: 'Next Steps',
+      // Project data
+      projectName: 'Corporate Website Redesign',
+      clientName: 'TechCorp LLC',
+      agencyName: 'Noxon Digital',
+      sprintPeriod: 'Mar 1–7, 2026',
+      nextSprintPeriod: 'Mar 8–14, 2026',
+      // Spec section titles
+      sec1: 'Goals & Objectives',
+      sec2: 'Design Requirements',
+      sec3: 'Technical Requirements',
+      sec4: 'Pages & Structure',
+      sec5: 'Integrations',
+      // Spec items
+      s11: 'Business goals defined',
+      s12: 'Target audience identified',
+      s21: 'Brand style guide approved',
+      s22: 'Color palette finalized',
+      s23: 'Typography system',
+      s31: 'CMS platform (WordPress)',
+      s32: 'Performance (< 2s load)',
+      s33: 'Mobile responsive layout',
+      s34: 'SEO structure & metadata',
+      s41: 'Homepage',
+      s42: 'About page',
+      s43: 'Services section (5 pages)',
+      s44: 'Blog module',
+      s45: 'Contact form + validation',
+      s51: 'CRM integration (AmoCRM)',
+      s52: 'Google Analytics 4',
+      s53: 'Chat widget (JivoSite)',
+      s54: 'Email notifications',
+      // Activity
+      act1: 'Typography system approved by client',
+      act2: 'CMS configured, all plugins installed',
+      act3: 'Services section — 5 pages published',
+      act4: 'Contact form tested (12 test submissions)',
+      act5: 'Email notification templates created',
+      // Prompt bar
+      promptText: 'Generate beautiful client reports — specs, tasks, timelines',
+      ctaBtn: 'Try SimpleDashboard',
+      // months
+      months: ['Jan','Feb','Mar','Apr','May','Jun']
+    },
+    ru: {
+      appName: 'ClientReport',
+      appSub: 'Отчёт о ходе работ',
+      navOverview: 'Обзор',
+      navSpec: 'ТЗ',
+      navReport: 'Отчёт спринта',
+      navExport: 'Экспорт PDF',
+      projectLabel: 'Проект',
+      sourceLabel: 'Источник данных',
+      srcSheets: 'Google Таблицы',
+      srcGithub: 'GitHub Issues',
+      srcManual: 'Ручной ввод',
+      langBtn: '🌐 English',
+      overviewTitle: 'Обзор проекта',
+      kpiProgressLabel: 'Готовность',
+      kpiDoneLabel: 'Задач выполнено',
+      kpiSprintLabel: 'Текущий спринт',
+      kpiDeadlineLabel: 'Дней осталось',
+      progressChart: 'Разбивка по статусам',
+      sprintChart: 'Прогресс по спринтам',
+      activityTitle: 'Последние действия',
+      budgetTitle: 'Бюджет',
+      budgetAllocated: 'Выделено',
+      budgetSpent: 'Потрачено',
+      budgetRemain: 'Остаток',
+      lastUpdated: 'Обновлено',
+      specTitle: 'Техническое задание',
+      specProgress: 'Выполнение',
+      specFilter: 'Фильтр:',
+      filterAll: 'Все',
+      filterDone: 'Готово',
+      filterProg: 'В работе',
+      filterPend: 'В очереди',
+      specSections: 'разделов',
+      specItems: 'пунктов',
+      statusDone: 'Готово',
+      statusProg: 'В работе',
+      statusPend: 'В очереди',
+      reportTitle: 'Отчёт спринта',
+      reportPeriod: 'Период',
+      reportCompleted: 'Выполнено в этом спринте',
+      reportInProg: 'В процессе',
+      reportPlanned: 'Планируется в следующем спринте',
+      reportExportBtn: 'Экспорт отчёта',
+      reportSpecRef: 'ТЗ',
+      exportTitle: 'Предпросмотр отчёта',
+      exportSubtitle: 'Готово к отправке заказчику',
+      exportPrint: '🖨️ Печать / Сохранить PDF',
+      exportClose: 'Назад',
+      exportDocTitle: 'Отчёт о ходе работ',
+      exportPrepared: 'Подготовлено',
+      exportFor: 'Для',
+      exportSprintRow: 'Спринт',
+      exportPeriodRow: 'Период',
+      exportProgressRow: 'Готовность',
+      exportTasksRow: 'Выполнено задач',
+      exportSection1: 'Выполненные работы',
+      exportSection2: 'В процессе',
+      exportSection3: 'Следующие шаги',
+      projectName: 'Редизайн корпоративного сайта',
+      clientName: 'ТехКорп ООО',
+      agencyName: 'Noxon Digital',
+      sprintPeriod: '1–7 мар 2026',
+      nextSprintPeriod: '8–14 мар 2026',
+      sec1: 'Цели и задачи',
+      sec2: 'Требования к дизайну',
+      sec3: 'Технические требования',
+      sec4: 'Страницы и структура',
+      sec5: 'Интеграции',
+      s11: 'Бизнес-цели определены',
+      s12: 'Целевая аудитория описана',
+      s21: 'Стиль-гайд согласован',
+      s22: 'Цветовая палитра утверждена',
+      s23: 'Типографика (система шрифтов)',
+      s31: 'CMS-платформа (WordPress)',
+      s32: 'Производительность (< 2 сек)',
+      s33: 'Адаптивная вёрстка',
+      s34: 'SEO-структура и мета-теги',
+      s41: 'Главная страница',
+      s42: 'О компании',
+      s43: 'Услуги (5 страниц)',
+      s44: 'Блог и новости',
+      s45: 'Форма обратной связи',
+      s51: 'Интеграция с CRM (AmoCRM)',
+      s52: 'Google Analytics 4',
+      s53: 'Чат-виджет (JivoSite)',
+      s54: 'Email-уведомления',
+      act1: 'Типографика согласована с заказчиком',
+      act2: 'CMS настроена, плагины установлены',
+      act3: 'Раздел «Услуги» — 5 страниц опубликованы',
+      act4: 'Форма обратной связи протестирована (12 отправок)',
+      act5: 'Созданы шаблоны email-уведомлений',
+      promptText: 'Красивые отчёты для заказчиков — ТЗ, задачи, прогресс',
+      ctaBtn: 'Попробовать SimpleDashboard',
+      months: ['Янв','Фев','Мар','Апр','Май','Июн']
+    }
+  };
+
+  var _lang = 'en';
+  var _isRuBrowser = false;
+  try { _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+  if (_isRuBrowser) _lang = 'ru';
+  try { var _stored = localStorage.getItem('demo_lang'); if (_stored === 'en' || _stored === 'ru') _lang = _stored; } catch(_e) {}
+  function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+  function toggleLang() {
+    _lang = _lang === 'ru' ? 'en' : 'ru';
+    try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+    renderSidebar();
+    navigateTo(currentPage);
+  }
+
+  // ===== Spec data =====
+  function getSpec() {
+    return [
+      { section: 1, title: tt('sec1'), items: [
+        { id: '1.1', title: tt('s11'), status: 'done', sprint: 1 },
+        { id: '1.2', title: tt('s12'), status: 'done', sprint: 1 }
+      ]},
+      { section: 2, title: tt('sec2'), items: [
+        { id: '2.1', title: tt('s21'), status: 'done', sprint: 2 },
+        { id: '2.2', title: tt('s22'), status: 'done', sprint: 2 },
+        { id: '2.3', title: tt('s23'), status: 'done', sprint: 3 }
+      ]},
+      { section: 3, title: tt('sec3'), items: [
+        { id: '3.1', title: tt('s31'), status: 'done', sprint: 3 },
+        { id: '3.2', title: tt('s32'), status: 'prog', sprint: 3 },
+        { id: '3.3', title: tt('s33'), status: 'prog', sprint: 3 },
+        { id: '3.4', title: tt('s34'), status: 'pend', sprint: 4 }
+      ]},
+      { section: 4, title: tt('sec4'), items: [
+        { id: '4.1', title: tt('s41'), status: 'done', sprint: 2 },
+        { id: '4.2', title: tt('s42'), status: 'done', sprint: 2 },
+        { id: '4.3', title: tt('s43'), status: 'done', sprint: 3 },
+        { id: '4.4', title: tt('s44'), status: 'prog', sprint: 3 },
+        { id: '4.5', title: tt('s45'), status: 'done', sprint: 3 }
+      ]},
+      { section: 5, title: tt('sec5'), items: [
+        { id: '5.1', title: tt('s51'), status: 'done', sprint: 2 },
+        { id: '5.2', title: tt('s52'), status: 'done', sprint: 2 },
+        { id: '5.3', title: tt('s53'), status: 'pend', sprint: 4 },
+        { id: '5.4', title: tt('s54'), status: 'done', sprint: 3 }
+      ]}
+    ];
+  }
+
+  function getStats() {
+    var spec = getSpec();
+    var done = 0, prog = 0, pend = 0, total = 0;
+    spec.forEach(function(s) { s.items.forEach(function(i) {
+      total++; if (i.status==='done') done++; else if (i.status==='prog') prog++; else pend++;
+    }); });
+    return { done: done, prog: prog, pend: pend, total: total, pct: Math.round(done/total*100) };
+  }
+
+  function badgeHtml(status) {
+    if (status === 'done') return '<span class="badge badge-done">✓ ' + tt('statusDone') + '</span>';
+    if (status === 'prog') return '<span class="badge badge-prog">⟳ ' + tt('statusProg') + '</span>';
+    return '<span class="badge badge-pend">○ ' + tt('statusPend') + '</span>';
+  }
+
+  // ===== Pages =====
+  var currentPage = 'overview';
+  var specFilter = 'all';
+
+  var pages = {
+    overview: function() {
+      var st = getStats();
+      var budget = { alloc: 150000, spent: 97500 };
+      var budgetPct = Math.round(budget.spent / budget.alloc * 100);
+      var activity = [
+        { icon: '✅', text: tt('act1'), time: 'Mar 7' },
+        { icon: '✅', text: tt('act2'), time: 'Mar 6' },
+        { icon: '✅', text: tt('act3'), time: 'Mar 5' },
+        { icon: '✅', text: tt('act4'), time: 'Mar 4' },
+        { icon: '✅', text: tt('act5'), time: 'Mar 3' }
+      ];
+      var actHtml = activity.map(function(a) {
+        return '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9">' +
+          '<span style="font-size:14px;margin-top:1px">' + a.icon + '</span>' +
+          '<span style="flex:1;font-size:12px;color:#374151">' + a.text + '</span>' +
+          '<span style="font-size:11px;color:#9ca3af;flex-shrink:0">' + a.time + '</span></div>';
+      }).join('');
+      return '<div class="fade-in">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<h2 style="font-size:17px;font-weight:700;color:#1e293b">' + tt('overviewTitle') + '</h2>' +
+          '<span style="font-size:11px;color:#94a3b8">⟳ ' + tt('lastUpdated') + ': ' + tt('sprintPeriod') + '</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
+          kpiCard(tt('kpiProgressLabel'), st.pct + '%', '📈', '#3b82f6', st.pct + '% of 18 items') +
+          kpiCard(tt('kpiDoneLabel'), st.done + ' / ' + st.total, '✅', '#10b981', '+5 ' + tt('navReport').toLowerCase()) +
+          kpiCard(tt('kpiSprintLabel'), '3 / 5', '🚀', '#8b5cf6', tt('sprintPeriod')) +
+          kpiCard(tt('kpiDeadlineLabel'), '14', '📅', '#f59e0b', tt('nextSprintPeriod')) +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+          '<div class="kpi-card">' +
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:10px">' + tt('progressChart') + '</div>' +
+            '<canvas id="donutChart" style="max-height:160px"></canvas>' +
+          '</div>' +
+          '<div class="kpi-card">' +
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:10px">' + tt('sprintChart') + '</div>' +
+            '<canvas id="barChart" style="max-height:160px"></canvas>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+          '<div class="kpi-card">' +
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px">' + tt('activityTitle') + '</div>' +
+            actHtml +
+          '</div>' +
+          '<div class="kpi-card">' +
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:10px">' + tt('budgetTitle') + '</div>' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+              '<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase">' + tt('budgetAllocated') + '</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#1e293b">₽150 000</div></div>' +
+              '<div style="text-align:right"><div style="font-size:10px;color:#9ca3af;text-transform:uppercase">' + tt('budgetSpent') + '</div>' +
+              '<div style="font-size:18px;font-weight:700;color:#374151">₽97 500</div></div>' +
+            '</div>' +
+            '<div style="background:#f1f5f9;border-radius:8px;height:8px;overflow:hidden;margin-bottom:6px">' +
+              '<div style="background:linear-gradient(90deg,#3b82f6,#2563eb);height:100%;width:' + budgetPct + '%;border-radius:8px;transition:width 0.6s"></div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280">' +
+              '<span>' + budgetPct + '% ' + tt('budgetSpent').toLowerCase() + '</span>' +
+              '<span style="color:#10b981;font-weight:600">₽52 500 ' + tt('budgetRemain').toLowerCase() + '</span>' +
+            '</div>' +
+            '<div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px">' +
+              '<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">' + tt('sourceLabel') + '</div>' +
+              '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+                '<span class="source-chip active">🔗 ' + tt('srcSheets') + '</span>' +
+                '<span class="source-chip">⚙️ ' + tt('srcGithub') + '</span>' +
+                '<span class="source-chip">✏️ ' + tt('srcManual') + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div></div>';
+    },
+
+    spec: function() {
+      var spec = getSpec();
+      var st = getStats();
+      var allItems = [];
+      spec.forEach(function(s) { s.items.forEach(function(i) { allItems.push(i); }); });
+      var filtered = specFilter === 'all' ? allItems : allItems.filter(function(i) { return i.status === specFilter; });
+
+      var filterBar = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px">' +
+        '<span style="font-size:11px;color:#9ca3af;margin-right:2px">' + tt('specFilter') + '</span>' +
+        filterBtn('all', tt('filterAll')) +
+        filterBtn('done', tt('filterDone')) +
+        filterBtn('prog', tt('filterProg')) +
+        filterBtn('pend', tt('filterPend')) +
+        '</div>';
+
+      // Progress bar
+      var pbar = '<div class="kpi-card" style="margin-bottom:14px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<span style="font-size:12px;font-weight:600;color:#374151">' + tt('specProgress') + ': ' + st.done + '/' + st.total + ' ' + tt('specItems') + '</span>' +
+          '<span style="font-size:12px;font-weight:700;color:#10b981">' + st.pct + '%</span>' +
+        '</div>' +
+        '<div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px">' +
+          '<div style="background:linear-gradient(90deg,#10b981,#059669);height:100%;width:' + st.pct + '%;border-radius:6px;transition:width 0.6s"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px">' +
+          statChip('#d1fae5', '#065f46', '✓', st.done, tt('statusDone')) +
+          statChip('#dbeafe', '#1d4ed8', '⟳', st.prog, tt('statusProg')) +
+          statChip('#f3f4f6', '#6b7280', '○', st.pend, tt('statusPend')) +
+        '</div></div>';
+
+      // Sections
+      var docHtml = '';
+      if (specFilter === 'all') {
+        spec.forEach(function(sec) {
+          var sectionDone = sec.items.filter(function(i){return i.status==='done';}).length;
+          var sectionStatus = sec.items.every(function(i){return i.status==='done';}) ? 'done' :
+            sec.items.some(function(i){return i.status==='prog';}) ? 'prog' : 'pend';
+          docHtml += '<div class="doc-section s-' + sectionStatus + '" style="margin-bottom:14px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+              '<span style="font-size:13px;font-weight:700;color:#1e293b">' + sec.section + '. ' + sec.title + '</span>' +
+              '<span style="font-size:11px;color:#9ca3af">' + sectionDone + '/' + sec.items.length + '</span>' +
+            '</div>' +
+            sec.items.map(function(item) {
+              return '<div class="spec-row">' +
+                '<span class="spec-num">' + item.id + '</span>' +
+                '<span class="spec-title">' + item.title + '</span>' +
+                badgeHtml(item.status) +
+              '</div>';
+            }).join('') +
+          '</div>';
+        });
+      } else {
+        filtered.forEach(function(item) {
+          docHtml += '<div class="spec-row" style="padding:8px 0">' +
+            '<span class="spec-num">' + item.id + '</span>' +
+            '<span class="spec-title">' + item.title + '</span>' +
+            badgeHtml(item.status) +
+          '</div>';
+        });
+        if (filtered.length === 0) docHtml = '<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">—</div>';
+      }
+
+      return '<div class="fade-in">' +
+        '<h2 style="font-size:17px;font-weight:700;color:#1e293b;margin-bottom:12px">' + tt('specTitle') + '</h2>' +
+        pbar + filterBar +
+        '<div class="kpi-card" style="padding:16px 20px">' + docHtml + '</div></div>';
+    },
+
+    report: function() {
+      var spec = getSpec();
+      var sprint3done = [], sprint3prog = [], sprint4pend = [];
+      spec.forEach(function(s) { s.items.forEach(function(i) {
+        if (i.sprint === 3 && i.status === 'done') sprint3done.push(i);
+        if (i.sprint === 3 && i.status === 'prog') sprint3prog.push(i);
+        if (i.sprint === 4 && i.status === 'pend') sprint4pend.push(i);
+      }); });
+
+      function checkList(items, cls) {
+        return items.map(function(i) {
+          return '<div class="check-item">' +
+            '<div class="check-icon ' + cls + '">' + (cls==='check-done'?'✓':cls==='check-prog'?'⟳':'○') + '</div>' +
+            '<div style="flex:1">' +
+              '<span class="badge" style="background:#ede9fe;color:#5b21b6;margin-right:6px;font-size:10px">' + tt('reportSpecRef') + ' ' + i.id + '</span>' +
+              '<span style="font-size:13px;color:#374151">' + i.title + '</span>' +
+            '</div></div>';
+        }).join('');
+      }
+
+      return '<div class="fade-in">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<h2 style="font-size:17px;font-weight:700;color:#1e293b">' + tt('reportTitle') + '</h2>' +
+          '<button onclick="navigateTo(\'export\')" style="padding:8px 18px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.4)">' + tt('reportExportBtn') + ' →</button>' +
+        '</div>' +
+        '<div class="kpi-card" style="margin-bottom:12px;background:linear-gradient(135deg,#1e293b,#1e3a5f);color:#fff">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+            '<div><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">' + tt('reportTitle') + '</div>' +
+            '<div style="font-size:18px;font-weight:800;margin-bottom:2px">' + tt('kpiSprintLabel') + ' 3 / 5</div>' +
+            '<div style="font-size:12px;color:#94a3b8">' + tt('reportPeriod') + ': ' + tt('sprintPeriod') + '</div></div>' +
+            '<div style="text-align:right"><div style="font-size:28px;font-weight:800;color:#34d399">67%</div>' +
+            '<div style="font-size:11px;color:#94a3b8">' + sprint3done.length + ' ' + tt('specItems') + '</div></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:12px">' +
+          '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:6px">' +
+            '<span style="font-size:14px">✅</span> ' + tt('reportCompleted') + ' <span class="badge" style="background:#d1fae5;color:#065f46">' + sprint3done.length + '</span>' +
+          '</div>' +
+          '<div>' + checkList(sprint3done, 'check-done') + '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:12px">' +
+          '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:6px">' +
+            '<span style="font-size:14px">🔄</span> ' + tt('reportInProg') + ' <span class="badge badge-prog">' + sprint3prog.length + '</span>' +
+          '</div>' +
+          '<div>' + checkList(sprint3prog, 'check-prog') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;gap:6px">' +
+            '<span style="font-size:14px">📋</span> ' + tt('reportPlanned') + ' <span class="badge badge-pend">' + sprint4pend.length + '</span>' +
+            '<span style="font-size:11px;color:#9ca3af;font-weight:400;margin-left:4px">' + tt('nextSprintPeriod') + '</span>' +
+          '</div>' +
+          '<div>' + checkList(sprint4pend, 'check-pend') + '</div>' +
+        '</div></div>';
+    },
+
+    export: function() {
+      var spec = getSpec();
+      var st = getStats();
+      var sprint3done = [], sprint3prog = [], sprint4pend = [];
+      spec.forEach(function(s) { s.items.forEach(function(i) {
+        if (i.sprint === 3 && i.status === 'done') sprint3done.push(i);
+        if (i.sprint === 3 && i.status === 'prog') sprint3prog.push(i);
+        if (i.sprint === 4 && i.status === 'pend') sprint4pend.push(i);
+      }); });
+
+      function printRow(items, dotColor) {
+        return items.map(function(i) {
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6">' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;display:inline-block"></span>' +
+            '<span style="font-size:10px;font-weight:700;color:#7c3aed;background:#ede9fe;padding:1px 6px;border-radius:6px;white-space:nowrap;flex-shrink:0">' + i.id + '</span>' +
+            '<span style="font-size:13px;color:#1e293b">' + i.title + '</span>' +
+          '</div>';
+        }).join('');
+      }
+
+      return '<div class="fade-in">' +
+        '<div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<div><h2 style="font-size:17px;font-weight:700;color:#1e293b">' + tt('exportTitle') + '</h2>' +
+          '<div style="font-size:12px;color:#9ca3af">' + tt('exportSubtitle') + '</div></div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button onclick="navigateTo(\'report\')" style="padding:8px 16px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;border-radius:8px;font-size:13px;cursor:pointer">' + tt('exportClose') + '</button>' +
+            '<button onclick="window.print()" style="padding:8px 18px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(59,130,246,0.4)">' + tt('exportPrint') + '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="print-doc" style="overflow:hidden">' +
+          // Header
+          '<div style="background:linear-gradient(135deg,#1e293b,#1e3a5f);padding:20px 28px;color:#fff">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<div><div style="font-size:13px;font-weight:800;color:#60a5fa;letter-spacing:0.04em;margin-bottom:2px">' + tt('agencyName') + '</div>' +
+              '<div style="font-size:20px;font-weight:800">' + tt('exportDocTitle') + '</div></div>' +
+              '<div style="text-align:right;font-size:11px;color:#94a3b8">' +
+                '<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:2px">' + tt('projectName') + '</div>' +
+                '<div>' + tt('exportFor') + ': ' + tt('clientName') + '</div>' +
+                '<div>' + tt('sprintPeriod') + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          // Summary grid
+          '<div style="padding:14px 28px;border-bottom:1px solid #f1f5f9;background:#fafafa;display:grid;grid-template-columns:1fr 1fr;gap:6px 24px">' +
+            '<div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:11px;color:#9ca3af;min-width:80px">' + tt('exportSprintRow') + '</span><span style="font-size:13px;font-weight:600;color:#1e293b">3 / 5</span></div>' +
+            '<div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:11px;color:#9ca3af;min-width:80px">' + tt('exportPeriodRow') + '</span><span style="font-size:13px;font-weight:600;color:#1e293b">' + tt('sprintPeriod') + '</span></div>' +
+            '<div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:11px;color:#9ca3af;min-width:80px">' + tt('exportProgressRow') + '</span><span style="font-size:13px;font-weight:600;color:#10b981">' + st.pct + '% (' + st.done + '/' + st.total + ')</span></div>' +
+            '<div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:11px;color:#9ca3af;min-width:80px">' + tt('exportTasksRow') + '</span><span style="font-size:13px;font-weight:600;color:#1e293b">' + sprint3done.length + '</span></div>' +
+          '</div>' +
+          // Completed
+          '<div class="print-section" style="padding:16px 28px">' +
+            '<div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+              '✅ ' + tt('exportSection1') +
+            '</div>' +
+            printRow(sprint3done, '#10b981') +
+          '</div>' +
+          // In progress
+          '<div class="print-section" style="padding:16px 28px">' +
+            '<div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+              '🔄 ' + tt('exportSection2') +
+            '</div>' +
+            printRow(sprint3prog, '#3b82f6') +
+          '</div>' +
+          // Next steps
+          '<div class="print-section" style="padding:16px 28px">' +
+            '<div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+              '📋 ' + tt('exportSection3') + ' (' + tt('nextSprintPeriod') + ')' +
+            '</div>' +
+            printRow(sprint4pend, '#9ca3af') +
+          '</div>' +
+          // Footer
+          '<div style="padding:12px 28px;background:#f8fafc;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:11px;color:#9ca3af">' + tt('exportPrepared') + ': ' + tt('agencyName') + ' • ' + tt('sprintPeriod') + '</span>' +
+            '<span style="font-size:11px;color:#9ca3af">' + tt('projectName') + ' — ' + tt('clientName') + '</span>' +
+          '</div>' +
+        '</div></div>';
+    }
+  };
+
+  function kpiCard(label, value, icon, color, sub) {
+    return '<div class="kpi-card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+        '<span style="font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em">' + label + '</span>' +
+        '<span style="font-size:18px">' + icon + '</span>' +
+      '</div>' +
+      '<div style="font-size:24px;font-weight:800;color:#1e293b;margin-bottom:4px">' + value + '</div>' +
+      '<div style="font-size:11px;color:#9ca3af">' + sub + '</div>' +
+    '</div>';
+  }
+
+  function filterBtn(val, label) {
+    var active = specFilter === val ? ' active' : '';
+    return '<button class="filter-btn' + active + '" onclick="setFilter(\'' + val + '\')">' + label + '</button>';
+  }
+
+  function statChip(bg, color, icon, n, label) {
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;background:' + bg + ';color:' + color + ';font-size:11px;font-weight:600">' +
+      icon + ' ' + n + ' ' + label + '</span>';
+  }
+
+  function setFilter(val) {
+    specFilter = val;
+    document.getElementById('mainContent').innerHTML = pages.spec();
+  }
+
+  function renderCharts(page) {
+    if (page !== 'overview') return;
+    var st = getStats();
+    var donutCtx = document.getElementById('donutChart');
+    if (donutCtx) {
+      new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+          labels: [tt('statusDone'), tt('statusProg'), tt('statusPend')],
+          datasets: [{ data: [st.done, st.prog, st.pend], backgroundColor: ['#10b981','#3b82f6','#d1d5db'], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } } } }
+      });
+    }
+    var barCtx = document.getElementById('barChart');
+    if (barCtx) {
+      new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: ['S1','S2','S3','S4','S5'],
+          datasets: [
+            { label: tt('statusDone'), data: [2, 5, 5, 0, 0], backgroundColor: '#10b981', borderRadius: 4 },
+            { label: tt('statusProg'), data: [0, 0, 3, 0, 0], backgroundColor: '#3b82f6', borderRadius: 4 },
+            { label: tt('statusPend'), data: [0, 0, 0, 2, 1], backgroundColor: '#e5e7eb', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } }, y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, stepSize: 2 } } },
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 10 } } } }
+        }
+      });
+    }
+  }
+
+  function renderSidebar() {
+    var setEl = function(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; };
+    setEl('sidebarApp', tt('appName'));
+    setEl('sidebarSub', tt('appSub'));
+    setEl('sidebarProjectLabel', tt('projectLabel'));
+    setEl('sidebarProjectName', tt('projectName'));
+    setEl('sidebarClientName', tt('clientName'));
+    setEl('sidebarSourceLabel', tt('sourceLabel'));
+    setEl('srcSheetsLabel', tt('srcSheets'));
+    setEl('srcGithubLabel', tt('srcGithub'));
+    setEl('srcManualLabel', tt('srcManual'));
+    document.querySelectorAll('[data-nav]').forEach(function(el) {
+      el.textContent = tt(el.getAttribute('data-nav'));
+    });
+    if (_isRuBrowser) {
+      var lt = document.getElementById('langToggle');
+      var lb = document.getElementById('langBtn');
+      if (lt) lt.style.display = '';
+      if (lb) lb.textContent = tt('langBtn');
+    }
+  }
+
+  function navigateTo(page) {
+    currentPage = page;
+    document.getElementById('mainContent').innerHTML = pages[page]();
+    document.querySelectorAll('.nav-link[data-page]').forEach(function(l) {
+      l.classList.toggle('active', l.getAttribute('data-page') === page);
+    });
+    setTimeout(function() { renderCharts(page); }, 60);
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    renderSidebar();
+    navigateTo('overview');
+
+    // Prompt bar
+    var pb = document.getElementById('promptText');
+    var cb = document.getElementById('ctaBtn');
+    if (pb) pb.textContent = tt('promptText');
+    if (cb) cb.textContent = tt('ctaBtn');
+
+    // Scroll hide/show prompt bar
+    var lastY = 0;
+    document.getElementById('mainContent').addEventListener('scroll', function(e) {
+      var bar = document.getElementById('promptBar');
+      if (!bar) return;
+      var y = e.target.scrollTop;
+      bar.style.transform = y > lastY && y > 60 ? 'translateY(100%)' : '';
+      lastY = y;
+    });
+  });
+  </script>
+</body>
+</html>

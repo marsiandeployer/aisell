@@ -1,0 +1,201 @@
+# Showcase Configuration
+# Product: SimpleDashboard
+# Created: 2026-02-20
+# Updated: 2026-02-20 (v2 — expanded to 7 pages, 8 statuses, 15 roles, auto-tasks)
+
+showcase:
+  slug: construction-crm
+  product: simple_dashboard
+  type: spa
+
+  prompt: >-
+    Сделай CRM-дашборд для строительной компании (дизайн интерьера и строительство):
+    8 статусов бизнес-процесса (новый лид, расчёт и согласование стоимости, контракт-встреча,
+    выполнение работ — проектирование, стройка/отделка, продажа/поставка, комплексный договор,
+    обратная связь и сбор аналитики), 4 типа услуг (проектирование, строительство, поставка, комплексный),
+    15 ролей по 7 отделам (продажи, техотдел, снабжение, проектный, креативный, конструкторский, маркетинг),
+    автозадачи с дедлайнами (созвон 1 день, смета 7 дней, спецификация 5 дней, ГПР 2 дня,
+    ежемесячные акты 26 числа, авторский надзор, 3D-визуализация 14 дней, съёмка раз в 2 недели,
+    сбор отзыва 5 дней), матрица участия ролей по этапам, календарь дедлайнов,
+    аналитика конверсий воронки, выручка по типам услуг и по месяцам, соблюдение сроков,
+    топ-клиенты, лента активности
+
+  prompt_title: "Сделай CRM-дашборд для строительной компании с 8 статусами, 15 ролями и автозадачами"
+
+  caption: "Construction CRM Dashboard - 8-Stage Pipeline, 15 Roles, Auto-Tasks & Deadline Calendar"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  data_generation: jit
+
+  pages:
+    - id: overview
+      title: "Overview"
+      icon: "📈"
+      components:
+        - type: kpi_cards
+          count: 6
+          metrics: [Active Deals, Total Revenue, Avg Deal Size, Conversion Rate, Overdue Tasks, Completed This Month]
+        - type: bar_chart
+          title: "Deals by Status (8 stages)"
+        - type: doughnut_chart
+          title: "Deals by Service Type"
+        - type: line_chart
+          title: "Monthly Revenue Trend"
+        - type: table
+          title: "Recent Deals (8 rows)"
+        - type: activity_feed
+          title: "Recent Activity (8 events)"
+
+    - id: pipeline
+      title: "Pipeline"
+      icon: "🚀"
+      components:
+        - type: kpi_cards
+          count: 8
+          stages: [New Lead, Cost Calc, Contract, Work:Design, Work:Construction, Work:Supply, Work:Complex, Feedback]
+        - type: bar_chart
+          title: "Stage Conversion % (7 transitions)"
+        - type: horizontal_bar
+          title: "Pipeline Flow"
+        - type: table
+          title: "Stage Details (deals, avg time, conversion)"
+        - type: progress_bars
+          title: "Avg Time in Stage"
+
+    - id: deals
+      title: "Deals"
+      icon: "📄"
+      components:
+        - type: filter_bar
+          filters: [By Type]
+        - type: table
+          title: "All Deals (12 rows)"
+          columns: [Client, Type, Status, Budget, Area, Manager, Deadline]
+
+    - id: team
+      title: "Team"
+      icon: "👥"
+      components:
+        - type: bar_chart
+          title: "Tasks by Department (7 depts)"
+        - type: bar_chart
+          title: "Overdue by Department"
+        - type: heatmap_table
+          title: "Role Involvement by Stage (15 roles x 8 stages)"
+        - type: table
+          title: "15 Roles Workload with progress bars"
+          departments: [Sales, Technical, Supply, Design, Creative, Structural, Marketing]
+
+    - id: tasks
+      title: "Auto Tasks"
+      icon: "☑"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics: [Pending, Done, Overdue]
+        - type: bar_chart
+          title: "Tasks by Stage"
+        - type: doughnut_chart
+          title: "Tasks by Status"
+        - type: table
+          title: "Auto Tasks (20 rows)"
+          columns: [Task, Client, Stage, Assignee, Deadline, Status]
+          task_types:
+            - "Созвониться и отправить материалы (1 день)"
+            - "Рассчитать смету (7 дней)"
+            - "Рассчитать спецификацию (5 дней)"
+            - "Согласовать смету с клиентом (2 дня)"
+            - "Подготовить документы по договору (2 дня)"
+            - "Подписать договор и выставить счёт (3 дня)"
+            - "Съёмка обмера объекта (5 дней)"
+            - "Предпроектный анализ (7 дней)"
+            - "3D-визуализация (14 дней)"
+            - "Архитектурный проект (21 день)"
+            - "Доставка образцов (10 дней)"
+            - "Составить ГПР (2 дня)"
+            - "Ежемесячные акты (30 дней)"
+            - "Авторский надзор (постоянно)"
+            - "Съёмка объекта раз в 2 недели"
+            - "Сбор отзыва и видео (5 дней)"
+            - "Заполнить раздел затрат (5 дней)"
+
+    - id: analytics
+      title: "Analytics"
+      icon: "📊"
+      components:
+        - type: line_chart
+          title: "Revenue by Month (12 months)"
+        - type: bar_chart
+          title: "Deals Closed by Month"
+        - type: big_number
+          title: "Avg Deal Cycle (days)"
+        - type: horizontal_bar
+          title: "Conversion Funnel (8 stages)"
+        - type: doughnut_chart
+          title: "Revenue Split by Type"
+        - type: doughnut_chart
+          title: "Deadline Compliance (On Time / Delayed)"
+        - type: progress_bars
+          title: "Top Clients by Revenue"
+
+    - id: calendar
+      title: "Calendar"
+      icon: "📅"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Overdue, This Week, Next Week, Later]
+        - type: task_groups
+          groups: [Overdue, This Week, Next Week, Later]
+
+  design:
+    layout: sidebar_left
+    sidebar_width: "w-56"
+    sidebar_color: "bg-gray-900"
+    main_area_color: "bg-gray-100"
+
+  business_context:
+    pipeline_statuses:
+      - "Новый лид"
+      - "Расчёт и согласование стоимости"
+      - "Контракт-встреча"
+      - "Выполнение работ. Проектирование"
+      - "Выполнение работ. Стройка/Отделка"
+      - "Выполнение работ. Продажа"
+      - "Выполнение работ. Комплексный договор"
+      - "Обратная связь. Сбор аналитики"
+
+    service_types:
+      - "Проектирование"
+      - "Строительство"
+      - "Продажа (поставка материалов/мебели)"
+      - "Комплексный (строительство + поставка)"
+
+    roles:
+      sales:
+        - "Руководитель отдела продаж"
+        - "Менеджер отдела продаж 1"
+        - "Менеджер отдела продаж 2"
+      technical:
+        - "Технический директор"
+        - "Прораб 1"
+        - "Прораб 2"
+      supply:
+        - "Руководитель отдела снабжения"
+        - "Менеджер по черновым материалам"
+        - "Менеджер по чистовым материалам"
+        - "Менеджер по мебели и изделиям"
+      design:
+        - "Руководитель проектного отдела"
+      creative:
+        - "Руководитель креативного отдела (Ведущий архитектор-дизайнер)"
+        - "Визуализатор"
+      structural:
+        - "Руководитель конструктивного отдела (Ведущий архитектор)"
+      marketing:
+        - "Маркетолог"
+
+    roles_count: 15
+    departments: 7

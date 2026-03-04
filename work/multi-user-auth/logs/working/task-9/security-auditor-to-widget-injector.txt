@@ -1,0 +1,27 @@
+FROM: security-auditor-9
+TO: widget-injector
+ROUND: 1
+REPORT_PATH: /root/aisell/work/multi-user-auth/logs/working/task-9/security-auditor-round1.json
+STATUS: changes_requested
+
+Security review complete. Report written to:
+/root/aisell/work/multi-user-auth/logs/working/task-9/security-auditor-round1.json
+
+Summary of findings (10 total: 1 critical, 4 major, 3 minor + 2 minor UX):
+
+CRITICAL (1):
+- Line 6045: ownerPrivateKey is still rendered in profile page HTML — violates tech-spec AC
+
+MAJOR (4):
+- Line 6045: CORS regex allows http:// origins for credential-bearing CORS requests (change to https:// only)
+- Line 5684: REDIRECT_TO_RE inconsistency with CORS regex (habab.ru allowed in CORS but not in redirect allowlist)
+- Line 4147: ownerAddress embedded in JS string literal without format validation (XSS risk if settings.json tampered)
+- Line 4182: ?error=auth_failed not handled in client widget (user left with no error feedback — spec violation)
+- Line 2676: postMessage uses '*' as targetOrigin (keypair private key could be intercepted by malicious embedder)
+
+MINOR (3):
+- Line 6262: dashboardUrl injected into AI prompt without sanitization (prompt injection risk)
+- Line 4090: CSP 'unsafe-inline' negates script injection protection
+- Line 4126: Concurrent tab scenario overwrites CSRF nonce (usability/DoS)
+
+Please fix critical and major issues before re-submission.

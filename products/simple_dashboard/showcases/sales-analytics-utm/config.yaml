@@ -1,0 +1,306 @@
+# Showcase Configuration
+# Product: SimpleDashboard
+# Created: 2026-02-19
+
+showcase:
+  slug: sales-analytics-utm
+  product: simple_dashboard
+  type: spa  # SPA | landing
+
+  prompt: "Сделай аналитику продаж моего курса с учетом источников трафика (utm меток)"
+
+  prompt_title: "Сделай аналитику продаж моего курса с учетом источников трафика (utm меток)"
+
+  caption: "Sales Analytics Dashboard"
+
+demo:
+  format: single_page_application
+  navigation: hash_based  # smooth_scroll | hash_based
+  data_generation: jit  # JIT (Just-in-Time) approach - dynamic data on each load
+
+  pages:
+    - id: overview
+      title: "Overview"
+      icon: "📊"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics:
+            - label: "Total Revenue"
+              format: currency
+              trend: positive
+            - label: "Course Sales"
+              format: number
+              trend: positive
+            - label: "Conversion Rate"
+              format: percentage
+              trend: positive
+            - label: "Avg. Order Value"
+              format: currency
+              trend: positive
+
+        - type: line_chart
+          title: "Revenue Over Time"
+          data: 7_days_revenue
+          colors: ["#3B82F6"]
+
+        - type: bar_chart
+          title: "Sales by Day"
+          data: 7_days_sales
+          colors: ["#10B981"]
+
+    - id: sales
+      title: "Sales"
+      icon: "💰"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics:
+            - label: "Total Revenue"
+              format: currency
+            - label: "Course Sales"
+              format: number
+            - label: "Conversion Rate"
+              format: percentage
+
+        - type: line_chart
+          title: "Revenue Over Time"
+          data: 7_days_revenue
+          fill: true
+
+        - type: table
+          title: "Recent Orders"
+          columns:
+            - Order ID
+            - Date
+            - Course
+            - Amount
+            - Status
+
+    - id: utm
+      title: "UTM Analytics"
+      icon: "🔗"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics:
+            - label: "Traffic Sources"
+              format: number
+            - label: "Best Performing"
+              format: text
+            - label: "Conversion Rate"
+              format: percentage
+
+        - type: doughnut_chart
+          title: "Traffic by Source"
+          sources:
+            - VK Ads
+            - Telegram
+            - Direct
+            - Email
+
+        - type: bar_chart
+          title: "Revenue by UTM Source"
+          data: utm_revenue
+
+        - type: table
+          title: "UTM Performance"
+          columns:
+            - Source
+            - Visits
+            - Sales
+            - Revenue
+            - Conversion
+
+    - id: conversions
+      title: "Conversions"
+      icon: "📈"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics:
+            - label: "Conversion Rate"
+              format: percentage
+            - label: "Total Conversions"
+              format: number
+            - label: "Revenue per Conversion"
+              format: currency
+
+        - type: line_chart
+          title: "Conversion Rate Over Time"
+          data: 7_days_conversion_rate
+
+        - type: funnel_chart
+          title: "Conversion Funnel"
+          stages:
+            - Landing
+            - Course Page
+            - Checkout
+            - Purchase
+
+        - type: table
+          title: "Conversion Details"
+          columns:
+            - Date
+            - Visits
+            - Conversions
+            - Rate
+
+  design:
+    layout: sidebar_left
+    sidebar_width: 256px
+    sidebar_color: "bg-gray-900"
+    main_area_color: "bg-gray-50"
+
+    header:
+      type: fixed_top
+      elements:
+        - title
+        - date_range_selector
+        - refresh_button
+
+    colors:
+      primary: "blue-600"
+      success: "green-500"
+      warning: "yellow-500"
+      danger: "red-500"
+      chart_palette:
+        - "#3B82F6"  # Blue
+        - "#10B981"  # Green
+        - "#F59E0B"  # Yellow
+        - "#EF4444"  # Red
+        - "#8B5CF6"  # Purple
+
+    fonts:
+      heading: "font-semibold"
+      body: "font-normal"
+      metrics: "font-bold text-2xl"
+
+  interactivity:
+    page_switching: instant  # No page reload, hash-based routing
+    chart_animations: true
+    hover_effects: true
+    active_nav_highlight: true
+
+jit_data_generation:
+  approach: "Generate random but realistic data on each page load"
+  volatility: 0.3  # 30% random fluctuation
+  trend: 0.15  # 15% growth trend
+
+  generators:
+    revenue:
+      base_value: 20
+      range: 7_days
+      unit: thousands
+      algorithm: |
+        const baseValue = 20;
+        const trend = 0.15;
+        const volatility = 0.3;
+        return Array.from({ length: 7 }, (_, i) => {
+          const trendValue = baseValue * (1 + trend * (i / 6));
+          const noise = (Math.random() - 0.5) * volatility * trendValue;
+          return Math.round(trendValue + noise);
+        });
+
+    sales:
+      base_value: 45
+      range: 7_days
+      algorithm: |
+        const baseValue = 45;
+        return Array.from({ length: 7 }, (_, i) => {
+          const growth = 1 + (i / 10);
+          return Math.round(baseValue * growth + (Math.random() - 0.5) * 10);
+        });
+
+    utm_sources:
+      sources:
+        - name: VK Ads
+          weight: 0.35
+        - name: Telegram
+          weight: 0.28
+        - name: Direct
+          weight: 0.22
+        - name: Email
+          weight: 0.15
+
+    conversion_rate:
+      base_rate: 2.5  # 2.5%
+      fluctuation: 0.5  # ±0.5%
+
+screenshot:
+  resolution: 1280x800
+  format: PNG
+  caption_height: 50px  # Height reserved for prompt caption
+  content_height: 750px # Actual demo content height
+
+  variants:
+    - screenshot.png           # Original from Puppeteer
+    - screenshot-1280x800.png  # Chrome Web Store format
+    - screenshot-640x400.png   # Thumbnail format
+
+files:
+  - demo.html      # Full interactive SPA demo
+  - config.yaml    # This file
+
+deployment:
+  demo_url: "/showcases/sales-analytics-utm/demo"
+  screenshot_url: "/showcases/sales-analytics-utm/screenshot-1280x800.png"
+  gallery_page: "/showcases"
+
+technical_notes:
+  - "Single Page Application with hash-based routing"
+  - "Instant page switching without reload (navigateTo function)"
+  - "JIT data generation ensures fresh data on each load"
+  - "Chart.js for all visualizations"
+  - "Active navigation highlighting (bg-blue-600)"
+  - "Responsive grid layouts for KPI cards"
+  - "setTimeout(50ms) before chart rendering for DOM update"
+
+reproduction_steps:
+  - "1. Create demo.html with SPA structure"
+  - "2. Implement 4 pages: Overview, Sales, UTM Analytics, Conversions"
+  - "3. Add hash-based navigation (navigateTo function)"
+  - "4. Implement JIT data generators for revenue, sales, UTM, conversions"
+  - "5. Add Chart.js visualizations (line, bar, doughnut charts)"
+  - "6. Create KPI cards with trend indicators"
+  - "7. Add data tables with realistic sample data"
+  - "8. Style with Tailwind CSS (sidebar + main area)"
+  - "9. Create page.html wrapper (1280x800) with 50px prompt caption"
+  - "10. Take screenshot using Puppeteer"
+  - "11. Resize to multiple formats using ImageMagick"
+  - "12. Update gallery index.html with Live Demo and Screenshot buttons"
+
+spa_implementation:
+  navigation_function: |
+    function navigateTo(page) {
+      currentPage = page;
+      const content = document.getElementById('mainContent');
+      content.innerHTML = pages[page]();
+
+      // Update active nav
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.dataset.page === page) {
+          link.classList.add('bg-blue-600');
+          link.classList.remove('hover:bg-gray-700');
+        } else {
+          link.classList.remove('bg-blue-600');
+          link.classList.add('hover:bg-gray-700');
+        }
+      });
+
+      // Render charts after DOM update
+      setTimeout(() => renderCharts(page), 50);
+    }
+
+  page_structure: |
+    const pages = {
+      overview: () => `<!-- HTML for overview page -->`,
+      sales: () => `<!-- HTML for sales page -->`,
+      utm: () => `<!-- HTML for UTM page -->`,
+      conversions: () => `<!-- HTML for conversions page -->`
+    };
+
+  initial_load: |
+    window.addEventListener('DOMContentLoaded', () => {
+      navigateTo('overview');
+    });

@@ -1,0 +1,17 @@
+# Data files (organized in data/ folder structure)
+data/
+message_history.json
+onboarding_leads.json
+onboarding_states.json
+user_referrals.json
+
+# Session files
+*.session
+*.session-journal
+
+# Dependencies
+node_modules
+
+# Environment
+.env
+.env.auth

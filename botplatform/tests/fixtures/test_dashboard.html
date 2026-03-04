@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Dashboard - Auth E2E</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    header { padding: 24px; }
+    h1 { font-size: 24px; font-weight: bold; }
+    .description { color: #6b7280; }
+    .kpi-card { background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 8px; display: inline-block; }
+  </style>
+</head>
+<body>
+  <!-- Header visible to everyone -->
+  <header>
+    <h1>Test Dashboard</h1>
+    <p class="description">E2E test dashboard for auth flow validation</p>
+  </header>
+
+  <!-- Data container: blurred until auth -->
+  <div id="authDataContainer" style="filter: blur(8px); pointer-events: none; user-select: none; position: relative;">
+    <div class="kpi-card">
+      <div>Revenue</div>
+      <div style="font-size: 24px; font-weight: bold;">$124,500</div>
+    </div>
+    <div class="kpi-card">
+      <div>Users</div>
+      <div style="font-size: 24px; font-weight: bold;">1,234</div>
+    </div>
+    <div class="kpi-card">
+      <div>Conversion</div>
+      <div style="font-size: 24px; font-weight: bold;">3.2%</div>
+    </div>
+  </div>
+
+  <!-- Auth overlays -->
+  <div id="authOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.85); z-index:1000;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; max-width:400px;">
+      <div data-overlay="install-extension" style="display:none;">
+        <p style="font-size:18px; margin-bottom:16px;">Install SimpleDashboard extension to access data</p>
+        <a href="https://chrome.google.com/webstore" target="_blank"
+           style="display:inline-block; padding:12px 24px; background:#3B82F6; color:white; border-radius:8px; text-decoration:none;">
+          Install extension
+        </a>
+      </div>
+      <div data-overlay="no-access" style="display:none;">
+        <p style="font-size:18px;">You do not have access to this dashboard</p>
+      </div>
+      <div data-overlay="service-unavailable" style="display:none;">
+        <p style="font-size:18px;">Auth service is temporarily unavailable. Please try later.</p>
+      </div>
+      <div data-overlay="no-keypair" style="display:none;">
+        <p style="font-size:18px; margin-bottom:8px;">Keypair not found.</p>
+        <p>Contact <a href="mailto:support@onout.org">support@onout.org</a> for recovery.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Auth ---
+    // OWNER_ADDRESS is injected by the test via URL param or set directly
+    const urlParams = new URLSearchParams(window.location.search);
+    const OWNER_ADDRESS = urlParams.get('owner') || '0x0000000000000000000000000000000000000000';
+    const DASHBOARD_ID = urlParams.get('dashboardId') || 'test_dashboard';
+    const AUTH_API_URL = urlParams.get('authApiUrl') || '/api/auth';
+
+    function showOverlay(name) {
+      const overlay = document.getElementById('authOverlay');
+      overlay.style.display = 'block';
+      overlay.querySelectorAll('[data-overlay]').forEach(el => el.style.display = 'none');
+      const target = overlay.querySelector('[data-overlay="' + name + '"]');
+      if (target) target.style.display = 'block';
+    }
+
+    function removeBlur() {
+      const container = document.getElementById('authDataContainer');
+      container.style.filter = 'none';
+      container.style.pointerEvents = 'auto';
+      container.style.userSelect = 'auto';
+    }
+
+    async function initDashboardAuth() {
+      // 1. Check extension provider
+      if (!window.ethereum) {
+        showOverlay('install-extension');
+        return;
+      }
+
+      // 2. Request accounts
+      let accounts;
+      try {
+        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (err) {
+        if (err.code === 'NO_KEYPAIR') {
+          showOverlay('no-keypair');
+          return;
+        }
+        showOverlay('service-unavailable');
+        return;
+      }
+
+      // 3. Generate challenge
+      const challenge = JSON.stringify({
+        dashboardId: DASHBOARD_ID,
+        timestamp: Date.now(),
+        nonce: crypto.randomUUID()
+      });
+
+      // 4. Sign challenge
+      let signature;
+      try {
+        signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [challenge, accounts[0]]
+        });
+      } catch (err) {
+        showOverlay('service-unavailable');
+        return;
+      }
+
+      // 5. Login via Auth API
+      try {
+        const res = await fetch(AUTH_API_URL + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signature, challenge, dashboardId: DASHBOARD_ID })
+        });
+
+        if (res.status === 401) {
+          showOverlay('no-access');
+          return;
+        }
+
+        if (!res.ok) {
+          showOverlay('service-unavailable');
+          return;
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem('dashboard_jwt', data.token);
+        removeBlur();
+      } catch (err) {
+        // fetch error — network or Auth API down
+        showOverlay('service-unavailable');
+      }
+    }
+
+    // Helper: fetch with JWT + reactive refresh on 401
+    async function fetchWithAuth(url, options) {
+      options = options || {};
+      const jwt = sessionStorage.getItem('dashboard_jwt');
+      if (!jwt) return fetch(url, options);
+
+      const headers = Object.assign({}, options.headers, { 'Authorization': 'Bearer ' + jwt });
+      let res = await fetch(url, Object.assign({}, options, { headers: headers }));
+
+      // JWT expired — re-authenticate and retry once
+      if (res.status === 401 && window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const challenge = JSON.stringify({
+            dashboardId: DASHBOARD_ID,
+            timestamp: Date.now(),
+            nonce: crypto.randomUUID()
+          });
+          const signature = await window.ethereum.request({
+            method: 'personal_sign',
+            params: [challenge, accounts[0]]
+          });
+          const loginRes = await fetch(AUTH_API_URL + '/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signature, challenge, dashboardId: DASHBOARD_ID })
+          });
+          if (loginRes.ok) {
+            const data = await loginRes.json();
+            sessionStorage.setItem('dashboard_jwt', data.token);
+            headers['Authorization'] = 'Bearer ' + data.token;
+            res = await fetch(url, Object.assign({}, options, { headers: headers }));
+          }
+        } catch (e) {
+          // Re-auth failed — return original 401 response
+        }
+      }
+
+      return res;
+    }
+
+    // Init auth on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      initDashboardAuth();
+    });
+  </script>
+</body>
+</html>

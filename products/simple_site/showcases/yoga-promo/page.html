@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen Flow Yoga Studio Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+    .showcase-container {
+      height: calc(100% - 50px);
+    }
+    .prompt-caption {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 14px;
+      font-style: italic;
+    }
+    .glow {
+      text-shadow: 0 0 40px rgba(255,255,255,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="showcase-container text-white">
+    <!-- Header -->
+    <header class="fixed w-full p-6 flex justify-between items-center z-50">
+      <div class="text-2xl font-light tracking-widest">ZEN FLOW</div>
+      <nav class="flex gap-8 text-sm tracking-wide">
+        <a href="#" class="hover:text-amber-300 transition">Classes</a>
+        <a href="#" class="hover:text-amber-300 transition">Schedule</a>
+        <a href="#" class="hover:text-amber-300 transition">Pricing</a>
+        <a href="#" class="hover:text-amber-300 transition">Contact</a>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <main class="h-full bg-cover bg-center relative" style="background-image: url('bg.jpg')">
+      <!-- Dark overlay for text readability -->
+      <div class="absolute inset-0 bg-gradient-to-b from-black/45 via-black/35 to-black/50"></div>
+
+      <!-- Content with z-index -->
+      <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-4">
+        <!-- Decorative circles -->
+        <div class="absolute top-20 left-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+
+        <!-- Lotus icon -->
+        <div class="text-6xl mb-6 opacity-80">🪷</div>
+
+        <h1 class="text-6xl font-extralight tracking-wider mb-4 glow">Find Your Inner Peace</h1>
+        <p class="text-xl font-light text-gray-300 mb-2">Yoga • Meditation • Mindfulness</p>
+        <p class="text-gray-400 mb-10 max-w-md">Transform your body and calm your mind in our serene studio space</p>
+
+        <div class="flex gap-4">
+          <a href="#" class="bg-amber-500 hover:bg-amber-400 text-gray-900 px-8 py-4 rounded-full font-medium tracking-wide transition">
+            First Class Free
+          </a>
+          <a href="#" class="border border-white/30 hover:border-white/60 px-8 py-4 rounded-full font-light tracking-wide transition">
+            View Schedule
+          </a>
+        </div>
+
+        <!-- Bottom info -->
+        <div class="absolute bottom-10 flex gap-12 text-sm text-gray-400">
+          <span>📍 123 Serenity Lane</span>
+          <span>🕐 6am - 9pm Daily</span>
+          <span>📞 (555) 123-YOGA</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="prompt-caption">
+    "Zen yoga studio hero landing page"
+  </div>
+</body>
+</html>

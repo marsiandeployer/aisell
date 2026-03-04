@@ -1,0 +1,58 @@
+name: Test Chrome Extensions
+
+on:
+  push:
+    paths:
+      - 'extensions/webchat-sidebar/**'
+      - 'products/*/showcases/extension-assets/**'
+  pull_request:
+    paths:
+      - 'extensions/webchat-sidebar/**'
+
+jobs:
+  test-extension:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product:
+          - name: SimpleDashboard
+            url: https://simpledashboard.wpmix.net
+            short_name: SimpleDashboard
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Build ${{ matrix.product.name }} Extension
+        working-directory: extensions/webchat-sidebar
+        run: |
+          node build.js \
+            --name "${{ matrix.product.name }} - AI Analytics Builder" \
+            --short-name "${{ matrix.product.short_name }}" \
+            --url "${{ matrix.product.url }}" \
+            --description "Build business dashboards with AI"
+
+      - name: Run Extension Tests
+        working-directory: extensions/webchat-sidebar
+        run: node test_extension.js
+
+      - name: Upload Test Screenshot
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.product.name }}-screenshot
+          path: extensions/webchat-sidebar/test-screenshot.png
+
+      - name: Upload Extension Package
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.product.name }}-extension
+          path: extensions/webchat-sidebar/out/webchat-sidebar.zip

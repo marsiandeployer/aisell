@@ -1,0 +1,72 @@
+{
+  "reviewer": "code-reviewer",
+  "task": 9,
+  "round": 1,
+  "status": "changes_requested",
+  "findings": [
+    {
+      "severity": "critical",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4146,
+      "issue": "chatSettings.ownerAddress is embedded directly into inline JavaScript without validation or escaping: `var ownerAddress = '${chatSettings.ownerAddress}';`. Although in production this value comes from ethers.Wallet.createRandom() (guaranteed 0x[0-9a-fA-F]{40} format), the settings.json file can be tampered with. If a malicious ownerAddress such as `0xfake'; alert(1);//` were written to settings.json, this injection would execute arbitrary JS in every visitor's browser — a stored XSS.",
+      "suggestion": "Validate chatSettings.ownerAddress against /^0x[0-9a-fA-F]{40}$/ before embedding it. If validation fails, treat the dashboard as unprotected (do not inject the auth widget). Add a guard: `const safeAddress = /^0x[0-9a-fA-F]{40}$/.test(chatSettings.ownerAddress) ? chatSettings.ownerAddress : ''; if (!safeAddress) { /* skip widget */ }`. This defense-in-depth check costs nothing and prevents a stored XSS if settings.json is ever corrupted or tampered with."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4181,
+      "issue": "The auth widget handles ?error=no_access and ?error=service_unavailable but does NOT handle ?error=auth_failed. The server's google-dashboard-callback handler sends ?error=auth_failed in multiple cases (invalid code, token exchange failure, etc.). Per user-spec: 'Google OAuth callback с невалидным code → редирект на d{userId}.wpmix.net?error=auth_failed → overlay service-unavailable'. When auth_failed lands on the dashboard, the widget falls through to showing the Google OAuth button again without any explanation, contradicting the spec.",
+      "suggestion": "Add a third case to the error param handling block: `if(errorParam === 'auth_failed'){ showOverlay('service-unavailable'); return; }`. This maps auth_failed to the service-unavailable overlay as specified. The test file should also add a corresponding assertion: fetchHtml('/?error=auth_failed', PROTECTED_USER_ID) → HTML contains 'data-overlay=\"service-unavailable\"' in the script source."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4200,
+      "issue": "The invite/status fetch uses a 10-second timeout via setTimeout, but the fetch() call itself has no AbortController / AbortSignal timeout. If the server hangs after the TCP connection is established (e.g., slow response, no connection reset), the fetch() may never resolve, and the 10-second setTimeout fires, shows the overlay, and sets statusDone=true — but the dangling fetch() promise continues and its .then()/.catch() callbacks still execute (with statusDone=true check, so they no-op). This is correct behavior, but the underlying socket remains open. Use AbortController for the fetch itself to ensure cleanup.",
+      "suggestion": "Add `var statusController = new AbortController(); var statusTimeout = setTimeout(function(){ ... statusController.abort(); }, 10000);` and pass `signal: statusController.signal` to the fetch() call. This ensures the socket is properly closed on timeout and is consistent with how the server-side code uses AbortSignal.timeout()."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4208,
+      "issue": "When the invite/status fetch response is not ok (e.g., 401 or 503), the code throws an error which is caught in .catch() — this causes the catch block to call `if(statusDone) return; statusDone = true; clearTimeout(statusTimeout); ...` which re-enables the OAuth button and shows the auth-widget. However, the earlier .then() block already cleared statusDone=false and set statusDone=true before throwing, so the catch's `if(statusDone) return` WILL trigger and the catch block will no-op. This means if fetch() returns a non-ok response, the catch block runs but no-ops due to statusDone already being true, and the OAuth button remains DISABLED. The widget hangs without showing the overlay.",
+      "suggestion": "Restructure the fetch chain: in the .then() handler for non-ok responses, do NOT throw an error — instead, directly call `statusDone = true; clearTimeout(statusTimeout); if(oauthBtn) oauthBtn.disabled = false; if(ownerAddress) showOverlay('auth-widget');`. Only propagate the json() parse rejection or actual network failures to .catch(). Alternatively, remove the early `statusDone = true` before the throw so the catch can still fire. Verify: fetch returns 401 → button is re-enabled and auth-widget overlay is shown."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 579,
+      "issue": "No test verifies that the nonce is written to session.oauthNonce in sessions.json. Task 9 spec: 'Nonce is written to the session entry (session.oauthNonce) before the response is sent.' The test (test_nonce_embedded_in_html) only checks the HTML response, not the session file. The CSRF protection depends on this side-effect being present in sessions.json — if writeSessions() is called at the wrong time or skipped, Task 6 CSRF validation will silently fail.",
+      "suggestion": "Add test: (1) inject a known session via injectSession(), (2) fetch protected dashboard HTML with Cookie: webchat_session=<sessionId>, (3) extract nonce from HTML using regex /window\\.__OAUTH_NONCE__\\s*=\\s*[\"']([0-9a-f]+)[\"']/, (4) read sessions.json directly, find the session entry, assert session.oauthNonce === extracted nonce."
+    },
+    {
+      "severity": "minor",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4125,
+      "issue": "The nonce is generated via crypto.randomBytes(16).toString('hex') producing 32 hex chars (16 bytes = 128 bits). The task spec says '16-byte hex'. The test (test_nonce_embedded_in_html, line 619) explicitly checks `nonceMatch[1].length === 32`. This is correct, but the inline comment says '16-byte hex' which matches. This is consistent — just noting for completeness. No change needed here, but confirm test assertion message says '32-char hex string (16 bytes)'.",
+      "suggestion": "No code change needed. Minor documentation note: consider adding a comment on the nonce variable line: `// 16 bytes (128-bit entropy) → 32-char hex string`."
+    },
+    {
+      "severity": "minor",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 1,
+      "issue": "The file header (lines 1-25) describes this as 'Task 7: Gate /api/data/ behind dashboard_jwt'. The file actually covers Tasks 7, 8, and 9. The misleading title causes confusion when searching for test coverage by task number.",
+      "suggestion": "Update the header comment to: 'Tests for JWT enforcement on /api/data/ (Task 7), GET /api/auth/invite/status CORS and auth (Task 8), and auth widget HTML injection (Task 9).' Update the test case list to include tests 5-15."
+    },
+    {
+      "severity": "minor",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 649,
+      "issue": "Tests 14-15 assert that data-overlay=\"no-access\" and data-overlay=\"service-unavailable\" appear in the raw HTML response body. These attributes are present because the auth widget script body contains them as string literals in the innerHTML assignment. This means the tests are actually asserting the widget SCRIPT SOURCE contains the correct overlay markup — this is valid but worth commenting explicitly so future developers do not confuse this with server-side overlay rendering.",
+      "suggestion": "Add a comment to tests 14-15: '// NOTE: These overlay attributes appear in the raw HTML because the auth widget script source contains them as string literals in the overlay innerHTML construction, not because the server renders them as DOM elements. The browser evaluates the script at runtime to create the actual DOM nodes.'"
+    }
+  ],
+  "summary": "The Task 9 auth widget implementation is present in the working tree and covers all main acceptance criteria: the widget script is correctly injected for protected dashboards, absent for unprotected dashboards, the nonce is generated and embedded as window.__OAUTH_NONCE__, loadChatSettings is called at the injection point, CSP connect-src is conditionally updated to add simpledashboard.wpmix.net for protected dashboards, the invite/status CORS fetch with credentials is implemented, the error overlays for no-access and service-unavailable are handled, and the Google OAuth redirect URL construction including the state parameter with nonce is correct. Two major behavioral issues require fixing before approval: (1) missing ?error=auth_failed handler — the server sends this error code but the widget does not map it to an overlay, leaving users on a broken state; (2) a race condition in the fetch error handling where a non-ok HTTP response causes statusDone to be set before the throw, making the catch block no-op and the OAuth button remaining disabled. One critical security finding: ownerAddress embedded in JS without regex validation before use — safe in practice but lacks defense-in-depth. Tests are well-structured and cover the main injection assertions, but are missing nonce session-write verification.",
+  "metrics": {
+    "filesReviewed": 2,
+    "criticalIssuesCount": 1,
+    "majorIssuesCount": 4,
+    "minorIssuesCount": 3,
+    "testCoverageAssessment": "adequate"
+  }
+}

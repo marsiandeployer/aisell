@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeadTrack — Sales Lead Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .funnel-bar { transition: width 0.4s ease; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:14px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:#334155;color:#fff; }
+    .nav-link.bg-blue-600 { background:#2563EB;color:#fff; }
+    .filter-btn { padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all 0.15s; }
+    .filter-btn.active { background:#2563EB;color:#fff;border-color:#2563EB; }
+    .filter-btn:hover:not(.active) { background:#f3f4f6;color:#374151; }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:14px 32px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(59,130,246,0.5);letter-spacing:0.01em" href="#"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <!-- Sidebar -->
+    <aside class="flex flex-col flex-shrink-0 text-white" style="width:200px;background:#1e293b">
+      <!-- Logo -->
+      <div class="px-4 pt-5 pb-4 border-b border-slate-700">
+        <div class="text-base font-bold flex items-center gap-2">
+          <span style="font-size:18px">&#9889;</span>
+          <span>LeadTrack</span>
+        </div>
+        <div class="text-xs text-slate-400 mt-0.5" id="sidebarSub"></div>
+      </div>
+      <!-- Nav -->
+      <nav class="flex-1 px-2 py-3 space-y-0.5">
+        <button onclick="navigateTo('dashboard')" data-page="dashboard" data-nav="dashboard" data-icon="📊" class="nav-link">📊 <span></span></button>
+        <button onclick="navigateTo('leads')"     data-page="leads"     data-nav="leads"     data-icon="👥" class="nav-link">👥 <span></span></button>
+        <button onclick="navigateTo('pipeline')"  data-page="pipeline"  data-nav="pipeline"  data-icon="🚀" class="nav-link">🚀 <span></span></button>
+        <button onclick="navigateTo('reports')"   data-page="reports"   data-nav="reports"   data-icon="📈" class="nav-link">📈 <span></span></button>
+      </nav>
+      <!-- Lang toggle -->
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-slate-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition text-xs flex items-center gap-2" id="langBtn">
+          <img id="langFlag" src="" width="16" height="12" style="border-radius:2px">
+          <span id="langLabel"></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 overflow-auto mini-scroll" style="padding:18px 20px 80px 20px" id="mainContent">
+    </main>
+  </div>
+
+  <script>
+    // ===== i18n =====
+    var _s = {
+      en: {
+        sidebarSub: 'Sales Intelligence',
+        dashboard: 'Dashboard',
+        leads: 'Leads',
+        pipeline: 'Pipeline',
+        reports: 'Reports',
+        pageTitle: 'Sales Dashboard',
+        totalLeads: 'Total Leads',
+        newThisMonth: 'New This Month',
+        convRate: 'Conversion Rate',
+        avgDeal: 'Avg Deal Size',
+        fromLastMonth: 'from last month',
+        leadName: 'Name',
+        company: 'Company',
+        source: 'Source',
+        status: 'Status',
+        value: 'Value',
+        dateAdded: 'Added',
+        leadsTable: 'Lead List',
+        funnel: 'Pipeline Funnel',
+        recentActivity: 'Recent Activity',
+        followUps: 'Next Follow-ups',
+        convertBtn: 'Convert',
+        minAgo: 'min ago',
+        hAgo: 'h ago',
+        overdue: 'Overdue',
+        dueToday: 'Due today',
+        dueTomorrow: 'Due tomorrow',
+        promptText: 'Track your leads with AI — set up in minutes',
+        ctaBtn: 'Try SimpleDashboard',
+        statusNew: 'New',
+        statusContacted: 'Contacted',
+        statusQualified: 'Qualified',
+        statusProposal: 'Proposal',
+        statusWon: 'Won',
+        statusLost: 'Lost',
+        srcWebsite: 'Website',
+        srcReferral: 'Referral',
+        srcLinkedIn: 'LinkedIn',
+        srcColdEmail: 'Cold Email',
+        srcWebinar: 'Webinar',
+        srcTradeShow: 'Trade Show',
+        actConvert: 'converted to client',
+        actNew: 'New lead from',
+        actFollowup: 'Follow-up sent to',
+        actCall: 'Call scheduled with',
+        actProposal: 'Proposal sent to',
+        actLost: 'Deal lost:',
+        monthlyLeads: 'Monthly New Leads',
+        allLeads: 'All Leads',
+        addLead: '+ Add Lead',
+        filterAll: 'All',
+        pipelineTitle: 'Pipeline Board',
+        pipelineValue: 'in pipeline',
+        reportsTitle: 'Analytics & Reports',
+        bySource: 'Leads by Source',
+        convTrend: 'Monthly Conversion Rate',
+        topDeals: 'Top Deals Closed This Month',
+        dealsClosed: 'Deals Closed',
+        showing: 'Showing 1–12 of 284',
+        actions: 'Actions',
+        totalValue: 'Total Value',
+        closeDate: 'Close Date',
+        manager: 'Manager',
+        winRate: 'Win Rate',
+        totalRevenue: 'Total Revenue',
+        leadsGenerated: 'Leads Generated',
+        qualified: 'Qualified',
+        months: ['Sep','Oct','Nov','Dec','Jan','Feb'],
+      },
+      ru: {
+        sidebarSub: 'Управление продажами',
+        dashboard: 'Обзор',
+        leads: 'Лиды',
+        pipeline: 'Воронка',
+        reports: 'Отчёты',
+        pageTitle: 'Панель продаж',
+        totalLeads: 'Всего лидов',
+        newThisMonth: 'Новых за месяц',
+        convRate: 'Конверсия',
+        avgDeal: 'Сред. сумма сделки',
+        fromLastMonth: 'за прошлый мес.',
+        leadName: 'Имя',
+        company: 'Компания',
+        source: 'Источник',
+        status: 'Статус',
+        value: 'Сумма',
+        dateAdded: 'Дата',
+        leadsTable: 'Список лидов',
+        funnel: 'Воронка продаж',
+        recentActivity: 'Новая активность',
+        followUps: 'Ожидающие контакты',
+        convertBtn: 'В клиенты',
+        minAgo: 'мин назад',
+        hAgo: 'ч назад',
+        overdue: 'Просрочено',
+        dueToday: 'Сегодня',
+        dueTomorrow: 'Завтра',
+        promptText: 'Управляйте лидами с AI — настройка за минуты',
+        ctaBtn: 'Попробовать',
+        statusNew: 'Новый',
+        statusContacted: 'Контакт',
+        statusQualified: 'Квалифицирован',
+        statusProposal: 'Предложение',
+        statusWon: 'Заключён',
+        statusLost: 'Проигран',
+        srcWebsite: 'Сайт',
+        srcReferral: 'Рекомендация',
+        srcLinkedIn: 'LinkedIn',
+        srcColdEmail: 'Email-рассылка',
+        srcWebinar: 'Вебинар',
+        srcTradeShow: 'Выставка',
+        actConvert: 'перешёл в клиенты',
+        actNew: 'Новый лид из',
+        actFollowup: 'Отправлен фоллоуап:',
+        actCall: 'Звонок запланирован:',
+        actProposal: 'Предложение отправлено:',
+        actLost: 'Сделка проиграна:',
+        monthlyLeads: 'Новые лиды по месяцам',
+        allLeads: 'Все лиды',
+        addLead: '+ Добавить лид',
+        filterAll: 'Все',
+        pipelineTitle: 'Доска пайплайна',
+        pipelineValue: 'в пайплайне',
+        reportsTitle: 'Аналитика и отчёты',
+        bySource: 'Лиды по источникам',
+        convTrend: 'Конверсия по месяцам',
+        topDeals: 'Топ сделок за месяц',
+        dealsClosed: 'Сделок закрыто',
+        showing: 'Показано 1–12 из 284',
+        actions: 'Действия',
+        totalValue: 'Сумма',
+        closeDate: 'Дата закрытия',
+        manager: 'Менеджер',
+        winRate: 'Win Rate',
+        totalRevenue: 'Выручка',
+        leadsGenerated: 'Лидов создано',
+        qualified: 'Квалиф.',
+        months: ['Сен','Окт','Ноя','Дек','Янв','Фев'],
+      }
+    };
+
+    var _lang = 'en';
+    var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('leadtrack_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+    function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('leadtrack_lang', _lang); } catch(_e) {}
+      navigateTo(currentPage);
+    }
+
+    // ===== JIT Data =====
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function fmtMoney(v) { return '$' + v.toLocaleString('en-US'); }
+
+    var names = ['Alex Morgan','Sarah Chen','Marcus Williams','Elena Rodriguez','James Park','Priya Patel','Tom Walsh','Nina Kovacs','David Kim','Rachel Torres','Chris Bauer','Mia Jackson'];
+    var companies = ['Vertex Systems','CloudBase Inc','DataFlow Ltd','Nexus Group','Prime Tech','Alpha Solutions','Beta Corp','Gamma Labs','Delta Force','Omega Digital','Sigma Works','Kappa IO'];
+    var statuses = ['statusNew','statusContacted','statusQualified','statusProposal','statusWon','statusLost'];
+    var sources = ['srcWebsite','srcReferral','srcLinkedIn','srcColdEmail','srcWebinar','srcTradeShow'];
+    var dates = ['Feb 3','Feb 7','Feb 10','Feb 12','Feb 15','Feb 18','Feb 20','Feb 22','Feb 23','Feb 24','Feb 24','Feb 25'];
+    var managers = ['Sarah L.','James K.','Mike R.','Anna S.','Tom H.'];
+
+    var statusStyle = {
+      statusNew:       'bg-blue-100 text-blue-700',
+      statusContacted: 'bg-yellow-100 text-yellow-700',
+      statusQualified: 'bg-purple-100 text-purple-700',
+      statusProposal:  'bg-orange-100 text-orange-700',
+      statusWon:       'bg-green-100 text-green-700',
+      statusLost:      'bg-red-100 text-red-700'
+    };
+
+    // Deterministic seeded RNG for stable JIT data
+    var _rng = 42;
+    function srng() { _rng = (_rng * 1664525 + 1013904223) & 0x7fffffff; return _rng / 0x7fffffff; }
+    function srngInt(min, max) { return Math.floor(srng() * (max - min + 1)) + min; }
+
+    var leadsData = names.map(function(name, i) {
+      return {
+        name: name,
+        company: companies[i],
+        source: sources[srngInt(0, sources.length - 1)],
+        status: statuses[Math.min(i % statuses.length, statuses.length - 1)],
+        value: srngInt(2, 25) * 1000,
+        date: dates[i]
+      };
+    });
+
+    var funnelSteps = [
+      { label: 'Leads',     count: 284, color: '#3B82F6' },
+      { label: 'Contacted', count: 198, color: '#8B5CF6' },
+      { label: 'Qualified', count: 124, color: '#F59E0B' },
+      { label: 'Proposal',  count: 67,  color: '#F97316' },
+      { label: 'Won',       count: 47,  color: '#10B981' }
+    ];
+
+    var activityItems = [
+      { icon: '🎉', key: 'actConvert',  who: 'Alex Morgan',       time: 12, unit: 'min' },
+      { icon: '🔗', key: 'actNew',      who: 'LinkedIn: TechCorp', time: 34, unit: 'min' },
+      { icon: '💬', key: 'actFollowup', who: 'Sarah Chen',         time: 1,  unit: 'h' },
+      { icon: '📞', key: 'actCall',     who: 'Marcus Williams',    time: 2,  unit: 'h' },
+      { icon: '📄', key: 'actProposal', who: 'Nexus Group',        time: 3,  unit: 'h' },
+      { icon: '😞', key: 'actLost',     who: 'Beta Corp',          time: 5,  unit: 'h' }
+    ];
+
+    var followupItems = [
+      { name: 'James Park',  company: 'Prime Tech',      due: 'overdue'    },
+      { name: 'Priya Patel', company: 'Alpha Solutions', due: 'dueToday'   },
+      { name: 'Nina Kovacs', company: 'Gamma Labs',      due: 'dueTomorrow'}
+    ];
+
+    // ===== Helper: KPI card =====
+    function kpiCard(label, value, trend, trendDir, color, icon) {
+      var trendCls = trendDir >= 0 ? 'text-green-500' : 'text-red-500';
+      var arrow = trendDir >= 0 ? '↑' : '↓';
+      return '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+        '<div class="flex items-center justify-between mb-2">' +
+          '<span class="text-xs text-gray-500 font-medium">' + label + '</span>' +
+          '<span class="text-lg">' + icon + '</span>' +
+        '</div>' +
+        '<div class="text-2xl font-bold ' + color + '">' + value + '</div>' +
+        '<div class="text-xs mt-1 ' + trendCls + '">' + arrow + ' ' + trend + ' <span class="text-gray-400">' + tt('fromLastMonth') + '</span></div>' +
+      '</div>';
+    }
+
+    // ===== Helper: status badge =====
+    function statusBadge(statusKey) {
+      return '<span class="px-1.5 py-0.5 rounded-full text-xs font-medium ' + (statusStyle[statusKey] || 'bg-gray-100 text-gray-600') + '">' + tt(statusKey) + '</span>';
+    }
+
+    // ===== Helper: source badge =====
+    function sourceBadge(src) {
+      var colors = { srcWebsite:'bg-blue-50 text-blue-600', srcReferral:'bg-green-50 text-green-600', srcLinkedIn:'bg-indigo-50 text-indigo-600', srcColdEmail:'bg-yellow-50 text-yellow-600', srcWebinar:'bg-purple-50 text-purple-600', srcTradeShow:'bg-pink-50 text-pink-600' };
+      return '<span class="px-1.5 py-0.5 rounded text-xs ' + (colors[src] || 'bg-gray-50 text-gray-500') + '">' + tt(src) + '</span>';
+    }
+
+    // ===== Helper: funnel HTML =====
+    function funnelHtml() {
+      var max = funnelSteps[0].count;
+      return funnelSteps.map(function(step, i) {
+        var pct = Math.round((step.count / max) * 100);
+        var convPct = i > 0 ? Math.round((step.count / funnelSteps[i-1].count) * 100) + '%' : '100%';
+        return '<div>' +
+          '<div class="flex items-center justify-between mb-0.5">' +
+            '<span class="text-xs font-medium text-gray-600" style="width:70px">' + step.label + '</span>' +
+            '<span class="text-xs font-bold text-gray-800">' + step.count + '</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-2">' +
+            '<div class="flex-1 bg-gray-100 rounded-full h-5">' +
+              '<div class="h-5 rounded-full funnel-bar flex items-center pl-2" style="width:' + pct + '%;background:' + step.color + ';min-width:32px">' +
+                '<span class="text-white font-medium" style="font-size:10px">' + pct + '%</span>' +
+              '</div>' +
+            '</div>' +
+            '<span class="text-xs text-gray-400" style="width:36px;text-align:right">' + convPct + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ===== Pages =====
+    var currentPage = 'dashboard';
+    var _charts = {};
+
+    var pages = {
+
+      dashboard: function() {
+        return '<h1 class="text-xl font-bold text-gray-900 mb-4">' + tt('pageTitle') + '</h1>' +
+          '<div class="grid grid-cols-4 gap-3 mb-4">' +
+            kpiCard(tt('totalLeads'),   '284',    '+12%', 1, 'text-blue-600',   '👥') +
+            kpiCard(tt('newThisMonth'), '47',     '+8%',  1, 'text-indigo-600', '⚡') +
+            kpiCard(tt('convRate'),     '23.4%',  '+2.1%',1, 'text-green-600',  '🎯') +
+            kpiCard(tt('avgDeal'),      '$8,400', '+5%',  1, 'text-purple-600', '💰') +
+          '</div>' +
+          '<div class="grid gap-3 mb-3" style="grid-template-columns:1fr 1fr 1fr">' +
+            '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+              '<h3 class="font-semibold text-xs text-gray-600 mb-3">' + tt('funnel') + '</h3>' +
+              '<div class="space-y-2.5">' + funnelHtml() + '</div>' +
+            '</div>' +
+            '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+              '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('monthlyLeads') + '</h3>' +
+              '<canvas id="monthlyChart" height="190"></canvas>' +
+            '</div>' +
+            '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+              '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('recentActivity') + '</h3>' +
+              '<div class="space-y-1">' + activityItems.map(function(a) {
+                var timeStr = a.unit === 'min' ? a.time + ' ' + tt('minAgo') : a.time + ' ' + tt('hAgo');
+                return '<div class="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">' +
+                  '<span class="text-sm flex-shrink-0">' + a.icon + '</span>' +
+                  '<div class="flex-1 min-w-0">' +
+                    '<p class="text-xs text-gray-700 leading-tight">' + tt(a.key) + ' <span class="font-medium">' + a.who + '</span></p>' +
+                    '<p class="text-xs text-gray-400">' + timeStr + '</p>' +
+                  '</div>' +
+                '</div>';
+              }).join('') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+            '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('followUps') + '</h3>' +
+            '<table class="w-full text-xs"><thead><tr class="bg-gray-50 text-gray-500 text-left" style="font-size:10px">' +
+              '<th class="px-3 py-2">' + tt('leadName') + '</th>' +
+              '<th class="px-3 py-2">' + tt('company') + '</th>' +
+              '<th class="px-3 py-2">' + tt('status') + '</th>' +
+            '</tr></thead><tbody>' +
+            followupItems.map(function(f) {
+              var badge = f.due === 'overdue'
+                ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-600">⚠ ' + tt('overdue') + '</span>'
+                : f.due === 'dueToday'
+                  ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-600">📅 ' + tt('dueToday') + '</span>'
+                  : '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">' + tt('dueTomorrow') + '</span>';
+              return '<tr class="border-t border-gray-50 hover:bg-gray-50">' +
+                '<td class="px-3 py-2 font-medium text-gray-800">' + f.name + '</td>' +
+                '<td class="px-3 py-2 text-gray-500">' + f.company + '</td>' +
+                '<td class="px-3 py-2">' + badge + '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table>' +
+          '</div>';
+      },
+
+      leads: function() {
+        var rows = leadsData.map(function(l, i) {
+          var isWon = l.status === 'statusWon';
+          var convertBtn = isWon
+            ? '<button class="px-2 py-0.5 bg-green-500 text-white rounded text-xs font-medium cursor-default">' + tt('convertBtn') + ' →</button>'
+            : '<span class="text-gray-300 text-xs">—</span>';
+          return '<tr class="hover:bg-gray-50 border-t border-gray-50" data-status="' + l.status + '">' +
+            '<td class="px-3 py-2 font-medium text-gray-800">' + l.name + '</td>' +
+            '<td class="px-3 py-2 text-gray-500">' + l.company + '</td>' +
+            '<td class="px-3 py-2">' + sourceBadge(l.source) + '</td>' +
+            '<td class="px-3 py-2">' + statusBadge(l.status) + '</td>' +
+            '<td class="px-3 py-2 text-right font-medium text-gray-800">' + fmtMoney(l.value) + '</td>' +
+            '<td class="px-3 py-2 text-right text-gray-400">' + l.date + '</td>' +
+            '<td class="px-3 py-2 text-right">' + convertBtn + '</td>' +
+          '</tr>';
+        }).join('');
+
+        var filterBtns = [tt('filterAll'), tt('statusNew'), tt('statusContacted'), tt('statusQualified'), tt('statusProposal'), tt('statusWon'), tt('statusLost')];
+        var filterKeys = ['all','statusNew','statusContacted','statusQualified','statusProposal','statusWon','statusLost'];
+
+        return '<div class="flex items-center justify-between mb-4">' +
+          '<div class="flex items-center gap-3">' +
+            '<h1 class="text-xl font-bold text-gray-900">' + tt('allLeads') + '</h1>' +
+            '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">284 total</span>' +
+          '</div>' +
+          '<button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold cursor-default hover:bg-blue-700 transition">' + tt('addLead') + '</button>' +
+        '</div>' +
+        '<div class="flex gap-2 mb-3 flex-wrap">' +
+          filterBtns.map(function(label, i) {
+            return '<button class="filter-btn' + (i === 0 ? ' active' : '') + '" onclick="filterLeads(\'' + filterKeys[i] + '\', this)">' + label + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">' +
+          '<table class="w-full text-xs" id="leadsFullTable"><thead>' +
+            '<tr class="bg-gray-50 text-gray-500 uppercase border-b border-gray-100" style="font-size:10px">' +
+              '<th class="px-3 py-2.5 text-left">' + tt('leadName') + '</th>' +
+              '<th class="px-3 py-2.5 text-left">' + tt('company') + '</th>' +
+              '<th class="px-3 py-2.5 text-left">' + tt('source') + '</th>' +
+              '<th class="px-3 py-2.5 text-left">' + tt('status') + '</th>' +
+              '<th class="px-3 py-2.5 text-right">' + tt('value') + '</th>' +
+              '<th class="px-3 py-2.5 text-right">' + tt('dateAdded') + '</th>' +
+              '<th class="px-3 py-2.5 text-right">' + tt('actions') + '</th>' +
+            '</tr>' +
+          '</thead><tbody id="leadsTbody">' + rows + '</tbody></table>' +
+          '<div class="px-3 py-2 border-t border-gray-100 text-xs text-gray-400 text-center">' + tt('showing') + '</div>' +
+        '</div>';
+      },
+
+      pipeline: function() {
+        var columns = [
+          { status: 'statusNew',       color: '#3B82F6', bg: '#EFF6FF', count: 68,  total: 340000,  cards: [
+            { co: 'Vertex Systems', name: 'Alex Morgan', value: 14000, src: 'srcWebsite', date: 'Feb 20' },
+            { co: 'CloudBase Inc',  name: 'Sarah Chen',  value: 8500,  src: 'srcLinkedIn',date: 'Feb 22' },
+            { co: 'DataFlow Ltd',   name: 'M. Williams', value: 22000, src: 'srcReferral', date: 'Feb 24' }
+          ]},
+          { status: 'statusContacted', color: '#F59E0B', bg: '#FFFBEB', count: 54,  total: 520000,  cards: [
+            { co: 'Nexus Group',    name: 'E. Rodriguez',value: 31000, src: 'srcWebinar',  date: 'Feb 18' },
+            { co: 'Prime Tech',     name: 'James Park',  value: 17500, src: 'srcColdEmail',date: 'Feb 19' }
+          ]},
+          { status: 'statusQualified', color: '#8B5CF6', bg: '#F5F3FF', count: 38,  total: 680000,  cards: [
+            { co: 'Alpha Solutions',name: 'Priya Patel', value: 45000, src: 'srcReferral', date: 'Feb 15' },
+            { co: 'Beta Corp',      name: 'Tom Walsh',   value: 28000, src: 'srcWebsite',  date: 'Feb 17' }
+          ]},
+          { status: 'statusProposal',  color: '#F97316', bg: '#FFF7ED', count: 21,  total: 480000,  cards: [
+            { co: 'Gamma Labs',     name: 'Nina Kovacs', value: 62000, src: 'srcTradeShow',date: 'Feb 10' },
+            { co: 'Delta Force',    name: 'David Kim',   value: 38000, src: 'srcLinkedIn', date: 'Feb 12' }
+          ]},
+          { status: 'statusWon',       color: '#10B981', bg: '#ECFDF5', count: 14,  total: 220000,  cards: [
+            { co: 'Omega Digital',  name: 'R. Torres',   value: 55000, src: 'srcReferral', date: 'Feb 8'  },
+            { co: 'Sigma Works',    name: 'Chris Bauer', value: 19000, src: 'srcWebsite',  date: 'Feb 9'  }
+          ]}
+        ];
+
+        return '<div class="flex items-center justify-between mb-4">' +
+          '<h1 class="text-xl font-bold text-gray-900">' + tt('pipelineTitle') + '</h1>' +
+          '<div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100 text-sm">' +
+            '<span class="text-gray-500">Total: </span>' +
+            '<span class="font-bold text-green-600">$1.24M</span>' +
+            '<span class="text-gray-400 ml-1">' + tt('pipelineValue') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex gap-3 overflow-x-auto pb-2">' +
+          columns.map(function(col) {
+            return '<div class="flex-shrink-0 rounded-xl border border-gray-100 overflow-hidden" style="width:220px;background:' + col.bg + '">' +
+              '<div class="px-3 py-2.5 border-b" style="border-color:' + col.color + '30;background:' + col.bg + '">' +
+                '<div class="flex items-center justify-between">' +
+                  '<span class="text-xs font-semibold" style="color:' + col.color + '">' + tt(col.status) + '</span>' +
+                  '<span class="text-xs font-bold text-gray-500">' + col.count + '</span>' +
+                '</div>' +
+                '<div class="text-xs text-gray-400 mt-0.5">' + fmtMoney(col.total) + '</div>' +
+              '</div>' +
+              '<div class="p-2 space-y-2">' +
+                col.cards.map(function(card) {
+                  return '<div class="bg-white rounded-lg p-2.5 shadow-sm border border-gray-100">' +
+                    '<div class="font-semibold text-xs text-gray-800 mb-0.5">' + card.co + '</div>' +
+                    '<div class="text-xs text-gray-500 mb-1">' + card.name + '</div>' +
+                    '<div class="text-sm font-bold text-gray-900 mb-1.5">' + fmtMoney(card.value) + '</div>' +
+                    '<div class="flex items-center justify-between">' +
+                      sourceBadge(card.src) +
+                      '<span class="text-xs text-gray-400">' + card.date + '</span>' +
+                    '</div>' +
+                  '</div>';
+                }).join('') +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      },
+
+      reports: function() {
+        var topDeals = [
+          { name: 'Omega Digital',  mgr: 'Sarah L.', value: 55000, date: 'Feb 8',  src: 'srcReferral' },
+          { name: 'Kappa IO',       mgr: 'James K.', value: 48000, date: 'Feb 11', src: 'srcWebinar' },
+          { name: 'Gamma Labs',     mgr: 'Mike R.',  value: 42000, date: 'Feb 14', src: 'srcTradeShow' },
+          { name: 'Sigma Works',    mgr: 'Anna S.',  value: 38000, date: 'Feb 17', src: 'srcLinkedIn' },
+          { name: 'Alpha Solutions', mgr: 'Tom H.', value: 31000, date: 'Feb 21', src: 'srcColdEmail' }
+        ];
+
+        return '<h1 class="text-xl font-bold text-gray-900 mb-4">' + tt('reportsTitle') + '</h1>' +
+          '<div class="grid grid-cols-4 gap-3 mb-4">' +
+            kpiCard(tt('totalLeads'),    '284',    '+12%',1, 'text-blue-600',   '👥') +
+            kpiCard(tt('dealsClosed'),   '31',     '+18%',1, 'text-green-600',  '✅') +
+            kpiCard(tt('totalRevenue'),  '$261K',  '+22%',1, 'text-purple-600', '💰') +
+            kpiCard(tt('winRate'),       '23.4%',  '+2.1%',1,'text-orange-600', '🏆') +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-3 mb-4">' +
+            '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+              '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('bySource') + '</h3>' +
+              '<canvas id="sourceChart" height="200"></canvas>' +
+            '</div>' +
+            '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+              '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('convTrend') + '</h3>' +
+              '<canvas id="conversionChart" height="200"></canvas>' +
+            '</div>' +
+          '</div>' +
+          '<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3">' +
+            '<h3 class="font-semibold text-xs text-gray-600 mb-2">' + tt('topDeals') + '</h3>' +
+            '<table class="w-full text-xs"><thead>' +
+              '<tr class="bg-gray-50 text-gray-500 uppercase border-b border-gray-100" style="font-size:10px">' +
+                '<th class="px-3 py-2 text-left">' + tt('company') + '</th>' +
+                '<th class="px-3 py-2 text-left">' + tt('manager') + '</th>' +
+                '<th class="px-3 py-2 text-left">' + tt('source') + '</th>' +
+                '<th class="px-3 py-2 text-right">' + tt('value') + '</th>' +
+                '<th class="px-3 py-2 text-right">' + tt('closeDate') + '</th>' +
+              '</tr>' +
+            '</thead><tbody>' +
+            topDeals.map(function(d) {
+              return '<tr class="border-t border-gray-50 hover:bg-gray-50">' +
+                '<td class="px-3 py-2 font-semibold text-gray-800">' + d.name + '</td>' +
+                '<td class="px-3 py-2 text-gray-500">' + d.mgr + '</td>' +
+                '<td class="px-3 py-2">' + sourceBadge(d.src) + '</td>' +
+                '<td class="px-3 py-2 text-right font-bold text-green-600">' + fmtMoney(d.value) + '</td>' +
+                '<td class="px-3 py-2 text-right text-gray-400">' + d.date + '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table>' +
+          '</div>';
+      }
+    };
+
+    // ===== Lead filter =====
+    function filterLeads(statusKey, btn) {
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var tbody = document.getElementById('leadsTbody');
+      if (!tbody) return;
+      var rows = tbody.querySelectorAll('tr[data-status]');
+      rows.forEach(function(row) {
+        if (statusKey === 'all' || row.dataset.status === statusKey) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    // ===== Charts =====
+    function renderCharts(page) {
+      // Destroy old charts to avoid "canvas already in use" error
+      Object.keys(_charts).forEach(function(k) {
+        try { _charts[k].destroy(); } catch(e) {}
+      });
+      _charts = {};
+
+      var months = tt('months');
+
+      if (page === 'dashboard') {
+        var mc = document.getElementById('monthlyChart');
+        if (mc) {
+          _charts.monthly = new Chart(mc, {
+            type: 'bar',
+            data: {
+              labels: months,
+              datasets: [{
+                label: tt('newThisMonth'),
+                data: [32, 28, 41, 38, 44, 47],
+                backgroundColor: '#3B82F6',
+                borderRadius: 4,
+                borderSkipped: false
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+              }
+            }
+          });
+        }
+      }
+
+      if (page === 'reports') {
+        var sc = document.getElementById('sourceChart');
+        if (sc) {
+          _charts.source = new Chart(sc, {
+            type: 'bar',
+            data: {
+              labels: [tt('srcWebsite'), tt('srcReferral'), tt('srcLinkedIn'), tt('srcColdEmail'), tt('srcWebinar'), tt('srcTradeShow')],
+              datasets: [{
+                label: tt('totalLeads'),
+                data: [84, 62, 53, 41, 28, 16],
+                backgroundColor: ['#3B82F6','#10B981','#6366F1','#F59E0B','#8B5CF6','#EC4899'],
+                borderRadius: 4,
+                borderSkipped: false
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+              }
+            }
+          });
+        }
+        var cc = document.getElementById('conversionChart');
+        if (cc) {
+          _charts.conv = new Chart(cc, {
+            type: 'line',
+            data: {
+              labels: months,
+              datasets: [{
+                label: tt('convRate'),
+                data: [19.2, 20.8, 21.5, 22.1, 22.9, 23.4],
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16,185,129,0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#10B981',
+                pointRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: {
+                  min: 17, max: 26,
+                  grid: { color: '#f3f4f6' },
+                  ticks: { font: { size: 10 }, callback: function(v) { return v + '%'; } }
+                },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // ===== Navigation =====
+    function navigateTo(page) {
+      currentPage = page;
+      document.getElementById('mainContent').innerHTML = pages[page]();
+      updateNavLabels();
+      document.querySelectorAll('.nav-link').forEach(function(link) {
+        if (link.dataset.page === page) {
+          link.classList.add('bg-blue-600');
+          link.classList.remove('text-slate-300');
+        } else {
+          link.classList.remove('bg-blue-600');
+          link.classList.add('text-slate-300');
+        }
+      });
+      setTimeout(function() { renderCharts(page); }, 50);
+    }
+
+    function updateNavLabels() {
+      document.getElementById('sidebarSub').textContent = tt('sidebarSub');
+      document.querySelectorAll('.nav-link[data-nav]').forEach(function(btn) {
+        btn.innerHTML = btn.dataset.icon + ' ' + tt(btn.dataset.nav);
+      });
+      if (_isRuBrowser) {
+        document.getElementById('langToggle').style.display = '';
+        var isRu = _lang === 'ru';
+        document.getElementById('langFlag').src = isRu ? 'https://flagcdn.com/w20/gb.png' : 'https://flagcdn.com/w20/ru.png';
+        document.getElementById('langLabel').textContent = isRu ? 'English' : 'Русский';
+      }
+    }
+
+    // ===== Prompt bar =====
+    function updatePromptBar() {
+      var prompt = tt('promptText');
+      var btn = document.getElementById('ctaBtn');
+      document.getElementById('promptText').textContent = prompt;
+      btn.textContent = tt('ctaBtn');
+      btn.href = '/?start=example_lead-tracker&prompt=' + encodeURIComponent(prompt);
+      btn.onclick = function(e) {
+        var insideIframe = false;
+        try { insideIframe = window.parent && window.parent !== window; } catch (_e) {}
+        if (insideIframe) {
+          e.preventDefault();
+          try {
+            window.parent.postMessage({ type: 'open_webchat_prompt', prompt: prompt }, '*');
+          } catch (_e) {}
+          return;
+        }
+        var extId = '';
+        try { extId = String(new URLSearchParams(window.location.search).get('ext_id') || '').trim(); } catch (_e) {}
+        if (!extId) return;
+        try {
+          if (window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+            e.preventDefault();
+            chrome.runtime.sendMessage(extId, { type: 'open_webchat_prompt', prompt: prompt });
+          }
+        } catch (_e) {}
+      };
+    }
+
+    // ===== Init =====
+    document.addEventListener('DOMContentLoaded', function() {
+      updatePromptBar();
+      navigateTo('dashboard');
+    });
+  </script>
+</body>
+</html>

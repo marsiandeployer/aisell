@@ -1,0 +1,17 @@
+slug: "mcw-wallet"
+caption: "Multi-Currency Crypto Wallet"
+caption_ru: "Мультивалютный криптокошелёк"
+product: "simple_crypto"
+
+demo_url: "https://wallet.wpmix.net/"
+source_screenshot: "https://onout.org/wallet/images/screens.png"
+
+reproduction_steps:
+  - "Purchase plugin from CodeCanyon item 23532064"
+  - "Upload ZIP to WordPress Admin → Plugins → Upload Plugin"
+  - "Activate plugin"
+  - "Add shortcode [multi-currency-wallet currencies='BTC,ETH,USDT'] to page"
+  - "Open page — wallet is live"
+
+jit_data_generation: false
+bilingual: true

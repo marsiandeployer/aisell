@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen Flow Yoga Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { scroll-behavior: smooth; }
+    .glow { text-shadow: 0 0 40px rgba(255,255,255,0.15); }
+    section { min-height: 100vh; }
+  </style>
+</head>
+<body class="text-white" style="margin:0">
+  <!-- Fixed Header -->
+  <header class="fixed w-full p-6 flex justify-between items-center z-50 bg-black/20 backdrop-blur-md">
+    <div class="text-2xl font-light tracking-widest">ZEN FLOW</div>
+    <nav class="flex gap-8 text-sm tracking-wide items-center">
+      <a href="#home" data-i18n="navHome" class="hover:text-amber-300 transition">Home</a>
+      <a href="#classes" data-i18n="navClasses" class="hover:text-amber-300 transition">Classes</a>
+      <a href="#schedule" data-i18n="navSchedule" class="hover:text-amber-300 transition">Schedule</a>
+      <a href="#pricing" data-i18n="navPricing" class="hover:text-amber-300 transition">Pricing</a>
+      <a href="#contact" data-i18n="navContact" class="hover:text-amber-300 transition">Contact</a>
+      <button id="langToggle" style="display:none" class="text-base hover:opacity-80 transition cursor-pointer" title="Switch language"></button>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="home" class="bg-cover bg-center relative" style="background-image: url('bg.jpg')">
+    <div class="absolute inset-0 bg-gradient-to-b from-black/45 via-black/35 to-black/50"></div>
+    <div class="relative z-10 h-screen flex flex-col justify-center items-center text-center px-4">
+      <div class="absolute top-20 left-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+      <div class="text-6xl mb-6 opacity-80">&#x1FAB7;</div>
+      <h1 data-i18n="heroTitle" class="text-6xl font-extralight tracking-wider mb-4 glow">Find Your Inner Peace</h1>
+      <p data-i18n="heroSub1" class="text-xl font-light text-gray-300 mb-2">Yoga &bull; Meditation &bull; Mindfulness</p>
+      <p data-i18n="heroSub2" class="text-gray-400 mb-10 max-w-md">Transform your body and calm your mind in our serene studio space</p>
+      <div class="flex gap-4">
+        <a href="#classes" data-i18n="heroCta1" class="bg-amber-500 hover:bg-amber-400 text-gray-900 px-8 py-4 rounded-full font-medium tracking-wide transition">First Class Free</a>
+        <a href="#schedule" data-i18n="heroCta2" class="border border-white/30 hover:border-white/60 px-8 py-4 rounded-full font-light tracking-wide transition">View Schedule</a>
+      </div>
+      <div class="absolute bottom-10 flex gap-12 text-sm text-gray-400">
+        <span>&#x1F4CD; 123 Serenity Lane</span>
+        <span>&#x1F550; 6am - 9pm</span>
+        <span>&#x1F4DE; (555) 123-YOGA</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Classes Section -->
+  <section id="classes" class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="h-screen flex flex-col justify-center items-center px-4">
+      <h2 data-i18n="classesTitle" class="text-4xl font-light tracking-wider mb-4">Our Classes</h2>
+      <p data-i18n="classesSub" class="text-gray-400 mb-12 text-center max-w-2xl">Choose from a variety of yoga styles to match your goals and experience level</p>
+      <div class="grid grid-cols-3 gap-6 max-w-6xl">
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50 transition cursor-pointer">
+          <div class="text-4xl mb-4">&#x1F9D8;</div>
+          <h3 data-i18n="classHatha" class="text-xl font-semibold mb-2">Hatha Yoga</h3>
+          <p data-i18n="classHathaDesc" class="text-gray-400 text-sm mb-4">Perfect for beginners. Focus on basic poses and breathing</p>
+          <div data-i18n="classHathaMeta" class="text-amber-500 font-medium">60 min &bull; All Levels</div>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50 transition cursor-pointer">
+          <div class="text-4xl mb-4">&#x1F525;</div>
+          <h3 data-i18n="classPower" class="text-xl font-semibold mb-2">Power Yoga</h3>
+          <p data-i18n="classPowerDesc" class="text-gray-400 text-sm mb-4">Dynamic flow to build strength and flexibility</p>
+          <div data-i18n="classPowerMeta" class="text-amber-500 font-medium">75 min &bull; Intermediate</div>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-amber-500/50 transition cursor-pointer">
+          <div class="text-4xl mb-4">&#x1F319;</div>
+          <h3 data-i18n="classYin" class="text-xl font-semibold mb-2">Yin Yoga</h3>
+          <p data-i18n="classYinDesc" class="text-gray-400 text-sm mb-4">Slow-paced restorative practice for deep relaxation</p>
+          <div data-i18n="classYinMeta" class="text-amber-500 font-medium">90 min &bull; All Levels</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Schedule Section -->
+  <section id="schedule" class="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+    <div class="h-screen flex flex-col justify-center items-center px-4">
+      <h2 data-i18n="scheduleTitle" class="text-4xl font-light tracking-wider mb-4">Weekly Schedule</h2>
+      <p data-i18n="scheduleSub" class="text-gray-400 mb-12">Join us any day of the week</p>
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 max-w-4xl w-full">
+        <div id="scheduleGrid" class="space-y-4"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900">
+    <div class="h-screen flex flex-col justify-center items-center px-4">
+      <h2 data-i18n="pricingTitle" class="text-4xl font-light tracking-wider mb-4">Membership Plans</h2>
+      <p data-i18n="pricingSub" class="text-gray-400 mb-12">Choose the plan that fits your lifestyle</p>
+      <div class="grid grid-cols-3 gap-6 max-w-6xl">
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition">
+          <h3 data-i18n="planDrop" class="text-2xl font-semibold mb-2">Drop-In</h3>
+          <div class="text-4xl font-bold text-amber-500 mb-4" data-i18n="planDropPrice">$20<span class="text-lg text-gray-400">/class</span></div>
+          <ul class="space-y-3 mb-6">
+            <li data-i18n="planDropF1" class="text-gray-300">&#x2713; Single class access</li>
+            <li data-i18n="planDropF2" class="text-gray-300">&#x2713; All class types</li>
+            <li data-i18n="planDropF3" class="text-gray-300">&#x2713; No commitment</li>
+          </ul>
+          <button data-i18n="planDropBtn" class="w-full bg-white/10 hover:bg-white/20 px-6 py-3 rounded-full font-medium transition">Buy Now</button>
+        </div>
+        <div class="bg-gradient-to-br from-amber-500/20 to-purple-500/20 backdrop-blur-sm p-8 rounded-2xl border-2 border-amber-500 transform scale-105">
+          <div data-i18n="planPopular" class="text-xs font-bold text-amber-500 mb-2">MOST POPULAR</div>
+          <h3 data-i18n="planMonthly" class="text-2xl font-semibold mb-2">Monthly</h3>
+          <div class="text-4xl font-bold text-amber-500 mb-4" data-i18n="planMonthlyPrice">$99<span class="text-lg text-gray-400">/month</span></div>
+          <ul class="space-y-3 mb-6">
+            <li data-i18n="planMonthlyF1" class="text-gray-300">&#x2713; Unlimited classes</li>
+            <li data-i18n="planMonthlyF2" class="text-gray-300">&#x2713; Priority booking</li>
+            <li data-i18n="planMonthlyF3" class="text-gray-300">&#x2713; Guest passes (2/month)</li>
+            <li data-i18n="planMonthlyF4" class="text-gray-300">&#x2713; Online classes included</li>
+          </ul>
+          <button data-i18n="planMonthlyBtn" class="w-full bg-amber-500 hover:bg-amber-400 text-gray-900 px-6 py-3 rounded-full font-medium transition">Start Now</button>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-white/20 transition">
+          <h3 data-i18n="planAnnual" class="text-2xl font-semibold mb-2">Annual</h3>
+          <div class="text-4xl font-bold text-amber-500 mb-4" data-i18n="planAnnualPrice">$990<span class="text-lg text-gray-400">/year</span></div>
+          <ul class="space-y-3 mb-6">
+            <li data-i18n="planAnnualF1" class="text-gray-300">&#x2713; Everything in Monthly</li>
+            <li data-i18n="planAnnualF2" class="text-gray-300">&#x2713; 2 months free</li>
+            <li data-i18n="planAnnualF3" class="text-gray-300">&#x2713; Private session discount</li>
+            <li data-i18n="planAnnualF4" class="text-gray-300">&#x2713; Retreat discounts</li>
+          </ul>
+          <button data-i18n="planAnnualBtn" class="w-full bg-white/10 hover:bg-white/20 px-6 py-3 rounded-full font-medium transition">Subscribe</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div class="h-screen flex flex-col justify-center items-center px-4">
+      <h2 data-i18n="contactTitle" class="text-4xl font-light tracking-wider mb-4">Get In Touch</h2>
+      <p data-i18n="contactSub" class="text-gray-400 mb-12">Start your yoga journey today</p>
+      <div class="grid grid-cols-2 gap-12 max-w-4xl w-full">
+        <div class="space-y-6">
+          <div>
+            <h3 data-i18n="contactVisit" class="text-xl font-semibold mb-2">Visit Us</h3>
+            <p class="text-gray-400">123 Serenity Lane<br>Peaceful Valley, PV 12345</p>
+          </div>
+          <div>
+            <h3 data-i18n="contactHours" class="text-xl font-semibold mb-2">Hours</h3>
+            <p data-i18n="contactHoursVal" class="text-gray-400">Monday - Sunday<br>6:00 AM - 9:00 PM</p>
+          </div>
+          <div>
+            <h3 data-i18n="contactInfo" class="text-xl font-semibold mb-2">Contact</h3>
+            <p class="text-gray-400">Phone: (555) 123-YOGA<br>Email: hello@zenflow.yoga</p>
+          </div>
+        </div>
+        <div class="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+          <form class="space-y-4" onsubmit="return false">
+            <input type="text" data-i18n-placeholder="formName" placeholder="Your Name" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 transition">
+            <input type="email" data-i18n-placeholder="formEmail" placeholder="Your Email" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 transition">
+            <textarea data-i18n-placeholder="formMsg" placeholder="Message" rows="4" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-amber-500 transition"></textarea>
+            <button data-i18n="formSend" type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-gray-900 px-6 py-3 rounded-full font-medium transition">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Booking overlay (full screen) -->
+  <div id="bookingOverlay" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(17,24,39,0.95);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+    <div id="bookingForm" class="w-full max-w-md mx-4 text-center">
+      <button onclick="closeBooking()" style="position:absolute;top:24px;right:24px;color:rgba(255,255,255,0.6);font-size:30px;cursor:pointer;background:none;border:none">&times;</button>
+      <div class="text-5xl mb-6">&#x1F9D8;</div>
+      <h2 id="bookingTitle" class="text-3xl font-light mb-8 text-white"></h2>
+      <input id="bookingName" type="text" class="w-full mb-4 px-5 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 text-lg focus:outline-none focus:border-amber-400 transition" placeholder="">
+      <input id="bookingPhone" type="tel" class="w-full mb-6 px-5 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 text-lg focus:outline-none focus:border-amber-400 transition" placeholder="">
+      <button onclick="submitBooking()" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-gray-900 text-lg font-semibold rounded-xl transition"></button>
+    </div>
+    <div id="bookingSuccess" style="display:none" class="text-center">
+      <div class="text-6xl mb-6">&#x2728;</div>
+      <h2 id="bookingSuccessText" class="text-3xl font-light text-white"></h2>
+    </div>
+  </div>
+
+  <!-- Prompt bar (bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 24px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:22px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,0.4);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:10px 24px;background:#fff;color:#111;border-radius:10px;font-size:16px;font-weight:600;text-decoration:none;white-space:nowrap" href="#"></a>
+  </div>
+
+  <script>
+  (function() {
+    var _s = {
+      en: {
+        navHome: 'Home', navClasses: 'Classes', navSchedule: 'Schedule', navPricing: 'Pricing', navContact: 'Contact',
+        heroTitle: 'Find Your Inner Peace',
+        heroSub1: 'Yoga \u2022 Meditation \u2022 Mindfulness',
+        heroSub2: 'Transform your body and calm your mind in our serene studio space',
+        heroCta1: 'First Class Free', heroCta2: 'View Schedule',
+        classesTitle: 'Our Classes',
+        classesSub: 'Choose from a variety of yoga styles to match your goals and experience level',
+        classHatha: 'Hatha Yoga', classHathaDesc: 'Perfect for beginners. Focus on basic poses and breathing', classHathaMeta: '60 min \u2022 All Levels',
+        classPower: 'Power Yoga', classPowerDesc: 'Dynamic flow to build strength and flexibility', classPowerMeta: '75 min \u2022 Intermediate',
+        classYin: 'Yin Yoga', classYinDesc: 'Slow-paced restorative practice for deep relaxation', classYinMeta: '90 min \u2022 All Levels',
+        scheduleTitle: 'Weekly Schedule', scheduleSub: 'Join us any day of the week',
+        days: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'],
+        schedSlot1: '6:00 AM - Hatha', schedSlot2: '10:00 AM - Power', schedSlot3: '6:00 PM - Yin',
+        schedBook: 'Book',
+        bookTitle: 'Book a Class', bookName: 'Your name', bookPhone: 'Phone number', bookSubmit: 'Sign Up', bookSuccess: 'We look forward to seeing you!',
+        pricingTitle: 'Membership Plans', pricingSub: 'Choose the plan that fits your lifestyle',
+        planDrop: 'Drop-In', planDropPrice: '$20/class',
+        planDropF1: '\u2713 Single class access', planDropF2: '\u2713 All class types', planDropF3: '\u2713 No commitment', planDropBtn: 'Buy Now',
+        planPopular: 'MOST POPULAR',
+        planMonthly: 'Monthly', planMonthlyPrice: '$99/month',
+        planMonthlyF1: '\u2713 Unlimited classes', planMonthlyF2: '\u2713 Priority booking', planMonthlyF3: '\u2713 Guest passes (2/month)', planMonthlyF4: '\u2713 Online classes included', planMonthlyBtn: 'Start Now',
+        planAnnual: 'Annual', planAnnualPrice: '$990/year',
+        planAnnualF1: '\u2713 Everything in Monthly', planAnnualF2: '\u2713 2 months free', planAnnualF3: '\u2713 Private session discount', planAnnualF4: '\u2713 Retreat discounts', planAnnualBtn: 'Subscribe',
+        contactTitle: 'Get In Touch', contactSub: 'Start your yoga journey today',
+        contactVisit: 'Visit Us', contactHours: 'Hours', contactHoursVal: 'Monday - Sunday\n6:00 AM - 9:00 PM', contactInfo: 'Contact',
+        formName: 'Your Name', formEmail: 'Your Email', formMsg: 'Message', formSend: 'Send Message',
+        promptText: '\u201CZen yoga studio landing page with schedule and pricing\u201D',
+        ctaLabel: 'I want the same',
+        langLabel: 'RU'
+      },
+      ru: {
+        navHome: '\u0413\u043b\u0430\u0432\u043d\u0430\u044f', navClasses: '\u0417\u0430\u043d\u044f\u0442\u0438\u044f', navSchedule: '\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435', navPricing: '\u0426\u0435\u043d\u044b', navContact: '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u044b',
+        heroTitle: '\u041d\u0430\u0439\u0434\u0438\u0442\u0435 \u0432\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044e\u044e \u0433\u0430\u0440\u043c\u043e\u043d\u0438\u044e',
+        heroSub1: '\u0419\u043e\u0433\u0430 \u2022 \u041c\u0435\u0434\u0438\u0442\u0430\u0446\u0438\u044f \u2022 \u041e\u0441\u043e\u0437\u043d\u0430\u043d\u043d\u043e\u0441\u0442\u044c',
+        heroSub2: '\u0422\u0440\u0430\u043d\u0441\u0444\u043e\u0440\u043c\u0438\u0440\u0443\u0439\u0442\u0435 \u0442\u0435\u043b\u043e \u0438 \u0443\u0441\u043f\u043e\u043a\u043e\u0439\u0442\u0435 \u0440\u0430\u0437\u0443\u043c \u0432 \u043d\u0430\u0448\u0435\u0439 \u0441\u0442\u0443\u0434\u0438\u0438',
+        heroCta1: '\u041f\u0435\u0440\u0432\u043e\u0435 \u0437\u0430\u043d\u044f\u0442\u0438\u0435 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u043e', heroCta2: '\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435',
+        classesTitle: '\u041d\u0430\u0448\u0438 \u0437\u0430\u043d\u044f\u0442\u0438\u044f',
+        classesSub: '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0442\u0438\u043b\u044c \u0439\u043e\u0433\u0438 \u043f\u043e\u0434 \u0432\u0430\u0448\u0438 \u0446\u0435\u043b\u0438 \u0438 \u0443\u0440\u043e\u0432\u0435\u043d\u044c \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u043a\u0438',
+        classHatha: '\u0425\u0430\u0442\u0445\u0430-\u0439\u043e\u0433\u0430', classHathaDesc: '\u0418\u0434\u0435\u0430\u043b\u044c\u043d\u043e \u0434\u043b\u044f \u043d\u0430\u0447\u0438\u043d\u0430\u044e\u0449\u0438\u0445. \u041e\u0441\u043d\u043e\u0432\u043d\u044b\u0435 \u043f\u043e\u0437\u044b \u0438 \u0434\u044b\u0445\u0430\u043d\u0438\u0435', classHathaMeta: '60 \u043c\u0438\u043d \u2022 \u0412\u0441\u0435 \u0443\u0440\u043e\u0432\u043d\u0438',
+        classPower: '\u0421\u0438\u043b\u043e\u0432\u0430\u044f \u0439\u043e\u0433\u0430', classPowerDesc: '\u0414\u0438\u043d\u0430\u043c\u0438\u0447\u043d\u044b\u0439 \u043f\u043e\u0442\u043e\u043a \u0434\u043b\u044f \u0441\u0438\u043b\u044b \u0438 \u0433\u0438\u0431\u043a\u043e\u0441\u0442\u0438', classPowerMeta: '75 \u043c\u0438\u043d \u2022 \u0421\u0440\u0435\u0434\u043d\u0438\u0439',
+        classYin: '\u0418\u043d\u044c-\u0439\u043e\u0433\u0430', classYinDesc: '\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u0430\u044f \u0432\u043e\u0441\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u0430\u043a\u0442\u0438\u043a\u0430 \u0434\u043b\u044f \u0433\u043b\u0443\u0431\u043e\u043a\u043e\u0433\u043e \u0440\u0430\u0441\u0441\u043b\u0430\u0431\u043b\u0435\u043d\u0438\u044f', classYinMeta: '90 \u043c\u0438\u043d \u2022 \u0412\u0441\u0435 \u0443\u0440\u043e\u0432\u043d\u0438',
+        scheduleTitle: '\u0420\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043d\u0430 \u043d\u0435\u0434\u0435\u043b\u044e', scheduleSub: '\u041f\u0440\u0438\u0445\u043e\u0434\u0438\u0442\u0435 \u0432 \u043b\u044e\u0431\u043e\u0439 \u0434\u0435\u043d\u044c',
+        days: ['\u041f\u043e\u043d\u0435\u0434\u0435\u043b\u044c\u043d\u0438\u043a','\u0412\u0442\u043e\u0440\u043d\u0438\u043a','\u0421\u0440\u0435\u0434\u0430','\u0427\u0435\u0442\u0432\u0435\u0440\u0433','\u041f\u044f\u0442\u043d\u0438\u0446\u0430','\u0421\u0443\u0431\u0431\u043e\u0442\u0430','\u0412\u043e\u0441\u043a\u0440\u0435\u0441\u0435\u043d\u044c\u0435'],
+        schedSlot1: '6:00 - \u0425\u0430\u0442\u0445\u0430', schedSlot2: '10:00 - \u0421\u0438\u043b\u043e\u0432\u0430\u044f', schedSlot3: '18:00 - \u0418\u043d\u044c',
+        schedBook: '\u0417\u0430\u043f\u0438\u0441\u044c',
+        bookTitle: '\u0417\u0430\u043f\u0438\u0441\u044c \u043d\u0430 \u0437\u0430\u043d\u044f\u0442\u0438\u0435', bookName: '\u0412\u0430\u0448\u0435 \u0438\u043c\u044f', bookPhone: '\u041d\u043e\u043c\u0435\u0440 \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0430', bookSubmit: '\u0417\u0430\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f', bookSuccess: '\u0416\u0434\u0435\u043c \u0432\u0430\u0441!',
+        pricingTitle: '\u0422\u0430\u0440\u0438\u0444\u044b', pricingSub: '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0449\u0438\u0439 \u043f\u043b\u0430\u043d',
+        planDrop: '\u0420\u0430\u0437\u043e\u0432\u043e\u0435', planDropPrice: '1 500 \u20bd/\u0437\u0430\u043d\u044f\u0442\u0438\u0435',
+        planDropF1: '\u2713 \u041e\u0434\u043d\u043e \u0437\u0430\u043d\u044f\u0442\u0438\u0435', planDropF2: '\u2713 \u041b\u044e\u0431\u043e\u0439 \u0442\u0438\u043f', planDropF3: '\u2713 \u0411\u0435\u0437 \u043e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432', planDropBtn: '\u041a\u0443\u043f\u0438\u0442\u044c',
+        planPopular: '\u041f\u041e\u041f\u0423\u041b\u042f\u0420\u041d\u042b\u0419',
+        planMonthly: '\u041c\u0435\u0441\u044f\u0447\u043d\u044b\u0439', planMonthlyPrice: '7 900 \u20bd/\u043c\u0435\u0441\u044f\u0446',
+        planMonthlyF1: '\u2713 \u0411\u0435\u0437\u043b\u0438\u043c\u0438\u0442 \u0437\u0430\u043d\u044f\u0442\u0438\u0439', planMonthlyF2: '\u2713 \u041f\u0440\u0438\u043e\u0440\u0438\u0442\u0435\u0442\u043d\u0430\u044f \u0437\u0430\u043f\u0438\u0441\u044c', planMonthlyF3: '\u2713 \u0413\u043e\u0441\u0442\u0435\u0432\u044b\u0435 \u043f\u0430\u0441\u044b (2/\u043c\u0435\u0441)', planMonthlyF4: '\u2713 \u041e\u043d\u043b\u0430\u0439\u043d-\u0437\u0430\u043d\u044f\u0442\u0438\u044f', planMonthlyBtn: '\u041d\u0430\u0447\u0430\u0442\u044c',
+        planAnnual: '\u0413\u043e\u0434\u043e\u0432\u043e\u0439', planAnnualPrice: '79 000 \u20bd/\u0433\u043e\u0434',
+        planAnnualF1: '\u2713 \u0412\u0441\u0451 \u0438\u0437 \u041c\u0435\u0441\u044f\u0447\u043d\u043e\u0433\u043e', planAnnualF2: '\u2713 2 \u043c\u0435\u0441\u044f\u0446\u0430 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u043e', planAnnualF3: '\u2713 \u0421\u043a\u0438\u0434\u043a\u0430 \u043d\u0430 \u0438\u043d\u0434\u0438\u0432\u0438\u0434\u0443\u0430\u043b\u044c\u043d\u044b\u0435', planAnnualF4: '\u2713 \u0421\u043a\u0438\u0434\u043a\u0438 \u043d\u0430 \u0440\u0435\u0442\u0440\u0438\u0442\u044b', planAnnualBtn: '\u041f\u043e\u0434\u043f\u0438\u0441\u0430\u0442\u044c\u0441\u044f',
+        contactTitle: '\u0421\u0432\u044f\u0436\u0438\u0442\u0435\u0441\u044c \u0441 \u043d\u0430\u043c\u0438', contactSub: '\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u043f\u0443\u0442\u044c \u0432 \u0439\u043e\u0433\u0435 \u0441\u0435\u0433\u043e\u0434\u043d\u044f',
+        contactVisit: '\u0410\u0434\u0440\u0435\u0441', contactHours: '\u0427\u0430\u0441\u044b \u0440\u0430\u0431\u043e\u0442\u044b', contactHoursVal: '\u041f\u043e\u043d\u0435\u0434\u0435\u043b\u044c\u043d\u0438\u043a - \u0412\u043e\u0441\u043a\u0440\u0435\u0441\u0435\u043d\u044c\u0435\n6:00 - 21:00', contactInfo: '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u044b',
+        formName: '\u0412\u0430\u0448\u0435 \u0438\u043c\u044f', formEmail: '\u0412\u0430\u0448 email', formMsg: '\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435', formSend: '\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c',
+        promptText: '\u00ab\u041b\u0435\u043d\u0434\u0438\u043d\u0433 \u0439\u043e\u0433\u0430-\u0441\u0442\u0443\u0434\u0438\u0438 \u0441 \u0440\u0430\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435\u043c \u0438 \u0442\u0430\u0440\u0438\u0444\u0430\u043c\u0438\u00bb',
+        ctaLabel: '\u0425\u043e\u0447\u0443 \u0442\u0430\u043a\u043e\u0439 \u0436\u0435',
+        langLabel: 'EN'
+      }
+    };
+
+    var _lang = 'en';
+    var _isRuBrowser = false;
+    try { _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+
+    function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+    function applyI18n() {
+      // data-i18n text content
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var val = tt(key);
+        if (val) el.textContent = val;
+      });
+      // data-i18n-placeholder
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        var val = tt(key);
+        if (val) el.placeholder = val;
+      });
+      // promptBar
+      document.getElementById('promptText').textContent = tt('promptText');
+      var ctaBtn = document.getElementById('ctaBtn');
+      ctaBtn.textContent = tt('ctaLabel');
+      ctaBtn.href = 'https://simplesite.wpmix.net/?prompt=' + encodeURIComponent('Zen yoga studio minimalist hero landing page with serene nature photo background');
+      // schedule
+      renderSchedule();
+      // lang toggle
+      var langBtn = document.getElementById('langToggle');
+      if (langBtn) langBtn.textContent = tt('langLabel');
+    }
+
+    function renderSchedule() {
+      var days = tt('days');
+      var html = '';
+      for (var i = 0; i < days.length; i++) {
+        html += '<div class="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition">' +
+          '<span class="font-semibold w-36">' + days[i] + '</span>' +
+          '<div class="flex gap-4 flex-1">' +
+          '<span class="text-sm text-gray-400">' + tt('schedSlot1') + '</span>' +
+          '<span class="text-sm text-gray-400">' + tt('schedSlot2') + '</span>' +
+          '<span class="text-sm text-gray-400">' + tt('schedSlot3') + '</span>' +
+          '</div>' +
+          '<button onclick="openBooking()" class="bg-amber-500 hover:bg-amber-400 text-gray-900 px-4 py-2 rounded-full text-sm font-medium transition">' + tt('schedBook') + '</button>' +
+          '</div>';
+      }
+      document.getElementById('scheduleGrid').innerHTML = html;
+    }
+
+    window.openBooking = openBooking;
+    window.closeBooking = closeBooking;
+    window.submitBooking = submitBooking;
+
+    function openBooking() {
+      var overlay = document.getElementById('bookingOverlay');
+      var form = document.getElementById('bookingForm');
+      var success = document.getElementById('bookingSuccess');
+      overlay.style.display = 'flex';
+      form.style.display = 'block';
+      success.style.display = 'none';
+      document.getElementById('bookingTitle').textContent = tt('bookTitle');
+      document.getElementById('bookingName').placeholder = tt('bookName');
+      document.getElementById('bookingPhone').placeholder = tt('bookPhone');
+      document.getElementById('bookingName').value = '';
+      document.getElementById('bookingPhone').value = '';
+      var submitBtn = form.querySelector('button[onclick="submitBooking()"]');
+      if (submitBtn) submitBtn.textContent = tt('bookSubmit');
+      document.getElementById('bookingSuccessText').textContent = tt('bookSuccess');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBooking() {
+      document.getElementById('bookingOverlay').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function submitBooking() {
+      document.getElementById('bookingForm').style.display = 'none';
+      document.getElementById('bookingSuccess').style.display = 'block';
+      setTimeout(closeBooking, 2000);
+    }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+      applyI18n();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+      applyI18n();
+      if (_isRuBrowser) {
+        var langBtn = document.getElementById('langToggle');
+        if (langBtn) {
+          langBtn.style.display = '';
+          langBtn.onclick = toggleLang;
+        }
+      }
+      // Scroll hide/show promptBar
+      var _bar = document.getElementById('promptBar');
+      var _lastScroll = 0;
+      window.addEventListener('scroll', function() {
+        var st = window.pageYOffset || document.documentElement.scrollTop;
+        _bar.style.transform = st > _lastScroll && st > 40 ? 'translateY(100%)' : 'translateY(0)';
+        _lastScroll = st;
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

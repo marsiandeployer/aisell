@@ -1,0 +1,30 @@
+--- webchat.ts.backup
++++ webchat.ts
+@@ -1800,6 +1800,27 @@
+         }
+         upsertMessage(m);
+       }
++      
++      // CHANGE: Notify parent (Chrome extension) when index.html is created
++      // WHY: Auto-open preview tab when user creates landing page
++      // REF: User message 2026-02-18
++      notifyExtensionOnFileCreated(messages);
++      
+       if (shouldScroll) scrollToBottom();
+     }
+ 
++    function notifyExtensionOnFileCreated(messages) {
++      try {
++        if (!window.parent || window.parent === window) return;
++        const lastMsg = messages && messages.length > 0 ? messages[messages.length - 1] : null;
++        if (!lastMsg || lastMsg.role !== 'assistant') return;
++        const text = String(lastMsg.text || '').toLowerCase();
++        if (!text.includes('index.html')) return;
++        if (!text.includes('создан') && !text.includes('created') && !text.includes('сохран') && !text.includes('saved')) return;
++        const userId = (window.__WEBCHAT_USER_ID__ || '').replace(/^user_/, '');
++        if (!userId) return;
++        const previewUrl = 'https://d' + userId + '.wpmix.net/';
++        window.parent.postMessage({ type: 'file_created', filename: 'index.html', url: previewUrl }, '*');
++      } catch (_e) {}
++    }
++

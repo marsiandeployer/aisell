@@ -1,0 +1,14 @@
+{
+  "name": "SimpleDashboard",
+  "version": "1.0.0",
+  "description": "Build professional business analytics dashboards as single-file index.html. Includes 7+ industry templates (e-commerce, SaaS, agency, restaurant, real estate), Chart.js charts, bilingual EN/RU support, adaptive business interview.",
+  "author": "Noxon Digital Factory",
+  "homepage": "https://simpledashboard.wpmix.net",
+  "tags": ["dashboard", "analytics", "business", "chartjs", "tailwind", "visualization", "spa", "i18n"],
+  "install": "Copy products/simple_dashboard/ to ~/.claude/skills/simpledashboard/",
+  "screenshots": [
+    { "path": "showcases/construction-crm/screenshot-1280x800.png", "caption": "Construction CRM Dashboard" },
+    { "path": "showcases/sales-analytics-utm/screenshot-1280x800.png", "caption": "Sales Analytics + UTM" },
+    { "path": "showcases/funnel-analytics/screenshot-1280x800.png", "caption": "Full Funnel Analytics" }
+  ]
+}

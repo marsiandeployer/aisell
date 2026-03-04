@@ -1,0 +1,41 @@
+{
+  "reviewer": "code-reviewer-10",
+  "task": 10,
+  "round": 1,
+  "timestamp": "2026-03-04T12:00:00Z",
+  "verdict": "approved_with_minor_findings",
+  "summary": "Implementation correctly addresses all acceptance criteria. The profile handler is made async, guest emails are fetched server-side with proper error handling, ownerPrivateKey display is removed, share section renders conditionally on ownerAddress, and JS functions follow existing click-to-copy pattern. All 13 tests pass. Minor findings below.",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "low",
+      "category": "code-duplication",
+      "file": "botplatform/src/webchat.ts",
+      "description": "createInvite() and revokeInvite() share ~90% identical code (innerHTML assignment, click-to-copy handler, resultEl.style.display, error alert). Consider extracting a shared helper like showInviteUrl(d.url) to reduce duplication.",
+      "action": "skip",
+      "reason": "Follows the same pattern as generateMagicLink() in the same file which is also self-contained. Extracting a helper inside an inline <script> in a template literal adds complexity without significant benefit. The duplication is contained and understandable."
+    },
+    {
+      "id": 2,
+      "severity": "low",
+      "category": "defensive-coding",
+      "file": "botplatform/src/webchat.ts",
+      "lines": "6163-6188",
+      "description": "createInvite() and revokeInvite() do not handle the case where the endpoint returns 403 (ownerAddress not set) differently from other errors. The user sees a generic 'Ошибка' alert for both 403 and network errors.",
+      "action": "skip",
+      "reason": "The share section is only rendered when ownerAddress is set, so 403 from these endpoints should not normally occur in practice. Generic error message is acceptable for edge cases."
+    }
+  ],
+  "acceptance_criteria_check": {
+    "share_section_present_with_ownerAddress": "PASS",
+    "share_section_absent_without_ownerAddress": "PASS",
+    "private_key_not_in_html": "PASS",
+    "btnInvite_present": "PASS",
+    "btnRevoke_present": "PASS",
+    "guest_list_server_side": "PASS",
+    "escapeHtml_on_emails": "PASS",
+    "invite_button_calls_POST_invite": "PASS",
+    "revoke_button_calls_POST_revoke": "PASS",
+    "npm_run_build_exits_0": "PASS"
+  }
+}

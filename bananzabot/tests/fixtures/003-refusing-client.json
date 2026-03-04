@@ -1,0 +1,42 @@
+{
+  "id": "test-003-refusing-client",
+  "name": "Клиент отказывается от доп. полей: Ремонт телефонов",
+  "category": "prompt_generation",
+  "use_system_prompt": true,
+  "conversation": [
+    {
+      "role": "user",
+      "content": "Ремонт телефонов, замена экрана 2500₽"
+    },
+    {
+      "role": "assistant",
+      "expected_keywords": ["услуги", "добавить"],
+      "expected_behavior": "ask_if_more_services"
+    },
+    {
+      "role": "user",
+      "content": "пофигу на остальное просто перекидывай сообщения"
+    },
+    {
+      "role": "assistant",
+      "must_include": ["READY_TO_GENERATE"],
+      "must_not_include": ["еще", "дополнительно", "также"],
+      "expected_behavior": "accept_refusal_and_ready"
+    }
+  ],
+  "evaluation_criteria": {
+    "respect_refusal": {
+      "weight": 0.5,
+      "description": "Не настаивал после явного отказа ('пофигу')"
+    },
+    "ready_signal": {
+      "weight": 0.3,
+      "description": "Сразу отправил READY_TO_GENERATE после отказа"
+    },
+    "no_pushiness": {
+      "weight": 0.2,
+      "description": "Не задавал новых вопросов после отказа"
+    }
+  },
+  "ai_evaluator_prompt": "Оцени promptBuilder с отказывающимся клиентом:\n\n1. Уважение отказа (0-50): Не настаивал после 'пофигу'?\n2. READY_TO_GENERATE (0-30): Отправил сигнал сразу?\n3. Не навязчивость (0-20): Не задавал новых вопросов?\n\nВЕРНИ JSON:\n{\"respect_refusal\": X, \"ready_signal\": X, \"no_pushiness\": X, \"total\": X, \"feedback\": \"...\"}"
+}

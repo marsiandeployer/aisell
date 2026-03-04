@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleCrypto — Crypto Product Showcases</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0f; font-family: system-ui, sans-serif; }
+    .card:hover .card-overlay { opacity: 1; }
+    .card-overlay { opacity: 0; transition: opacity 0.2s; }
+    .card img { transition: transform 0.3s; }
+    .card:hover img { transform: scale(1.03); }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+
+  <!-- Header -->
+  <div class="max-w-5xl mx-auto mb-8">
+    <div class="flex items-center gap-3 mb-2">
+      <span class="text-3xl">🔐</span>
+      <h1 class="text-white text-2xl font-bold" data-i18n="heading">SimpleCrypto</h1>
+    </div>
+    <p class="text-zinc-400 text-sm" data-i18n="subheading">
+      White-label crypto products — deploy with AI assistance. No npm install.
+    </p>
+  </div>
+
+  <!-- Grid -->
+  <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+    <!-- MCW Wallet — FEATURED (full showcase) -->
+    <div class="card lg:col-span-2 relative rounded-2xl overflow-hidden border border-amber-500/30 cursor-pointer bg-zinc-900">
+      <a href="mcw-wallet/demo.html" target="_blank">
+        <img src="https://onout.org/wallet/images/screens.png"
+             alt="Multi-Currency Wallet"
+             class="w-full object-cover"
+             style="height: 280px; object-position: top;">
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-amber-500 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-white font-semibold" data-i18n="walletTitle">Multi-Currency Wallet</span>
+              <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">Featured</span>
+            </div>
+            <p class="text-zinc-400 text-xs" data-i18n="walletDesc">BTC, ETH, ERC-20 wallet with built-in exchange. WordPress plugin.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 mt-3">
+          <a href="https://wallet.wpmix.net/" target="_blank"
+             class="text-xs text-amber-400 hover:text-amber-300" data-i18n="liveDemo">Live demo ↗</a>
+          <a href="https://onout.org/wallet/" target="_blank"
+             class="text-xs text-zinc-500 hover:text-zinc-400" data-i18n="landing">Landing ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto" data-i18n="wordpressLabel">WordPress</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PredictionMarket -->
+    <div class="card relative rounded-2xl overflow-hidden border border-zinc-800 cursor-pointer bg-zinc-900">
+      <a href="https://predictionmarket.wpmix.net/" target="_blank">
+        <img src="https://onout.org/predictionmarket/images/product-screen.png"
+             alt="Prediction Market"
+             class="w-full object-cover"
+             style="height: 180px; object-position: top;">
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-zinc-700 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-3">
+        <div class="text-white text-sm font-medium mb-0.5" data-i18n="pmTitle">Prediction Market</div>
+        <p class="text-zinc-500 text-xs" data-i18n="pmDesc">Polymarket-like CLOB platform. YES/NO markets, limit orders.</p>
+        <div class="flex items-center gap-3 mt-2">
+          <a href="https://predictionmarket.wpmix.net/" target="_blank"
+             class="text-xs text-zinc-400 hover:text-zinc-300" data-i18n="liveDemo">Live demo ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto">Static</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEX -->
+    <div class="card relative rounded-2xl overflow-hidden border border-zinc-800 cursor-pointer bg-zinc-900">
+      <a href="https://dex.onout.org/" target="_blank">
+        <img src="https://onout.org/dex/images/screen1.jpg"
+             alt="DEX"
+             class="w-full object-cover bg-zinc-800"
+             style="height: 160px; object-position: top;"
+             onerror="this.src='https://onout.org/dex/images/admin-bg.jpg'">
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-zinc-700 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-3">
+        <div class="text-white text-sm font-medium mb-0.5" data-i18n="dexTitle">DEX / Token Exchange</div>
+        <p class="text-zinc-500 text-xs" data-i18n="dexDesc">Uniswap-like exchange for any EVM chain. Fork & configure.</p>
+        <div class="flex items-center gap-3 mt-2">
+          <a href="https://dex.onout.org/" target="_blank"
+             class="text-xs text-zinc-400 hover:text-zinc-300" data-i18n="liveDemo">Live demo ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staking / Farming -->
+    <div class="card relative rounded-2xl overflow-hidden border border-zinc-800 cursor-pointer bg-zinc-900">
+      <a href="https://farm.wpmix.net/" target="_blank">
+        <img src="https://onout.org/farming/images/admin-panel.jpg"
+             alt="Staking"
+             class="w-full object-cover"
+             style="height: 160px; object-position: top;">
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-zinc-700 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-3">
+        <div class="text-white text-sm font-medium mb-0.5" data-i18n="farmTitle">Staking & Yield Farming</div>
+        <p class="text-zinc-500 text-xs" data-i18n="farmDesc">Users stake your token and earn rewards. WordPress plugin.</p>
+        <div class="flex items-center gap-3 mt-2">
+          <a href="https://farm.wpmix.net/" target="_blank"
+             class="text-xs text-zinc-400 hover:text-zinc-300" data-i18n="liveDemo">Live demo ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto">WordPress</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAO -->
+    <div class="card relative rounded-2xl overflow-hidden border border-zinc-800 cursor-pointer bg-zinc-900">
+      <a href="https://farm.wpmix.net/daofactory/" target="_blank">
+        <div class="w-full bg-gradient-to-br from-indigo-950 to-purple-950 flex items-center justify-center" style="height:160px;">
+          <span class="text-5xl">🗳</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-zinc-700 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-3">
+        <div class="text-white text-sm font-medium mb-0.5" data-i18n="daoTitle">DAO Governance</div>
+        <p class="text-zinc-500 text-xs" data-i18n="daoDesc">Token-based proposals and voting. Fork appsource/dao.</p>
+        <div class="flex items-center gap-3 mt-2">
+          <a href="https://farm.wpmix.net/daofactory/" target="_blank"
+             class="text-xs text-zinc-400 hover:text-zinc-300" data-i18n="liveDemo">Live demo ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Launchpad -->
+    <div class="card relative rounded-2xl overflow-hidden border border-zinc-800 cursor-pointer bg-zinc-900">
+      <a href="https://launchpad.onout.org/" target="_blank">
+        <div class="w-full bg-gradient-to-br from-emerald-950 to-teal-950 flex items-center justify-center" style="height:160px;">
+          <span class="text-5xl">🚀</span>
+        </div>
+        <div class="card-overlay absolute inset-0 bg-black/60 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm bg-zinc-700 px-4 py-2 rounded-full" data-i18n="viewDemo">View Demo →</span>
+        </div>
+      </a>
+      <div class="p-3">
+        <div class="text-white text-sm font-medium mb-0.5" data-i18n="launchTitle">IDO Launchpad</div>
+        <p class="text-zinc-500 text-xs" data-i18n="launchDesc">Token sale pools with vesting. Fork appsource/launchpad.</p>
+        <div class="flex items-center gap-3 mt-2">
+          <a href="https://launchpad.onout.org/" target="_blank"
+             class="text-xs text-zinc-400 hover:text-zinc-300" data-i18n="liveDemo">Live demo ↗</a>
+          <span class="text-xs text-zinc-600 ml-auto">GitHub Pages</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="max-w-5xl mx-auto mt-8 text-center text-zinc-600 text-xs">
+    <span data-i18n="footer">All products by</span>
+    <a href="https://onout.org/" target="_blank" class="text-zinc-500 hover:text-zinc-400 ml-1">NoxonThemes / onout.org</a>
+  </div>
+
+  <script>
+  (function() {
+    var s = {
+      en: {
+        heading: 'SimpleCrypto',
+        subheading: 'White-label crypto products — deploy with AI assistance. No npm install.',
+        viewDemo: 'View Demo →',
+        liveDemo: 'Live demo ↗',
+        landing: 'Landing ↗',
+        wordpressLabel: 'WordPress',
+        walletTitle: 'Multi-Currency Wallet',
+        walletDesc: 'BTC, ETH, ERC-20 wallet with built-in exchange. WordPress plugin.',
+        pmTitle: 'Prediction Market',
+        pmDesc: 'Polymarket-like CLOB platform. YES/NO markets, limit orders.',
+        dexTitle: 'DEX / Token Exchange',
+        dexDesc: 'Uniswap-like exchange for any EVM chain. Fork & configure.',
+        farmTitle: 'Staking & Yield Farming',
+        farmDesc: 'Users stake your token and earn rewards. WordPress plugin.',
+        daoTitle: 'DAO Governance',
+        daoDesc: 'Token-based proposals and voting. Fork appsource/dao.',
+        launchTitle: 'IDO Launchpad',
+        launchDesc: 'Token sale pools with vesting. Fork appsource/launchpad.',
+        footer: 'All products by'
+      },
+      ru: {
+        heading: 'SimpleCrypto',
+        subheading: 'White-label крипто-продукты — деплой с AI-ассистентом. Без npm install.',
+        viewDemo: 'Открыть демо →',
+        liveDemo: 'Живое демо ↗',
+        landing: 'Лендинг ↗',
+        wordpressLabel: 'WordPress',
+        walletTitle: 'Мультивалютный кошелёк',
+        walletDesc: 'BTC, ETH, ERC-20 кошелёк со встроенным обменом. WordPress плагин.',
+        pmTitle: 'Prediction Market',
+        pmDesc: 'Платформа типа Polymarket. Рынки YES/NO, лимитные ордера.',
+        dexTitle: 'DEX / Обменник токенов',
+        dexDesc: 'Биржа как Uniswap для любого EVM. Форк и настройка конфига.',
+        farmTitle: 'Стейкинг и Фарминг',
+        farmDesc: 'Пользователи стейкают ваш токен и получают награды. WordPress.',
+        daoTitle: 'DAO Голосование',
+        daoDesc: 'Предложения и голосования для держателей токена. Форк appsource/dao.',
+        launchTitle: 'IDO Launchpad',
+        launchDesc: 'Пулы для продажи токенов с вестингом. Форк appsource/launchpad.',
+        footer: 'Все продукты от'
+      }
+    };
+    var isRu = false;
+    try { isRu = (navigator.language||'').toLowerCase().startsWith('ru'); } catch(e){}
+    if (!isRu) return;
+    var t = s.ru;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      var k = el.getAttribute('data-i18n');
+      if (t[k]) el.textContent = t[k];
+    });
+  })();
+  </script>
+</body>
+</html>

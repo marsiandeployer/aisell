@@ -1,0 +1,5 @@
+WebChat Extension: Hair Salon Booking Form with Calendar & Stylist Profile
+
+Left: "Elegance" hair salon - stylist profile (Sarah Anderson with photo), interactive calendar, time slots, booking form with services ($245 total)
+Right: AI chat showing the prompt and bot response generating the booking page
+Prompt: "Make booking form for hair salon with calendar and stylist profile with photo"

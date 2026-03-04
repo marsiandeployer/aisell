@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Analytics Dashboard - Live Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+    .page-transition {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .page-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+  <!-- Prompt bar (fixed, semi-transparent, over content) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:22px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:8px 20px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-style:normal;text-decoration:none;white-space:nowrap" href="#"></a>
+  </div>
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-900 text-white p-4 flex flex-col">
+      <div class="text-xl font-bold mb-8">&#128202; Dashboard</div>
+      <nav class="space-y-2 flex-1" id="nav">
+        <a href="#overview" class="nav-link block px-4 py-2 rounded hover:bg-gray-700 transition" data-page="overview"></a>
+        <a href="#sales" class="nav-link block px-4 py-2 rounded hover:bg-gray-700 transition" data-page="sales"></a>
+        <a href="#utm" class="nav-link block px-4 py-2 rounded hover:bg-gray-700 transition" data-page="utm"></a>
+        <a href="#conversions" class="nav-link block px-4 py-2 rounded hover:bg-gray-700 transition" data-page="conversions"></a>
+      </nav>
+      <div id="langToggle" style="display:none" class="mt-4 pt-4 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-4 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-sm" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 overflow-auto" id="mainContent">
+      <!-- Content will be dynamically loaded -->
+    </main>
+  </div>
+
+  <script>
+    // ===== i18n =====
+    var _s = {
+      en: {
+        nav_overview: 'Overview',
+        nav_sales: 'Sales',
+        nav_utm: 'UTM Sources',
+        nav_conversions: 'Conversions',
+        course_sales_analytics: 'Course Sales Analytics',
+        period: 'Period',
+        total_revenue: 'Total Revenue',
+        from_last_month: 'from last month',
+        sales: 'Sales',
+        avg_check: 'Avg. Check',
+        conversion: 'Conversion',
+        sales_dynamics: 'Sales Dynamics',
+        traffic_sources_utm: 'Traffic Sources (UTM)',
+        sales_by_source: 'Sales by Source',
+        source_utm: 'Source (utm_source)',
+        campaign_utm: 'Campaign (utm_campaign)',
+        revenue: 'Revenue',
+        sales_details: 'Sales Details',
+        full_sales_stats: 'Full course sales statistics',
+        total_count: 'Total Count',
+        per_month: 'per month',
+        standard_plan: 'Standard plan',
+        growth: 'growth',
+        sales_by_period: 'Sales by Period',
+        top_sales_days: 'Top Sales Days',
+        day_monday: 'Monday',
+        day_wednesday: 'Wednesday',
+        day_friday: 'Friday',
+        day_saturday: 'Saturday',
+        day_sunday: 'Sunday',
+        jan: 'Jan',
+        feb: 'Feb',
+        utm_traffic_sources: 'UTM Traffic Sources',
+        detailed_source_analytics: 'Detailed analytics by source',
+        distribution_by_source: 'Distribution by Source',
+        roi_by_channel: 'ROI by Channel',
+        costs: 'Costs',
+        conversion_analysis: 'Conversion Analysis',
+        sales_funnel_and_conversions: 'Sales funnel and conversions',
+        sales_funnel: 'Sales Funnel',
+        visitors: 'Visitors',
+        course_views: 'Course Views',
+        added_to_cart: 'Added to Cart',
+        started_checkout: 'Started Checkout',
+        completed_purchase: 'Completed Purchase',
+        conversion_by_device: 'Conversion by Device',
+        conversion_metrics: 'Conversion Metrics',
+        avg_conversion: 'Avg. Conversion',
+        best_channel: 'Best Channel',
+        time_to_purchase: 'Time to Purchase',
+        days: 'days',
+        repeat_purchases: 'Repeat Purchases',
+        chart_label_sales: 'Sales',
+        chart_label_conversion: 'Conversion %'
+      },
+      ru: {
+        nav_overview: 'Обзор',
+        nav_sales: 'Продажи',
+        nav_utm: 'UTM источники',
+        nav_conversions: 'Конверсии',
+        course_sales_analytics: 'Аналитика продаж курса',
+        period: 'Период',
+        total_revenue: 'Общая выручка',
+        from_last_month: 'от прошлого месяца',
+        sales: 'Продажи',
+        avg_check: 'Средний чек',
+        conversion: 'Конверсия',
+        sales_dynamics: 'Динамика продаж',
+        traffic_sources_utm: 'Источники трафика (UTM)',
+        sales_by_source: 'Продажи по источникам',
+        source_utm: 'Источник (utm_source)',
+        campaign_utm: 'Кампания (utm_campaign)',
+        revenue: 'Выручка',
+        sales_details: 'Детализация продаж',
+        full_sales_stats: 'Полная статистика по продажам курса',
+        total_count: 'Общее количество',
+        per_month: 'за месяц',
+        standard_plan: 'Стандартный тариф',
+        growth: 'рост',
+        sales_by_period: 'График продаж по периодам',
+        top_sales_days: 'Топ дни по продажам',
+        day_monday: 'Понедельник',
+        day_wednesday: 'Среда',
+        day_friday: 'Пятница',
+        day_saturday: 'Суббота',
+        day_sunday: 'Воскресенье',
+        jan: 'Янв',
+        feb: 'Фев',
+        utm_traffic_sources: 'UTM источники трафика',
+        detailed_source_analytics: 'Детальная аналитика по источникам',
+        distribution_by_source: 'Распределение по источникам',
+        roi_by_channel: 'ROI по каналам',
+        costs: 'Затраты',
+        conversion_analysis: 'Анализ конверсий',
+        sales_funnel_and_conversions: 'Воронка продаж и конверсии',
+        sales_funnel: 'Воронка продаж',
+        visitors: 'Посетители',
+        course_views: 'Просмотры курса',
+        added_to_cart: 'Добавили в корзину',
+        started_checkout: 'Начали оформление',
+        completed_purchase: 'Завершили покупку',
+        conversion_by_device: 'Конверсия по устройствам',
+        conversion_metrics: 'Метрики конверсии',
+        avg_conversion: 'Средняя конверсия',
+        best_channel: 'Лучший канал',
+        time_to_purchase: 'Время до покупки',
+        days: 'дня',
+        repeat_purchases: 'Повторные покупки',
+        chart_label_sales: 'Продажи',
+        chart_label_conversion: 'Конверсия %'
+      }
+    };
+
+    var _lang = 'en';
+
+    function tt(key) {
+      return (_s[_lang] && _s[_lang][key]) || (_s['en'] && _s['en'][key]) || key;
+    }
+
+    // Language detection and persistence
+    var _isRuBrowser = false;
+    try { _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru'); } catch(_e) {}
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+    }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+      document.getElementById('langBtn').textContent = _lang === 'ru' ? '\uD83C\uDF10 Русский' : '\uD83C\uDF10 English';
+      if (typeof updatePromptBar === 'function') updatePromptBar();
+      updateNavLabels();
+      navigateTo(currentPage);
+    }
+
+    function updateNavLabels() {
+      var navMap = {
+        overview: 'nav_overview',
+        sales: 'nav_sales',
+        utm: 'nav_utm',
+        conversions: 'nav_conversions'
+      };
+      document.querySelectorAll('.nav-link').forEach(function(link) {
+        var page = link.dataset.page;
+        if (navMap[page]) link.textContent = tt(navMap[page]);
+      });
+    }
+
+    // ===== SPA (Single Page Application) Navigation =====
+    // Instant page switching without reload
+
+    let charts = {};
+    let currentPage = 'overview';
+
+    // JIT Data Generation
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), 0, 1);
+    const endDate = now;
+    const formatDate = (d) => d.toLocaleDateString(_lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'short' });
+
+    const generateSalesData = () => {
+      const baseValue = 20;
+      const trend = 0.15;
+      const volatility = 0.3;
+      return Array.from({ length: 7 }, (_, i) => {
+        const trendValue = baseValue * (1 + trend * (i / 6));
+        const noise = (Math.random() - 0.5) * volatility * trendValue;
+        return Math.round(trendValue + noise);
+      });
+    };
+
+    const salesData = generateSalesData();
+    const totalSales = salesData.reduce((a, b) => a + b, 0);
+    const avgPrice = 5500;
+    const totalRevenue = totalSales * avgPrice;
+    const avgConversion = 3.2;
+
+    const utmSources = [
+      { name: 'Google CPC', campaign: 'cpc_landing_v2', color: '#3B82F6' },
+      { name: 'Instagram', campaign: 'stories_promo', color: '#E91E63' },
+      { name: 'Telegram', campaign: 'channel_post', color: '#00BCD4' },
+      { name: 'Facebook', campaign: 'lookalike_audience', color: '#4CAF50' },
+      { name: 'Email', campaign: 'newsletter_feb', color: '#FF9800' }
+    ];
+
+    const distributeSales = (total) => {
+      const weights = [0.31, 0.23, 0.18, 0.16, 0.12];
+      return weights.map(w => Math.round(total * w));
+    };
+
+    const utmSalesData = distributeSales(totalSales);
+
+    const fmtNum = (n) => n.toLocaleString(_lang === 'ru' ? 'ru-RU' : 'en-US');
+
+    const periodLabels = () => [
+      `${tt('jan')} 1-7`, `${tt('jan')} 8-14`, `${tt('jan')} 15-21`, `${tt('jan')} 22-31`,
+      `${tt('feb')} 1-7`, `${tt('feb')} 8-14`, `${tt('feb')} 15-19`
+    ];
+
+    // Page Templates
+    const pages = {
+      overview: () => `
+        <div class="page-transition page-active">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">${tt('course_sales_analytics')}</h1>
+            <p class="text-gray-500">${tt('period')}: ${formatDate(startDate)} - ${formatDate(endDate)}</p>
+          </div>
+          <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('total_revenue')}</div>
+              <div class="text-2xl font-bold text-gray-800">\u20BD${fmtNum(totalRevenue)}</div>
+              <div class="text-green-500 text-sm">\u2191 23% ${tt('from_last_month')}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('sales')}</div>
+              <div class="text-2xl font-bold text-gray-800">${totalSales}</div>
+              <div class="text-green-500 text-sm">\u2191 18% ${tt('from_last_month')}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('avg_check')}</div>
+              <div class="text-2xl font-bold text-gray-800">\u20BD${fmtNum(avgPrice)}</div>
+              <div class="text-red-500 text-sm">\u2193 4% ${tt('from_last_month')}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('conversion')}</div>
+              <div class="text-2xl font-bold text-gray-800">${avgConversion}%</div>
+              <div class="text-green-500 text-sm">\u2191 0.5% ${tt('from_last_month')}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('sales_dynamics')}</h3>
+              <canvas id="salesChart"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('traffic_sources_utm')}</h3>
+              <canvas id="utmChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold mb-4 text-gray-800">${tt('sales_by_source')}</h3>
+            <table class="w-full text-left">
+              <thead class="border-b">
+                <tr class="text-gray-600 text-sm">
+                  <th class="pb-2">${tt('source_utm')}</th>
+                  <th class="pb-2">${tt('campaign_utm')}</th>
+                  <th class="pb-2">${tt('sales')}</th>
+                  <th class="pb-2">${tt('revenue')}</th>
+                  <th class="pb-2">${tt('conversion')}</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                ${utmSources.map((s, i) => {
+                  const sales = utmSalesData[i];
+                  const revenue = sales * avgPrice;
+                  const conv = (avgConversion + (Math.random() - 0.5) * 1.5).toFixed(1);
+                  const convClass = conv >= 3.5 ? 'text-green-600' : conv >= 2.5 ? 'text-yellow-600' : 'text-red-600';
+                  return `<tr class="border-b hover:bg-gray-50">
+                    <td class="py-2">${s.name.toLowerCase().replace(' ', '')}</td>
+                    <td class="py-2">${s.campaign}</td>
+                    <td class="py-2">${sales}</td>
+                    <td class="py-2">\u20BD${fmtNum(revenue)}</td>
+                    <td class="py-2 ${convClass}">${conv}%</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `,
+
+      sales: () => `
+        <div class="page-transition page-active">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">${tt('sales_details')}</h1>
+            <p class="text-gray-500">${tt('full_sales_stats')}</p>
+          </div>
+          <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('total_count')}</div>
+              <div class="text-3xl font-bold text-gray-800">${totalSales}</div>
+              <div class="text-green-500 text-sm mt-2">+${Math.round(totalSales * 0.18)} ${tt('per_month')}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('avg_check')}</div>
+              <div class="text-3xl font-bold text-gray-800">\u20BD${fmtNum(avgPrice)}</div>
+              <div class="text-gray-400 text-sm mt-2">${tt('standard_plan')}</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <div class="text-gray-500 text-sm">${tt('revenue')}</div>
+              <div class="text-3xl font-bold text-gray-800">\u20BD${fmtNum(totalRevenue)}</div>
+              <div class="text-green-500 text-sm mt-2">\u2191 23% ${tt('growth')}</div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow mb-6">
+            <h3 class="font-semibold mb-4 text-gray-800">${tt('sales_by_period')}</h3>
+            <canvas id="salesDetailChart"></canvas>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow">
+            <h3 class="font-semibold mb-4 text-gray-800">${tt('top_sales_days')}</h3>
+            <div class="space-y-3">
+              ${[
+                { key: 'day_monday' },
+                { key: 'day_wednesday' },
+                { key: 'day_friday' },
+                { key: 'day_saturday' },
+                { key: 'day_sunday' }
+              ].map((item, i) => {
+                const count = Math.round(totalSales / 7 * (1.2 - i * 0.05));
+                const percent = (count / totalSales * 100).toFixed(1);
+                return `<div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                  <span class="font-medium text-gray-700">${tt(item.key)}</span>
+                  <div class="flex items-center gap-4">
+                    <div class="w-32 bg-gray-200 rounded-full h-2">
+                      <div class="bg-blue-600 h-2 rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-600">${count} (${percent}%)</span>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `,
+
+      utm: () => `
+        <div class="page-transition page-active">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">${tt('utm_traffic_sources')}</h1>
+            <p class="text-gray-500">${tt('detailed_source_analytics')}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('distribution_by_source')}</h3>
+              <canvas id="utmPieChart"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('roi_by_channel')}</h3>
+              <canvas id="utmBarChart"></canvas>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+            ${utmSources.map((s, i) => {
+              const sales = utmSalesData[i];
+              const revenue = sales * avgPrice;
+              const cost = revenue * 0.3;
+              const roi = ((revenue - cost) / cost * 100).toFixed(0);
+              return `<div class="bg-white p-5 rounded-lg shadow hover:shadow-lg transition">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <div class="w-3 h-12 rounded-full" style="background: ${s.color}"></div>
+                    <div>
+                      <h4 class="font-semibold text-lg text-gray-800">${s.name}</h4>
+                      <p class="text-sm text-gray-500">${s.campaign}</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-4 gap-8 text-right">
+                    <div>
+                      <div class="text-sm text-gray-500">${tt('sales')}</div>
+                      <div class="text-lg font-bold text-gray-800">${sales}</div>
+                    </div>
+                    <div>
+                      <div class="text-sm text-gray-500">${tt('revenue')}</div>
+                      <div class="text-lg font-bold text-gray-800">\u20BD${fmtNum(revenue)}</div>
+                    </div>
+                    <div>
+                      <div class="text-sm text-gray-500">${tt('costs')}</div>
+                      <div class="text-lg font-bold text-gray-800">\u20BD${fmtNum(Math.round(cost))}</div>
+                    </div>
+                    <div>
+                      <div class="text-sm text-gray-500">ROI</div>
+                      <div class="text-lg font-bold text-green-600">${roi}%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `,
+
+      conversions: () => `
+        <div class="page-transition page-active">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">${tt('conversion_analysis')}</h1>
+            <p class="text-gray-500">${tt('sales_funnel_and_conversions')}</p>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h3 class="font-semibold mb-6 text-gray-800">${tt('sales_funnel')}</h3>
+            <div class="space-y-4">
+              ${[
+                { key: 'visitors', value: Math.round(totalSales / avgConversion * 100), percent: 100 },
+                { key: 'course_views', value: Math.round(totalSales / avgConversion * 100 * 0.45), percent: 45 },
+                { key: 'added_to_cart', value: Math.round(totalSales / avgConversion * 100 * 0.15), percent: 15 },
+                { key: 'started_checkout', value: Math.round(totalSales / avgConversion * 100 * 0.08), percent: 8 },
+                { key: 'completed_purchase', value: totalSales, percent: avgConversion }
+              ].map((step, i) => `
+                <div>
+                  <div class="flex justify-between mb-2">
+                    <span class="font-medium text-gray-700">${tt(step.key)}</span>
+                    <span class="text-sm font-semibold text-gray-600">${step.value} (${step.percent}%)</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-8" style="width: ${100 - i * 10}%">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold" style="width: ${step.percent}%">
+                      ${step.percent}%
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('conversion_by_device')}</h3>
+              <canvas id="deviceChart"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+              <h3 class="font-semibold mb-4 text-gray-800">${tt('conversion_metrics')}</h3>
+              <div class="space-y-4 mt-4">
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                  <span class="text-gray-700">${tt('avg_conversion')}</span>
+                  <span class="text-xl font-bold text-blue-600">${avgConversion}%</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                  <span class="text-gray-700">${tt('best_channel')}</span>
+                  <span class="text-xl font-bold text-green-600">Google (4.1%)</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                  <span class="text-gray-700">${tt('time_to_purchase')}</span>
+                  <span class="text-xl font-bold text-gray-800">2.3 ${tt('days')}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                  <span class="text-gray-700">${tt('repeat_purchases')}</span>
+                  <span class="text-xl font-bold text-purple-600">12%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // Navigation Handler
+    function navigateTo(page) {
+      currentPage = page;
+      const content = document.getElementById('mainContent');
+
+      // Update content instantly
+      content.innerHTML = pages[page]();
+
+      // Update active nav
+      document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.dataset.page === page) {
+          link.classList.add('bg-blue-600');
+          link.classList.remove('hover:bg-gray-700');
+        } else {
+          link.classList.remove('bg-blue-600');
+          link.classList.add('hover:bg-gray-700');
+        }
+      });
+
+      // Render charts after DOM update
+      setTimeout(() => renderCharts(page), 50);
+    }
+
+    // Chart Rendering
+    function renderCharts(page) {
+      // Destroy old charts
+      Object.values(charts).forEach(c => c?.destroy?.());
+      charts = {};
+
+      if (page === 'overview') {
+        charts.sales = new Chart(document.getElementById('salesChart'), {
+          type: 'line',
+          data: {
+            labels: periodLabels(),
+            datasets: [{
+              label: tt('chart_label_sales'),
+              data: salesData,
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+
+        charts.utm = new Chart(document.getElementById('utmChart'), {
+          type: 'doughnut',
+          data: {
+            labels: utmSources.map(s => s.name),
+            datasets: [{ data: utmSalesData, backgroundColor: utmSources.map(s => s.color) }]
+          },
+          options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+      } else if (page === 'sales') {
+        charts.salesDetail = new Chart(document.getElementById('salesDetailChart'), {
+          type: 'bar',
+          data: {
+            labels: periodLabels(),
+            datasets: [{
+              label: tt('chart_label_sales'),
+              data: salesData,
+              backgroundColor: '#3B82F6'
+            }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      } else if (page === 'utm') {
+        charts.utmPie = new Chart(document.getElementById('utmPieChart'), {
+          type: 'pie',
+          data: {
+            labels: utmSources.map(s => s.name),
+            datasets: [{ data: utmSalesData, backgroundColor: utmSources.map(s => s.color) }]
+          },
+          options: { responsive: true }
+        });
+
+        charts.utmBar = new Chart(document.getElementById('utmBarChart'), {
+          type: 'bar',
+          data: {
+            labels: utmSources.map(s => s.name),
+            datasets: [{
+              label: 'ROI %',
+              data: utmSalesData.map(s => Math.round((s * avgPrice * 0.7 / (s * avgPrice * 0.3)) * 100)),
+              backgroundColor: utmSources.map(s => s.color)
+            }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+      } else if (page === 'conversions') {
+        charts.device = new Chart(document.getElementById('deviceChart'), {
+          type: 'bar',
+          data: {
+            labels: ['Desktop', 'Mobile', 'Tablet'],
+            datasets: [{
+              label: tt('chart_label_conversion'),
+              data: [4.2, 2.8, 2.1],
+              backgroundColor: ['#3B82F6', '#10B981', '#F59E0B']
+            }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true, max: 5 } } }
+        });
+      }
+    }
+
+    // Event Listeners
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateTo(link.dataset.page);
+      });
+    });
+
+    // Handle hash navigation
+    window.addEventListener('hashchange', () => {
+      const page = location.hash.slice(1) || 'overview';
+      if (pages[page]) navigateTo(page);
+    });
+
+    // Prompt bar data
+    var _promptTitle = {
+      ru: '\u00ab\u0421\u0434\u0435\u043b\u0430\u0439 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0443 \u043f\u0440\u043e\u0434\u0430\u0436 \u043c\u043e\u0435\u0433\u043e \u043a\u0443\u0440\u0441\u0430 \u0441 \u0443\u0447\u0435\u0442\u043e\u043c \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u043e\u0432 \u0442\u0440\u0430\u0444\u0438\u043a\u0430 (utm \u043c\u0435\u0442\u043e\u043a)\u00bb',
+      en: '\u201CBuild sales analytics for my course tracking traffic sources (utm tags)\u201D'
+    };
+    var _fullPrompt = '\u0421\u0434\u0435\u043b\u0430\u0439 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0443 \u043f\u0440\u043e\u0434\u0430\u0436 \u043c\u043e\u0435\u0433\u043e \u043a\u0443\u0440\u0441\u0430 \u0441 \u0443\u0447\u0435\u0442\u043e\u043c \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u043e\u0432 \u0442\u0440\u0430\u0444\u0438\u043a\u0430 (utm \u043c\u0435\u0442\u043e\u043a)';
+    var _ctaLabel = { ru: '\u0425\u043e\u0447\u0443 \u0442\u0430\u043a\u043e\u0439 \u0436\u0435', en: 'I want the same' };
+
+    function updatePromptBar() {
+      document.getElementById('promptText').textContent = _promptTitle[_lang] || _promptTitle['en'];
+      var btn = document.getElementById('ctaBtn');
+      btn.textContent = _ctaLabel[_lang] || _ctaLabel['en'];
+      btn.href = '/?start=example_sales-analytics-utm&prompt=' + encodeURIComponent(_fullPrompt);
+      btn.onclick = function(e) {
+        var insideIframe = false;
+        try { insideIframe = window.parent && window.parent !== window; } catch (_e) {}
+        if (insideIframe) {
+          e.preventDefault();
+          try {
+            window.parent.postMessage({ type: 'open_webchat_prompt', prompt: _fullPrompt }, '*');
+          } catch (_e) {}
+          return;
+        }
+        var extId = '';
+        try { extId = String(new URLSearchParams(window.location.search).get('ext_id') || '').trim(); } catch (_e) {}
+        if (!extId) return;
+        try {
+          if (window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+            e.preventDefault();
+            chrome.runtime.sendMessage(extId, { type: 'open_webchat_prompt', prompt: _fullPrompt });
+          }
+        } catch (_e) {}
+      };
+    }
+
+    // DOMContentLoaded: init nav labels, lang toggle, initial page
+    document.addEventListener('DOMContentLoaded', () => {
+      updateNavLabels();
+      updatePromptBar();
+
+      if (_isRuBrowser) {
+        var lt = document.getElementById('langToggle');
+        if (lt) lt.style.display = '';
+        document.getElementById('langBtn').textContent = _lang === 'ru' ? '\uD83C\uDF10 Русский' : '\uD83C\uDF10 English';
+      }
+
+      const initialPage = location.hash.slice(1) || 'overview';
+      navigateTo(initialPage);
+
+      // Hide prompt bar on scroll down, show on scroll up
+      var _lastScroll = 0;
+      var _bar = document.getElementById('promptBar');
+      var _main = document.querySelector('main');
+      if (_main && _bar) {
+        _main.addEventListener('scroll', function() {
+          var st = _main.scrollTop;
+          _bar.style.transform = st > _lastScroll && st > 40 ? 'translateY(100%)' : 'translateY(0)';
+          _lastScroll = st;
+        });
+      }
+    });
+  </script>
+</body>
+</html>

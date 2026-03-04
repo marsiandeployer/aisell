@@ -1,0 +1,187 @@
+# Simple* Product Template
+# ========================
+# Шаблон для создания продуктов серии Simple*
+# Все продукты называются Simple{Name}: SimpleSite, SimpleDashboard, etc.
+
+# =============================================================================
+# ОСНОВНЫЕ МЕТАДАННЫЕ
+# =============================================================================
+product_id: "simple_template"                    # snake_case, начинается с simple_
+name: "SimpleTemplate"                           # PascalCase, начинается с Simple
+tagline: "Краткое описание в 120 символов максимум для Chrome Web Store и карточек"
+description: |
+  Полное описание продукта до 500 символов.
+  Что делает продукт, для кого, какую проблему решает.
+  Используется в Chrome Web Store и на habab.ru.
+
+version: "1.0.0"
+status: "development"                            # development | active | deprecated
+category: "ai-builder"                           # ai-builder | automation | analytics
+
+# =============================================================================
+# СВЯЗЬ С HABAB.RU (B2B портфолио)
+# =============================================================================
+habab:
+  product_yaml: "/root/space2/hababru/content/products/simple_template.yaml"
+  product_url: "https://habab.ru/products/simple_template"
+  promo_article: "/root/space2/hababru/content/products/simple_template_promo.md"
+
+  # B2B позиционирование (как продаем на habab.ru)
+  b2b_pitch: |
+    Я разработаю для вас платформу-конструктор [тип продукта],
+    где ваши клиенты смогут [действие] через AI-чат.
+
+  target_audience:
+    - "Маркетинговые агентства"
+    - "Web-студии"
+    - "SaaS компании"
+
+# =============================================================================
+# CHROME WEB STORE
+# =============================================================================
+chrome_store:
+  name: "SimpleTemplate - AI Builder"            # Название в магазине (до 45 символов)
+  short_name: "SimpleTemplate"                   # Короткое имя (до 12 символов)
+
+  # Описания для Chrome Web Store
+  short_description: "Краткое описание до 132 символов для карточки в магазине"
+
+  detailed_description: |
+    Полное описание для страницы продукта в Chrome Web Store.
+
+    ✨ What you can build:
+    • Feature 1
+    • Feature 2
+    • Feature 3
+
+    🤖 AI-powered:
+    • AI capability 1
+    • AI capability 2
+
+    🌐 Publish to web:
+    • Instant hosting
+    • Custom domains
+
+  # Ключевые слова для поиска
+  keywords:
+    - "keyword1"
+    - "keyword2"
+    - "AI builder"
+
+  # Иконки
+  icons:
+    dir: "/root/aisell/products/simple_template/icons/"
+    # Нужны: icon16.png, icon32.png, icon48.png, icon128.png
+    # Стиль: минималистичный, узнаваемый символ
+    # Цвета: основной цвет продукта
+
+  # Скриншоты для магазина (1280x800 или 640x400)
+  screenshots:
+    - path: "showcases/case-1/screenshot-1280x800.png"
+      caption: "Описание скриншота 1"
+    - path: "showcases/case-2/screenshot-1280x800.png"
+      caption: "Описание скриншота 2"
+
+# =============================================================================
+# TELEGRAM / WEBCHAT
+# =============================================================================
+telegram:
+  bot_username: "@simpletemplatebot"             # Если есть отдельный бот
+  webchat_url: "https://example.habab.ru"        # URL веб-чата
+  webchat_port: 8091                             # Порт на сервере
+
+  # System prompt для AI
+  system_prompt: |
+    You are SimpleTemplate - an AI assistant that helps users create [type].
+
+    Your capabilities:
+    - Create [items] from chat descriptions
+    - Edit via natural language
+    - Publish to web instantly
+
+# =============================================================================
+# SHOWCASES (демо-примеры)
+# =============================================================================
+# Каждый showcase - это пример использования продукта
+# Скриншот 1280x800: слева результат, справа чат
+#
+# Шаблон HTML: /root/aisell/extensions/webchat-sidebar/previews/templates/chat-frame-base.html
+# Скрипт генерации: render_showcase.ts --product {product_id} --slug {slug}
+# Скриншоты сохраняются: /root/aisell/products/{product_id}/showcases/{slug}.png
+
+showcases:
+  - slug: "example-case-1"
+    prompt: "Create a landing page for yoga studio with booking form"
+    caption: "Yoga Studio Landing Page"
+    tags: ["landing", "booking", "wellness"]
+
+  - slug: "example-case-2"
+    prompt: "Make a coffee shop menu with online ordering"
+    caption: "Coffee Shop Menu"
+    tags: ["menu", "ecommerce", "food"]
+
+# =============================================================================
+# ИКОНКИ И ВИЗУАЛ
+# =============================================================================
+visual:
+  # Основной цвет продукта (для иконок, UI, баннеров)
+  primary_color: "#4F46E5"                       # Indigo для примера
+  brand_colors:
+    accent: "#4F46E5"         # Основной акцент
+    accent_light: "#818CF8"   # Светлее (hover, подсветка)
+    accent_dark: "#4338CA"    # Темнее (pressed, тени)
+    bg_dark: "#0c0f1a"        # Тёмный фон для баннеров/промо
+    bg_gradient: "160deg, #0c0f1a 0%, #0e1025 50%, #110f2a 100%"
+
+  # Символ продукта (для иконок)
+  icon_symbol: "🌐"                              # Emoji или описание
+  icon_description: |
+    Минималистичная планета/глобус
+    Синий градиент от #4F46E5 к #7C3AED
+
+  # Требования к иконкам Chrome Web Store:
+  # - 16x16, 32x32, 48x48, 128x128 PNG
+  # - Прозрачный фон
+  # - Четкий символ без мелких деталей
+
+# =============================================================================
+# SEO И МАРКЕТИНГ
+# =============================================================================
+seo:
+  # Ключевые слова для demand-research и статей
+  keywords:
+    primary:
+      - "основной ключ 1"
+      - "основной ключ 2"
+    secondary:
+      - "дополнительный ключ 1"
+      - "дополнительный ключ 2"
+
+  # Идеи для SEO-статей на habab.ru
+  article_ideas:
+    - "Как создать [тип продукта] без программирования"
+    - "[Тип продукта] для малого бизнеса: полное руководство"
+    - "Топ-10 примеров [тип продукта] для вдохновения"
+
+# =============================================================================
+# ЧЕКЛИСТ СОЗДАНИЯ ПРОДУКТА
+# =============================================================================
+#
+# □ 1. Создать этот YAML файл в /root/aisell/products/{product_id}.yaml
+# □ 2. Создать структуру папок:
+#      /root/aisell/products/{product_id}/
+#      ├── icons/           # Иконки 16/32/48/128
+#      ├── showcases/       # Демо-примеры
+#      │   ├── case-1/
+#      │   │   ├── prompt.txt
+#      │   │   ├── caption.txt
+#      │   │   └── screenshot.png
+#      │   └── case-2/
+#      └── README.md
+# □ 3. Провести /demand-research для ключевых слов
+# □ 4. Создать иконки (см. visual.icon_description)
+# □ 5. Создать минимум 3 showcase примера
+# □ 6. Создать продукт на habab.ru (create-product-habab.md)
+# □ 7. Написать SEO-статью (/habab-seo-article)
+# □ 8. Опубликовать в Chrome Web Store (chrome-extension-publishing.md)
+# □ 9. Добавить в README.md проекта aisell

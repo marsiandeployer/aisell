@@ -1,0 +1,42 @@
+{
+  "id": "test-002-minimalist-client",
+  "name": "Минималистичный клиент: Веб разработка",
+  "category": "prompt_generation",
+  "use_system_prompt": true,
+  "conversation": [
+    {
+      "role": "user",
+      "content": "веб разработка"
+    },
+    {
+      "role": "assistant",
+      "expected_keywords": ["услуги", "подробнее", "цены"],
+      "expected_behavior": "ask_for_details"
+    },
+    {
+      "role": "user",
+      "content": "просто присылай мне их сообщения"
+    },
+    {
+      "role": "assistant",
+      "must_include": ["READY_TO_GENERATE"],
+      "expected_keywords": ["готов", "создам"],
+      "expected_behavior": "ready_with_minimal_info"
+    }
+  ],
+  "evaluation_criteria": {
+    "quick_readiness": {
+      "weight": 0.4,
+      "description": "Быстро понял что клиенту достаточно минимума и не настаивал"
+    },
+    "ready_signal": {
+      "weight": 0.4,
+      "description": "Отправил READY_TO_GENERATE после минимальной информации"
+    },
+    "tone": {
+      "weight": 0.2,
+      "description": "Дружелюбный, лаконичный"
+    }
+  },
+  "ai_evaluator_prompt": "Оцени promptBuilder с минималистичным клиентом:\n\n1. Быстрота (0-40): Понял что клиенту достаточно минимума, не навязывал лишнее?\n2. READY_TO_GENERATE (0-40): Отправил сигнал после минимума?\n3. Тон (0-20): Лаконично, дружелюбно?\n\nВЕРНИ JSON:\n{\"quick_readiness\": X, \"ready_signal\": X, \"tone\": X, \"total\": X, \"feedback\": \"...\"}"
+}

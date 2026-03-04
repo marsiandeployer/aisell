@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, initial-scale=1" />
+    <title>Promo Preview</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 1280px;
+        height: 800px;
+        overflow: hidden;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+      body {
+        background:
+          radial-gradient(circle at 8% 8%, rgba(102, 126, 234, 0.32), transparent 28%),
+          radial-gradient(circle at 82% 80%, rgba(73, 194, 161, 0.28), transparent 36%),
+          linear-gradient(130deg, #101827 0%, #0f1e2a 55%, #142331 100%);
+        color: #eaf0f8;
+      }
+      .browser {
+        width: 1240px;
+        height: 760px;
+        margin: 20px auto;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.22);
+        box-shadow: 0 35px 80px rgba(0,0,0,0.45);
+        background: #0f1722;
+      }
+      .topbar {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        background: linear-gradient(180deg, #e8edf5 0%, #d5deeb 100%);
+        border-bottom: 1px solid #bfcbdc;
+      }
+      .dot { width: 11px; height: 11px; border-radius: 50%; }
+      .r { background: #ff5f57; }
+      .y { background: #febb2e; }
+      .g { background: #28c840; }
+      .url {
+        margin-left: 8px;
+        flex: 1;
+        height: 31px;
+        border-radius: 9px;
+        border: 1px solid #bccadd;
+        background: #f9fbff;
+        color: #4a5c75;
+        display: flex;
+        align-items: center;
+        padding: 0 13px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .body {
+        display: grid;
+        grid-template-columns: 67% 33%;
+        height: calc(100% - 52px);
+      }
+      .left {
+        border-right: 1px solid rgba(255,255,255,0.12);
+        overflow: hidden;
+      }
+      .left iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .right {
+        background: #dce6f5;
+        padding: 10px;
+      }
+      .chat-container {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #c1cfe2;
+        border-radius: 12px;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .chat-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+      }
+      .chat-messages {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .bubble {
+        max-width: 90%;
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .bubble.user {
+        align-self: flex-end;
+        background: #3b82f6;
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
+      .bubble.assistant {
+        align-self: flex-start;
+        background: #f3f4f6;
+        color: #1f2937;
+        border-bottom-left-radius: 4px;
+      }
+      .chat-input {
+        padding: 12px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 8px;
+      }
+      .chat-input input {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 20px;
+        font-size: 14px;
+        outline: none;
+      }
+      .chat-input button {
+        padding: 10px 20px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="browser">
+      <div class="topbar">
+        <span class="dot r"></span>
+        <span class="dot y"></span>
+        <span class="dot g"></span>
+        <div class="url">https://d999999999.habab.ru/</div>
+      </div>
+
+      <div class="body">
+        <section class="left">
+          <iframe src="http://localhost:8091/preview"></iframe>
+        </section>
+
+        <aside class="right">
+          <div class="chat-container">
+            <div class="chat-header">NoxonBot</div>
+            <div class="chat-messages">
+              <div class="bubble user">Cozy coffee shop menu online with 'Print QR code' function</div>
+              <div class="bubble assistant">Coffee menu ready!
+
+• Bean & Brew landing page
+• Menu: Espresso $3, Latte $4, Cappuccino $4.50, Croissant $2.50
+• "Print QR Code" button to share menu
+• Cozy brown gradient background
+
+Saved to /work/index.html</div>
+            </div>
+            <div class="chat-input">
+              <input type="text" placeholder="Type a message...">
+              <button>Send</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>

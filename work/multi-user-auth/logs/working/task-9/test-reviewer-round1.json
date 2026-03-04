@@ -1,0 +1,80 @@
+{
+  "reviewer": "test-reviewer",
+  "task": 9,
+  "round": 1,
+  "status": "changes_requested",
+  "findings": [
+    {
+      "severity": "critical",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4097,
+      "issue": "Task 9 implementation is absent. The HTML injection block at lines 4097-4118 only injects the magic-link script. There is no auth-widget-loader script, no nonce generation, no ownerAddress guard, and no CSP update. Tests 10-15 will all fail at runtime because the code under test was never written.",
+      "suggestion": "Implement the auth widget injection as specified in Task 9: (1) load chatSettings at injection point, (2) if ownerAddress truthy, generate nonce via crypto.randomBytes(16).toString('hex'), store in session.oauthNonce, build authWidgetScript IIFE, concatenate with magic-link script; (3) if ownerAddress falsy, inject only magic-link script; (4) update connect-src to add 'https://simpledashboard.wpmix.net'."
+    },
+    {
+      "severity": "critical",
+      "file": "botplatform/src/webchat.ts",
+      "line": 4089,
+      "issue": "CSP connect-src is 'self' only. Task 9 requires adding https://simpledashboard.wpmix.net to connect-src so the widget's cross-origin fetch to /api/auth/invite/status is allowed. Without this, the browser will block the CORS fetch even if the server sends CORS headers, silently breaking the returning-guest auto-auth flow.",
+      "suggestion": "Change line 4089 from \"connect-src 'self'; \" to \"connect-src 'self' https://simpledashboard.wpmix.net; \". Add a test: fetch protected dashboard HTML, parse the Content-Security-Policy response header, assert it includes 'https://simpledashboard.wpmix.net' in the connect-src directive."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 607,
+      "issue": "Test 12 (nonce_embedded_in_html) verifies that window.__OAUTH_NONCE__ appears in HTML and is 32-char hex, but does NOT verify the server-side side effect: that the nonce is written to session.oauthNonce in sessions.json. This side effect is critical for CSRF protection in the OAuth callback (Task 6). If the nonce is in HTML but never stored in the session, CSRF validation will fail silently or crash.",
+      "suggestion": "Add a companion test: (1) inject a known session via injectSession(), (2) fetch protected dashboard HTML with Cookie: webchat_session=<sessionId>, (3) extract the nonce from the HTML response via regex, (4) read sessions.json directly and assert the matching session entry has oauthNonce === extracted_nonce. This verifies the server-side write, not just the HTML output."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 649,
+      "issue": "Tests 14-15 check that data-overlay=\"no-access\" and data-overlay=\"service-unavailable\" appear in the HTML response when ?error=no_access or ?error=service_unavailable is in the query string. However, per Task 9 spec, the overlay structure is injected by the auth widget JS IIFE at runtime in the browser — it is not server-rendered into the HTML. The server injects only the script tag; the script then injects the DOM. These tests check a server-rendered behavior that is not specified — the server HTML will NOT contain data-overlay attributes unless the widget script source code itself includes them as string literals.",
+      "suggestion": "The test should instead assert that the injected widget script source code contains the literal strings 'data-overlay=\"no-access\"' and 'data-overlay=\"service-unavailable\"' as template literals within the IIFE body (i.e., check the injected script source contains those attribute strings, not that the parsed DOM renders them). Alternatively, if the spec intends the server to server-render overlay HTML, the task description must be clarified. As written, these tests will pass only if the server embeds overlay markup in the script body, which is the correct interpretation — but should be made explicit in the assertion message."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 579,
+      "issue": "No test covers the acceptance criterion: 'Widget exits immediately (no UI rendered, no network call) if sessionStorage.dashboard_jwt is already set.' This is a client-side behavioral guard, but its presence in the injected script source can be verified by asserting the script body contains the conditional check. Missing this coverage means a regression (removing the early-exit guard) would go undetected.",
+      "suggestion": "Add a test that fetches the protected dashboard HTML, extracts the auth-widget-loader script body, and asserts it contains the pattern: sessionStorage.getItem('dashboard_jwt') (or equivalent) as an early-exit condition. This is a static analysis of the injected client JS, not a runtime assertion, but it correctly guards against the guard being removed."
+    },
+    {
+      "severity": "major",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 579,
+      "issue": "No test verifies that the injected widget script calls GET https://simpledashboard.wpmix.net/api/auth/invite/status with credentials:'include'. This is a core behavioral step in the returning-guest flow. If the URL or credentials are wrong, returning guests silently fall through to the full OAuth re-auth flow.",
+      "suggestion": "Add a test that fetches the protected dashboard HTML and asserts the widget script body contains 'simpledashboard.wpmix.net/api/auth/invite/status' and 'credentials' (or 'include'). This validates the script was correctly constructed server-side. Pair it with a runtime integration test using a mock server for /api/auth/invite/status that returns mlToken and verify the script source contains mlToken redirect logic."
+    },
+    {
+      "severity": "minor",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 1,
+      "issue": "The file header comment (lines 6-9) says 'Task 7: Gate /api/data/ behind dashboard_jwt on protected dashboards' and describes JWT enforcement tests only. The file actually contains tests for Tasks 7, 8, and 9. The misleading header creates confusion about which task owns which tests during code review and debugging.",
+      "suggestion": "Update the file header to describe the full scope: 'Tests for JWT enforcement (Task 7), invite/status endpoint (Task 8), and auth widget injection (Task 9).' Update the test case list in the header to include tests 5-15."
+    },
+    {
+      "severity": "minor",
+      "file": "botplatform/tests/test_guest_auth_widget.js",
+      "line": 493,
+      "issue": "Test 9 (invite_status_valid_session_dashboard_access) asserts 'Status is 200, 401, or 503' — this is a trimodal assertion that accepts both success and two failure states. The test will pass even if the endpoint is completely broken (returns 401). The comment explains this is due to environment variability, but it provides essentially no regression value for the 200 path.",
+      "suggestion": "Separate the environment-conditional logic: if auth-api is reachable, assert status === 200 and assert mlToken is present; if auth-api is unreachable, skip (or assert 503). Use a pre-check: attempt GET http://localhost:8095/health before the test. If health check fails, mark as skipped with a warning rather than accepting 401 as a passing state."
+    }
+  ],
+  "summary": "Task 9 implementation is entirely absent — webchat.ts does not yet contain the auth-widget-loader injection, nonce generation, ownerAddress guard, or CSP update. This means all six TDD tests (10-15) will fail at runtime against the current code. The test design for tests 10-13 is sound and will correctly verify behavior once the implementation is present. However, there are two major structural gaps: (1) nonce storage in sessions.json is not tested — only the HTML output is checked, leaving the CSRF protection side-effect unverified; (2) tests 14-15 test overlay presence in server-rendered HTML, but per the task spec the overlays are rendered by the client-side IIFE, not by the server — these tests will only pass if the server embeds overlay HTML in the script body, which needs to be an explicit implementation requirement. Additionally, critical acceptance criteria around CSP update, early-exit guard, and invite/status URL correctness have no test coverage. Two critical findings (missing implementation, missing CSP test) and four major findings require resolution before approval.",
+  "metrics": {
+    "filesReviewed": 3,
+    "litmusTest": {
+      "checked": 6,
+      "passed": 4,
+      "failed": 2
+    },
+    "coverageAssessment": "insufficient",
+    "pyramidBalance": {
+      "unit": 0,
+      "integration": 6,
+      "e2e": 0,
+      "assessment": "unbalanced"
+    }
+  }
+}

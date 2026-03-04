@@ -1,0 +1,5 @@
+WebChat Extension: Coffee Shop Landing Page with Menu & Reservation
+
+Left: "Brew & Bloom" coffee shop landing - hero section with booking CTA, menu with 6 drinks
+Right: AI chat showing the prompt and bot response generating the page
+Prompt: "Coffee shop landing page with online menu and reservation form"

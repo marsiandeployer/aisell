@@ -1,0 +1,48 @@
+# Build output
+out/
+*.zip
+
+# Environment variables & credentials
+.env
+.env.*
+!.env.example
+
+# OAuth & API keys
+*_key.json
+*_credentials.json
+oauth_token*.json
+refresh_token.txt
+
+# Chrome Web Store generated assets
+store_assets/icon*.png
+store_assets/promo-*.png
+store_assets/*.jpg
+store_assets/*.jpeg
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*~
+
+# PM2
+.pm2/

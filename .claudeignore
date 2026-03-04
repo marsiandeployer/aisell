@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build artifacts
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Git
+.git/
+.gitignore
+
+# Environment files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Session files
+*.session
+*.session-journal
+
+# Large data directories
+botplatform/data/ai_sandbox_homes/
+botplatform/data/history/
+botplatform/group_data/
+
+# Logs
+*.log
+logs/
+
+# Media files (keep only documentation assets)
+*.mp4
+*.avi
+*.mov
+*.webm
+
+# Archives
+*.zip
+*.tar
+*.gz
+*.crx
+
+# Database files
+*.sqlite
+*.db
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Chrome extension build outputs (keep source)
+extensions/webchat-sidebar/out/
+
+# Specific large directories
+botplatform/group_data/-5217914003/hostingpanel/
+botplatform/group_data/-5264892294/
