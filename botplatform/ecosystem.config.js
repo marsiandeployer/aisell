@@ -124,6 +124,42 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss'
     },
 
+    // SimpleDashboard webchat (port 8094, PRODUCT_TYPE=simple_dashboard)
+    {
+      name: 'simpledashboard-web',
+      cwd: '/root/aisell/botplatform',
+      script: 'start-webchat-simpledashboard.sh',
+      interpreter: 'bash',
+      watch: false,
+      max_restarts: 10,
+      min_uptime: '15s',
+      env: {
+        PATH: '/root/.nvm/versions/node/v22.21.1/bin:/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+      },
+      error_file: '/root/.pm2/logs/simpledashboard-web-error.log',
+      out_file: '/root/.pm2/logs/simpledashboard-web-out.log',
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss'
+    },
+
+    // SimpleCrypto webchat (port 8096, PRODUCT_TYPE=simple_crypto)
+    {
+      name: 'simplecrypto-web',
+      cwd: '/root/aisell/botplatform',
+      script: 'start-webchat-simplecrypto.sh',
+      interpreter: 'bash',
+      watch: false,
+      max_restarts: 10,
+      min_uptime: '15s',
+      env: {
+        PATH: '/root/.nvm/versions/node/v22.21.1/bin:/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+      },
+      error_file: '/root/.pm2/logs/simplecrypto-web-error.log',
+      out_file: '/root/.pm2/logs/simplecrypto-web-out.log',
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss'
+    },
+
     // CHANGE: cred-sync — syncs Claude + Codex credentials to prod server every 10 minutes
     // WHY: Prod server (62.109.14.209) needs fresh credentials for Claude/Codex CLI
     {
