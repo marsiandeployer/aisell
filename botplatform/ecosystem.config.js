@@ -161,6 +161,24 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss'
     },
 
+    // SimpleBounty webchat (port 8097, PRODUCT_TYPE=simple_bounty)
+    {
+      name: 'simplebounty-web',
+      cwd: '/root/aisell/botplatform',
+      script: 'start-webchat-simplebounty.sh',
+      interpreter: 'bash',
+      watch: false,
+      max_restarts: 10,
+      min_uptime: '15s',
+      env: {
+        PATH: '/root/.nvm/versions/node/v22.21.1/bin:/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+      },
+      error_file: '/root/.pm2/logs/simplebounty-web-error.log',
+      out_file: '/root/.pm2/logs/simplebounty-web-out.log',
+      merge_logs: true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss'
+    },
+
     // CHANGE: cred-sync — syncs Claude + Codex credentials to prod server every 10 minutes
     // WHY: Prod server (62.109.14.209) needs fresh credentials for Claude/Codex CLI
     {
