@@ -342,7 +342,7 @@ interface LeaderboardEntry {
 - **Files to read:** Task 2, 3 output; `botplatform/src/webchat.ts` (Google OAuth callback, participantId extraction pattern, lines 6039-6041)
 
 #### Task 7: Campaign participant page
-- **Description:** Создать базовый `index.html` шаблон: Google auth (Auth SDK), AI-генерируемый фон/стиль, список заданий с наградами, форма сабмита (текст/URL с client-side URL validation), отображение статуса заявки, лидерборд топ-10. JS обращается к `/api/bounty/*` публичным и authenticated endpoints. `GOOGLE_OAUTH_REDIRECT_URI` настроен на `simplebounty.wpmix.net/api/auth/google-dashboard-callback` (зарегистрировать в Google Cloud Console). Creator-предупреждение если escrow=0.
+- **Description:** Создать базовый `index.html` шаблон: Google auth (Auth SDK), AI-генерируемый фон/стиль, список заданий с наградами, форма сабмита (текст/URL с client-side URL validation), отображение статуса заявки, лидерборд топ-10. JS обращается к `/api/bounty/*` публичным и authenticated endpoints. OAuth redirect настройка — см. Decision 8. Creator-предупреждение если escrow=0.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewer, security-auditor, test-reviewer
 - **Verify:** curl — `curl -H "Host: d{userId}.wpmix.net" http://localhost:8097` → 200, HTML с `<script>` тегами
@@ -408,7 +408,7 @@ interface LeaderboardEntry {
 ### Final Wave
 
 #### Task 13: Pre-deploy QA
-- **Description:** Запустить полный тест-сьют (unit + integration + E2E), проверить все acceptance criteria из user-spec (AC-1 — AC-14) и tech-spec (TC-1 — TC-14). Зафиксировать результаты.
+- **Description:** Запустить полный тест-сьют (unit + integration + E2E), проверить все acceptance criteria из user-spec (AC-1 — AC-14) и tech-spec (TC-1 — TC-15). Зафиксировать результаты.
 - **Skill:** pre-deploy-qa
 - **Reviewers:** none
 - **Verify:** bash — все тесты green
@@ -416,9 +416,9 @@ interface LeaderboardEntry {
 - **Files to read:** `work/simple-bounty/user-spec.md`, `work/simple-bounty/tech-spec.md`
 
 #### Task 14: Deploy
-- **Description:** Запустить `pm2 start simplebounty-web` на prod (95.217.227.164). Добавить DNS-запись `simplebounty.wpmix.net → 62.109.14.209`. Nginx reload на VM104 и reverse proxy. SSL через certbot для `simplebounty.wpmix.net`. Зарегистрировать redirect URI в Google Cloud Console.
+- **Description:** Запустить `pm2 start simplebounty-web` на prod (95.217.227.164). Добавить DNS-запись `simplebounty.wpmix.net → 62.109.14.209`. Nginx reload на VM104 и reverse proxy. SSL через certbot для `simplebounty.wpmix.net`. Зарегистрировать redirect URI в Google Cloud Console (см. Decision 8).
 - **Skill:** deploy-pipeline
-- **Reviewers:** none
+- **Reviewers:** deploy-reviewer, security-auditor
 - **Verify:** bash — `curl https://simplebounty.wpmix.net` → 200
 - **Files to modify:** `/etc/nginx/sites-enabled/simplebounty.wpmix.net` (symlink), reverse proxy nginx config
 - **Files to read:** `botplatform/ecosystem.config.js`, Task 1 nginx config
