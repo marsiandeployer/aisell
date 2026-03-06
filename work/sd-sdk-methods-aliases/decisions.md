@@ -51,3 +51,39 @@
 **Verification:**
 - `npm run build` → 0 errors (TypeScript compilation clean)
 - Pre-commit hooks → 67/67 checks passed (structure, templates, TS, security, linters)
+
+## Task 2: Тест-файл tests/test_sdk_methods.js
+
+**Status:** Done
+**Commit:** 3c7ce8c
+**Agent:** coder-tests
+**Summary:** Created `botplatform/tests/test_sdk_methods.js` with 85 integration test assertions across 7 groups: backward compat (GET/POST/PUT/DELETE lifecycle), aliases (list/create/update/patch/delete equivalence), getOne (single object return + null for missing), upsert (client-side GET+find+PUT/POST pattern with deduplication check), getMembers (collection CRUD + real members access), removeMember (add+find+delete+verify), and status codes (201/200/400/401/404). Server restart was required after Task 1 build for getOne endpoint to work.
+**Deviations:** Нет — реализация соответствует спеку. getMembers/removeMember tested at HTTP level only (isOwner enrichment and owner guard are client-side SDK logic).
+
+**Reviews:**
+
+*Round 1:*
+- code-reviewer: OK → [logs/working/task-2/code-reviewer-round1.json]
+- test-reviewer: OK → [logs/working/task-2/test-reviewer-round1.json]
+
+**Verification:**
+- `node tests/test_sdk_methods.js` → 85/85 passed, exit 0
+- `node tests/test_webchat_keypair.js` → 16/16 passed (backward compat OK)
+- Pre-commit hooks → all checks passed (67/67)
+
+## Task 3: SKILL.md обновление + dashboard 281 fix + уникальность в sd:auth
+
+**Status:** Done
+**Commit:** d5062c4
+**Agent:** coder-docs
+**Summary:** Updated SKILL.md API reference to document new primary methods (list/create/update/patch/delete/getOne/upsert) and mark old ones (get/post/put/del) as deprecated. Replaced the sd:auth community pattern with SD.data.upsert to prevent duplicate member entries on repeated logins. Added SD.admin.getMembers() and SD.admin.removeMember(email) documentation. Fixed dashboard 281 (gitignored live file) to use upsert in sd:auth, SD.admin.getMembers() in loadMembers, and SD.admin.removeMember(email) in deleteMember.
+**Deviations:** Dashboard 281 index.html is in .gitignore (user data directory) so changes are saved to disk but not committed to git. This is expected behavior.
+
+**Reviews:**
+
+*Round 1:*
+- code-reviewer: OK → [logs/working/task-3/code-reviewer-round1.json]
+
+**Verification:**
+- Pre-commit hooks → all checks passed (security, linters, showcase validators)
+- Dashboard 281: manual verification needed at https://d9000000000281.wpmix.net
