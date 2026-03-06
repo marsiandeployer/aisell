@@ -35,7 +35,8 @@ size: L
 2. AI-диалог → вызов `/api/bounty/campaigns` (POST) — AI создаёт кампанию
 3. AI добавляет задания через `/api/bounty/campaigns/:id/tasks` (POST)
 4. Создатель пополняет эскроу через `/api/bounty/campaigns/:id/escrow/deposit` (POST, amount > 0)
-5. AI рендерит `index.html` — SPA для участников
+5. Публикация кампании через `POST /api/bounty/campaigns/:id/publish` (draft → published, только если есть ≥1 задание)
+6. AI рендерит `index.html` — SPA для участников
 6. Создатель управляет заявками через `/api/bounty/submissions/:id/approve|reject` (POST)
    - Approve: **обязательно** проверяет `submission.campaignId → campaign.creatorId === req.webUser.userId`, иначе 403
    - Approve: debit escrow (read-after-write rollback если balance ушёл в минус), credit balances.json
@@ -97,9 +98,14 @@ size: L
 **Alternatives considered:** Stars as currency — API ограничения; Telegram Login — убрано из MVP явным решением.
 
 ### Decision 7: Race condition — read-after-write rollback (accepted limitation)
-**Decision:** После debit читаем файл снова; если balance < 0 — откатываем (записываем старое значение обратно). Concurrent approvals при MVP-нагрузке обрабатываются так.
+**Decision:** После debit читаем файл снова; если balance < 0 — откатываем (записываем старое значение обратно), возвращаем 409 Conflict. Concurrent approvals при MVP-нагрузке обрабатываются так.
 **Rationale:** User-spec явно принимает это ограничение для MVP при низком трафике: «Accepted limitation для MVP при низком трафике».
 **Alternatives considered:** in-memory mutex Map per campaignId — более надёжно, но добавляет сложность; сбрасывается при pm2 restart.
+
+### Decision 8: Google OAuth redirect_uri для simplebounty
+**Decision:** Зарегистрировать `https://simplebounty.wpmix.net/api/auth/google-dashboard-callback` в Google Cloud Console. Задать `GOOGLE_OAUTH_REDIRECT_URI` в `start-webchat-simplebounty.sh`. Переиспользовать существующий `api/auth/google-dashboard-callback` handler в webchat.ts.
+**Rationale:** webchat.ts redirect_uri hardcoded к simpledashboard.wpmix.net (line 6101). Без новой регистрации Google вернёт `redirect_uri_mismatch` для всех bounty-участников.
+**Alternatives considered:** Отдельный OAuth app — не нужно, один Google Cloud Console проект поддерживает несколько redirect URIs.
 
 ## Data Models
 
@@ -241,9 +247,10 @@ interface LeaderboardEntry {
 | T6: SKILL.md | curl | POST `/api/message` "создай кампанию" → AI создаёт campaign через tool call |
 | T7: Participant page | curl | `curl -H "Host: d{userId}.wpmix.net" http://localhost:8097` → 200, `<html>` в ответе |
 | T8: Telegram notifications | bash | `SIMPLEBOUNTY_BOT_TOKEN=test node tests/test_bounty_notifications.js` → mock Telegram call logged |
-| T9: Unit tests | bash | `node tests/test_bounty_unit.js` → 0 failures |
-| T10: Integration tests | bash | `node tests/test_bounty_integration.js` → 0 failures |
-| T11: E2E tests | bash | `node tests/test_bounty_e2e.js` → 0 failures |
+| T9: Creator panel | curl | `curl -b "session=<token>" http://localhost:8097/api/bounty/panel` → 200, HTML с кампаниями |
+| T10: Unit tests | bash | `node tests/test_bounty_unit.js` → 0 failures |
+| T11: Integration tests | bash | `node tests/test_bounty_integration.js` → 0 failures |
+| T12: E2E tests | bash | `node tests/test_bounty_e2e.js` → 0 failures |
 
 ### Tools required
 - `curl` — API проверки
@@ -280,6 +287,7 @@ interface LeaderboardEntry {
 - [ ] TC-12: Все unit-тесты: `node tests/test_bounty_unit.js` → 0 failures
 - [ ] TC-13: Все integration-тесты: `node tests/test_bounty_integration.js` → 0 failures
 - [ ] TC-14: Нет регрессий в `test_sdk_methods.js` (SimpleDashboard tests)
+- [ ] TC-15: POST `/api/bounty/campaigns/:id/publish` переводит кампанию draft→published; повторный вызов → 200 (idempotent); без заданий → 400
 
 ## Implementation Tasks
 
@@ -290,7 +298,7 @@ interface LeaderboardEntry {
 #### Task 1: Product infrastructure
 - **Description:** Создать `products/simple_bounty/` (product.yaml, пустой CLAUDE.md.workspace placeholder). Добавить `start-webchat-simplebounty.sh` (PRODUCT_TYPE=simple_bounty, WEBCHAT_PORT=8097, GOOGLE_OAUTH_REDIRECT_URI=https://simplebounty.wpmix.net/api/auth/google-dashboard-callback) и запись `simplebounty-web` в `ecosystem.config.js`. Настроить nginx vhost `simplebounty.wpmix.net` на VM104 и reverse proxy. Результат: pm2 start → сервер отвечает на порту 8097.
 - **Skill:** infrastructure-setup
-- **Reviewers:** infrastructure-reviewer
+- **Reviewers:** infrastructure-reviewer, code-reviewer, security-auditor
 - **Verify:** bash — `pm2 status simplebounty-web` → online; `curl http://localhost:8097` → 200
 - **Files to modify:** `botplatform/ecosystem.config.js`, `botplatform/start-webchat-simplebounty.sh` (new), `/etc/nginx/sites-available/simplebounty.wpmix.net` (new)
 - **Files to read:** `botplatform/start-webchat-simpledashboard.sh`, `botplatform/ecosystem.config.js`, `products/simple_dashboard/product.yaml`
@@ -298,7 +306,7 @@ interface LeaderboardEntry {
 ### Wave 2 (зависит от Wave 1)
 
 #### Task 2: Campaigns & Tasks API
-- **Description:** Создать `src/bounty-api.ts` с CRUD-эндпоинтами для кампаний и заданий. GET `/api/bounty/campaigns/:id/tasks` — публичный (без auth). POST/DELETE требуют webchat session + `campaign.creatorId === req.webUser.userId`. При удалении задания с pending submissions — автоматически rejected (AC-14). Задания: reward должен быть > 0. Монтировать роутер в webchat.ts.
+- **Description:** Создать `src/bounty-api.ts` с CRUD-эндпоинтами для кампаний и заданий. GET `/api/bounty/campaigns/:id/tasks` — публичный (без auth). POST/DELETE требуют webchat session + `campaign.creatorId === req.webUser.userId`. При удалении задания с pending submissions — автоматически rejected (AC-14). Задания: reward должен быть > 0. Добавить `POST /api/bounty/campaigns/:id/publish` — переводит кампанию из `draft` → `published` (только creator, только если есть хотя бы одно задание). Монтировать роутер в webchat.ts.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewer, security-auditor, test-reviewer
 - **Verify:** curl — POST `/api/bounty/campaigns` → 201; GET tasks без auth → 200; DELETE задания с pending → submissions rejected
@@ -336,7 +344,7 @@ interface LeaderboardEntry {
 #### Task 7: Campaign participant page
 - **Description:** Создать базовый `index.html` шаблон: Google auth (Auth SDK), AI-генерируемый фон/стиль, список заданий с наградами, форма сабмита (текст/URL с client-side URL validation), отображение статуса заявки, лидерборд топ-10. JS обращается к `/api/bounty/*` публичным и authenticated endpoints. `GOOGLE_OAUTH_REDIRECT_URI` настроен на `simplebounty.wpmix.net/api/auth/google-dashboard-callback` (зарегистрировать в Google Cloud Console). Creator-предупреждение если escrow=0.
 - **Skill:** code-writing
-- **Reviewers:** code-reviewer, test-reviewer
+- **Reviewers:** code-reviewer, security-auditor, test-reviewer
 - **Verify:** curl — `curl -H "Host: d{userId}.wpmix.net" http://localhost:8097` → 200, HTML с `<script>` тегами
 - **Files to modify:** `products/simple_bounty/index.html.template` (new)
 - **Files to read:** `botplatform/src/webchat.ts` (getAuthSdkJs, Auth SDK interface), `products/simple_dashboard/` (UI patterns)
@@ -346,27 +354,27 @@ interface LeaderboardEntry {
 #### Task 5: Leaderboard API
 - **Description:** Добавить `GET /api/bounty/campaigns/:id/leaderboard` (публичный endpoint) в `bounty-api.ts`. Агрегирует approved submissions: sum points per participantId, sort descending, top-10. Ответ содержит только `{participantId, participantName, totalPoints}` — **никакого email** (PII protection). Читает submissions.json напрямую без кэша.
 - **Skill:** code-writing
-- **Reviewers:** code-reviewer, test-reviewer
+- **Reviewers:** code-reviewer, security-auditor, test-reviewer
 - **Verify:** curl — GET после N approvals → список без `email` поля, упорядочен по убыванию totalPoints
 - **Files to modify:** `botplatform/src/bounty-api.ts`
 - **Files to read:** Task 4 output (submissions.json structure)
 
+### Wave 6 (зависит от Wave 5)
+
 #### Task 8: Telegram notifications
 - **Description:** Создать `src/bounty-notifications.ts` с функциями: `notifyNewSubmission`, `notifyAutoApprove`, `notifyEmptyEscrow`. Используют Telegraf bot instance с `SIMPLEBOUNTY_BOT_TOKEN`. Вызываются из bounty-api.ts после ключевых событий (best-effort: try/catch, ошибка не блокирует response). Работают только если `SIMPLEBOUNTY_BOT_TOKEN` задан. Creator's Telegram chatId берётся из их webchat session userId (если создатель зарегистрирован через Telegram-бот, иначе уведомление пропускается).
 - **Skill:** code-writing
-- **Reviewers:** code-reviewer
+- **Reviewers:** code-reviewer, security-auditor, test-reviewer
 - **Verify:** bash — `SIMPLEBOUNTY_BOT_TOKEN=fake node -e "require('./src/bounty-notifications').notifyNewSubmission(123, ...)"` → логирует attempt without crash
 - **Files to modify:** `botplatform/src/bounty-notifications.ts` (new), `botplatform/src/bounty-api.ts` (import + calls)
 - **Files to read:** `botplatform/src/bot.ts` (Telegraf setup pattern), Task 4 output
 
-### Wave 6 (зависит от Wave 5)
-
 #### Task 9: Creator management panel
-- **Description:** Добавить creator-панель в webchat UI (или отдельный `/panel` endpoint): список кампаний, per-campaign submissions с статусом и отображением proof (XSS-safe, HTML-escaped), кнопки Одобрить/Отклонить, индикатор баланса эскроу с badge-предупреждением при balance=0, счётчик pending submissions. Панель использует webchat session (creator).
+- **Description:** Добавить creator-панель через новый `/api/bounty/panel` endpoint в `webchat.ts` (НЕ в bounty-api.ts): возвращает HTML с list кампаний, per-campaign submissions с статусом и proof (XSS-safe, HTML-escaped из submissions.json), кнопки Одобрить/Отклонить (вызывают `/api/bounty/submissions/:id/approve|reject`), индикатор баланса эскроу с badge-предупреждением при balance=0, счётчик pending submissions. Панель использует webchat session (creator).
 - **Skill:** code-writing
 - **Reviewers:** code-reviewer, test-reviewer
-- **Verify:** user — creator видит panel badge при pending submissions, approve → поинты начислены, badge исчезает
-- **Files to modify:** `botplatform/src/webchat.ts` (или новый panel endpoint в bounty-api.ts)
+- **Verify:** curl — `curl -b "session=<creator_token>" http://localhost:8097/api/bounty/panel` → 200, HTML содержит список кампаний и submissions
+- **Files to modify:** `botplatform/src/webchat.ts` (новый panel endpoint)
 - **Files to read:** Task 2-8 output; `botplatform/src/webchat.ts` (requireSessionApi, webchat UI render)
 
 ### Wave 7 (зависит от Wave 6)
