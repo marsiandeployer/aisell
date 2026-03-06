@@ -55,3 +55,24 @@
 - `curl -s -o /dev/null -w "%{http_code}" http://localhost:8094` → 200 (no regression)
 - All pre-commit hooks pass (54 template tests, 10 security checks, product YAML linter)
 
+## Task 2: Campaigns & Tasks API
+
+**Status:** Done
+**Commit:** dc606bf
+**Agent:** api-builder
+**Summary:** Created bounty-api.ts with Express Router containing all campaign and task CRUD endpoints. Router is mounted in webchat.ts via dependency injection (requireSessionApi, workspacesRoot) to avoid circular imports. All endpoints enforce ownership via campaign.creatorId check, IDs are validated against SAFE_ID_REGEX for path traversal prevention, and task deletion cascades to reject pending submissions (AC-14).
+**Deviations:** Нет.
+
+**Reviews:**
+
+*Round 1:*
+- code-reviewer: 3 findings (1 minor fix, 2 accepted) → [logs/working/task-2/code-reviewer-round1.json]
+- security-auditor: 4 findings (1 major fix, 3 accepted) → [logs/working/task-2/security-auditor-round1.json]
+- test-reviewer: 3 findings (1 minor fix, 2 accepted) → [logs/working/task-2/test-reviewer-round1.json]
+
+**Verification:**
+- `node tests/test_bounty_campaigns.js` → 48 passed, 0 failed
+- `node tests/test_sdk_methods.js` → 85 passed, 0 failed (no regressions)
+- `npm test` → 54 passed (pre-commit hooks)
+- All pre-commit hooks pass (TS checks, security, product YAML, showcase linters)
+
