@@ -166,6 +166,31 @@ async function testCampaignNoAuth() {
   assert(res.body.description === 'Testing auth', `Description matches`);
 }
 
+async function testCampaignValidation() {
+  section('--- Group 1b: Campaign validation ---');
+
+  // POST campaign with empty title → 400
+  const emptyRes = await httpRequest(`${BASE_URL}/api/bounty/campaigns`, {
+    method: 'POST',
+    body: { title: '', description: 'No title' },
+  });
+  assert(emptyRes.status === 400, `POST campaign with empty title → 400 (got ${emptyRes.status})`);
+
+  // POST campaign with whitespace-only title → 400
+  const wsRes = await httpRequest(`${BASE_URL}/api/bounty/campaigns`, {
+    method: 'POST',
+    body: { title: '   ', description: 'Whitespace title' },
+  });
+  assert(wsRes.status === 400, `POST campaign with whitespace title → 400 (got ${wsRes.status})`);
+
+  // POST campaign without title → 400
+  const noTitleRes = await httpRequest(`${BASE_URL}/api/bounty/campaigns`, {
+    method: 'POST',
+    body: { description: 'Missing title field' },
+  });
+  assert(noTitleRes.status === 400, `POST campaign without title → 400 (got ${noTitleRes.status})`);
+}
+
 async function testCampaignCrud() {
   section('--- Group 2: Campaign CRUD ---');
 
@@ -211,6 +236,13 @@ async function testTaskValidation() {
     body: { title: 'Task Validation Campaign', description: 'For task tests' },
   });
   const campaignId = campRes.body.id;
+
+  // 3z. POST task with empty title → 400
+  const emptyTitle = await httpRequest(`${BASE_URL}/api/bounty/campaigns/${campaignId}/tasks`, {
+    method: 'POST',
+    body: { title: '   ', description: 'Blank title', reward: 10 },
+  });
+  assert(emptyTitle.status === 400, `POST task with whitespace-only title → 400 (got ${emptyTitle.status})`);
 
   // 3a. POST task with reward=0 → 400
   const zeroReward = await httpRequest(`${BASE_URL}/api/bounty/campaigns/${campaignId}/tasks`, {
@@ -511,6 +543,8 @@ async function main() {
 
   try {
     await testCampaignNoAuth();
+    await delay(50);
+    await testCampaignValidation();
     await delay(50);
     await testCampaignCrud();
     await delay(50);

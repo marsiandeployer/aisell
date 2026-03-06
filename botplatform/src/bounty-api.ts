@@ -249,8 +249,8 @@ export function createBountyRouter(deps: BountyRouterDeps): express.Router {
     const user = getReqUser(req);
     const { title, description } = req.body;
 
-    if (!title || typeof title !== 'string') {
-      res.status(400).json({ error: 'title is required and must be a string' });
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      res.status(400).json({ error: 'title is required and must be a non-empty string' });
       return;
     }
 
@@ -340,8 +340,8 @@ export function createBountyRouter(deps: BountyRouterDeps): express.Router {
 
     const { title, description, reward } = req.body;
 
-    if (!title || typeof title !== 'string') {
-      res.status(400).json({ error: 'title is required and must be a string' });
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      res.status(400).json({ error: 'title is required and must be a non-empty string' });
       return;
     }
 
