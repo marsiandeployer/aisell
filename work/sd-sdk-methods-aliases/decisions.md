@@ -87,3 +87,36 @@
 **Verification:**
 - Pre-commit hooks → all checks passed (security, linters, showcase validators)
 - Dashboard 281: manual verification needed at https://d9000000000281.wpmix.net
+
+## Task 4: Pre-deploy QA
+
+**Status:** Done
+**Commit:** N/A (QA-only task, no code changes)
+**Agent:** qa-runner
+**Summary:** Full acceptance testing of Tasks 1–3 changes. npm run build passed clean (0 TypeScript errors). All three test suites ran green after fresh service restarts: test_sdk_methods.js 85/85, test_webchat_keypair.js 16/16, test_auth_api.js 47/47. PM2 logs for simpledashboard-web show no new errors — only expected test-time 503s from Auth API rate-limit test scenario in test_webchat_keypair.js, which is correct behavior.
+**Deviations:** Per project memory, test_auth_api.js was preceded by a pm2 restart dashboard-auth-api to avoid in-memory rate limiter exhaustion from prior test runs. This matches the documented gotcha in MEMORY.md and task instructions.
+
+**Reviews:** N/A (QA task)
+
+**Verification:**
+- `npm run build` → 0 errors
+- `node tests/test_sdk_methods.js` → 85/85 passed
+- `node tests/test_webchat_keypair.js` → 16/16 passed
+- `node tests/test_auth_api.js` → 47/47 passed (47 passed, 0 failed, 100% success rate)
+- `pm2 logs simpledashboard-web` → no unexpected errors, service healthy
+
+## Task 5: Deploy
+
+**Status:** Done
+**Commit:** (push of 9 accumulated commits from tasks 1–4)
+**Agent:** deployer
+**Summary:** Built botplatform TypeScript (tsc, 0 errors), restarted simpledashboard-web PM2 process (id 32, restart #109), verified startup clean — "Webchat listening on http://0.0.0.0:8094". Pushed 9 commits to origin/main. No GitHub Actions workflows present in repository, so CI check skipped.
+**Deviations:** No separate "feat(sdk): add method aliases" commit was needed — all code changes were already committed by tasks 1–3. The decisions.md and task-4.md staged modifications were committed together with the push of existing branch commits.
+
+**Reviews:** N/A (deploy task)
+
+**Verification:**
+- `npm run build` → 0 errors (TypeScript compilation clean)
+- `pm2 restart simpledashboard-web` → online, uptime 0s, status online
+- `pm2 logs simpledashboard-web --lines 20` → "Webchat listening on http://0.0.0.0:8094", no crash
+- `git push origin main` → 9 commits pushed successfully
