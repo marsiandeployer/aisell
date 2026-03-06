@@ -1,19 +1,25 @@
 /**
- * Bounty API — Express Router for campaigns & tasks CRUD.
+ * Bounty API — Express Router for campaigns, tasks, and escrow CRUD.
  *
  * Exports a factory function `createBountyRouter` that accepts dependencies
  * (workspacesRoot, requireSessionApi) to avoid circular imports with webchat.ts.
  *
  * Endpoints:
- *   POST   /campaigns                          — create campaign (auth required)
- *   GET    /campaigns                          — list creator's campaigns (auth required)
- *   GET    /campaigns/:campaignId              — single campaign (public)
- *   POST   /campaigns/:campaignId/tasks        — create task (auth + ownership)
- *   GET    /campaigns/:campaignId/tasks        — list tasks (public)
- *   DELETE /campaigns/:campaignId/tasks/:taskId — delete task (auth + ownership, cascade reject)
- *   POST   /campaigns/:campaignId/publish      — publish campaign (auth + ownership)
+ *   POST   /campaigns                              — create campaign (auth required)
+ *   GET    /campaigns                              — list creator's campaigns (auth required)
+ *   GET    /campaigns/:campaignId                  — single campaign (public)
+ *   POST   /campaigns/:campaignId/tasks            — create task (auth + ownership)
+ *   GET    /campaigns/:campaignId/tasks            — list tasks (public)
+ *   DELETE /campaigns/:campaignId/tasks/:taskId     — delete task (auth + ownership, cascade reject)
+ *   POST   /campaigns/:campaignId/publish          — publish campaign (auth + ownership)
+ *   POST   /campaigns/:campaignId/escrow/deposit   — deposit points to escrow (auth + ownership)
+ *   GET    /campaigns/:campaignId/escrow/balance   — get escrow balance (auth + ownership)
+ *   POST   /submissions/:submissionId/approve      — approve submission (auth + ownership, escrow debit)
  *
- * Data stored in: group_data/user_{creatorId}/data/campaigns.json, tasks.json, submissions.json
+ * Also exports `debitEscrow` function for use in Task 4 (auto-approve flow).
+ *
+ * Data stored in: group_data/user_{creatorId}/data/campaigns.json, tasks.json, submissions.json,
+ *                 escrow_{campaignId}.json
  */
 
 import express from 'express';
@@ -55,6 +61,22 @@ interface Submission {
   submittedAt: string;
   reviewedAt?: string;
   pointsAwarded?: number;
+}
+
+/** Escrow account for a single campaign. One file per campaign: escrow_{campaignId}.json */
+interface Escrow {
+  campaignId: string;
+  balance: number;
+  transactions: EscrowTx[];
+}
+
+/** Single escrow transaction (deposit or debit). */
+interface EscrowTx {
+  type: 'deposit' | 'debit';
+  amount: number;
+  ref: string;               // submissionId or 'manual'
+  initiatedBy: 'creator' | 'auto-approve';  // audit trail
+  createdAt: string;          // ISO 8601
 }
 
 /** WebUser type matching webchat.ts (attached by requireSessionApi). */
@@ -184,6 +206,11 @@ export function createBountyRouter(deps: BountyRouterDeps): express.Router {
     return path.join(userDataDir(userId), 'submissions.json');
   }
 
+  /** Returns path to escrow_{campaignId}.json for a user. */
+  function escrowPath(userId: number, campaignId: string): string {
+    return path.join(userDataDir(userId), `escrow_${campaignId}.json`);
+  }
+
   // ─── Data Access ─────────────────────────────────────────────────────
 
   function readCampaigns(userId: number): Campaign[] {
@@ -208,6 +235,29 @@ export function createBountyRouter(deps: BountyRouterDeps): express.Router {
 
   function writeSubmissions(userId: number, submissions: Submission[]): void {
     writeJsonAtomic(submissionsPath(userId), submissions);
+  }
+
+  /**
+   * Reads escrow data for a campaign. Returns default { balance: 0 } if file missing (cold-start).
+   * @param userId - Creator user ID
+   * @param campaignId - Campaign ID
+   */
+  function readEscrow(userId: number, campaignId: string): Escrow {
+    return readJsonFile<Escrow>(escrowPath(userId, campaignId), {
+      campaignId,
+      balance: 0,
+      transactions: [],
+    });
+  }
+
+  /**
+   * Writes escrow data atomically for a campaign.
+   * @param userId - Creator user ID
+   * @param campaignId - Campaign ID
+   * @param escrow - Escrow data to write
+   */
+  function writeEscrow(userId: number, campaignId: string, escrow: Escrow): void {
+    writeJsonAtomic(escrowPath(userId, campaignId), escrow);
   }
 
   /**
@@ -515,5 +565,254 @@ export function createBountyRouter(deps: BountyRouterDeps): express.Router {
     res.json(campaign);
   });
 
+  // ─── Escrow Endpoints ───────────────────────────────────────────────
+
+  /**
+   * POST /campaigns/:campaignId/escrow/deposit — Deposit points to campaign escrow.
+   * Requires session auth + campaign ownership. amount must be > 0.
+   */
+  router.post('/campaigns/:campaignId/escrow/deposit', requireSessionApi, (req, res) => {
+    const user = getReqUser(req);
+    const { campaignId } = req.params;
+
+    if (!isValidId(campaignId)) {
+      res.status(400).json({ error: 'Invalid campaign ID format' });
+      return;
+    }
+
+    // Verify campaign exists and belongs to current user
+    const campaigns = readCampaigns(user.userId);
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    if (!campaign) {
+      const globalResult = findCampaignGlobally(campaignId);
+      if (globalResult) {
+        res.status(403).json({ error: 'Forbidden: campaign belongs to another user' });
+        return;
+      }
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.creatorId !== user.userId) {
+      res.status(403).json({ error: 'Forbidden: campaign belongs to another user' });
+      return;
+    }
+
+    const { amount } = req.body;
+
+    // Validate amount: must be number, finite, and > 0
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      res.status(400).json({ error: 'amount must be a positive number greater than 0' });
+      return;
+    }
+
+    // Read current escrow, increase balance, add transaction
+    const escrow = readEscrow(user.userId, campaignId);
+    escrow.balance += amount;
+    escrow.transactions.push({
+      type: 'deposit',
+      amount,
+      ref: 'manual',
+      initiatedBy: 'creator',
+      createdAt: new Date().toISOString(),
+    });
+    writeEscrow(user.userId, campaignId, escrow);
+
+    console.log(`[bounty] Escrow deposit: ${amount} points to campaign ${campaignId} by user ${user.userId}`);
+    res.json({ balance: escrow.balance });
+  });
+
+  /**
+   * GET /campaigns/:campaignId/escrow/balance — Get escrow balance.
+   * Requires session auth + campaign ownership.
+   * Returns { balance, warning: true } if balance === 0.
+   */
+  router.get('/campaigns/:campaignId/escrow/balance', requireSessionApi, (req, res) => {
+    const user = getReqUser(req);
+    const { campaignId } = req.params;
+
+    if (!isValidId(campaignId)) {
+      res.status(400).json({ error: 'Invalid campaign ID format' });
+      return;
+    }
+
+    // Verify campaign exists and belongs to current user
+    const campaigns = readCampaigns(user.userId);
+    const campaign = campaigns.find((c) => c.id === campaignId);
+    if (!campaign) {
+      const globalResult = findCampaignGlobally(campaignId);
+      if (globalResult) {
+        res.status(403).json({ error: 'Forbidden: campaign belongs to another user' });
+        return;
+      }
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.creatorId !== user.userId) {
+      res.status(403).json({ error: 'Forbidden: campaign belongs to another user' });
+      return;
+    }
+
+    const escrow = readEscrow(user.userId, campaignId);
+    const result: { balance: number; warning?: boolean } = { balance: escrow.balance };
+    if (escrow.balance === 0) {
+      result.warning = true;
+    }
+    res.json(result);
+  });
+
+  // ─── Submission Approve Endpoint ────────────────────────────────────
+
+  /**
+   * POST /submissions/:submissionId/approve — Approve a submission.
+   * Requires session auth + campaign ownership (via submission.campaignId).
+   * Debits escrow by task.reward; returns 402 if insufficient balance.
+   */
+  router.post('/submissions/:submissionId/approve', requireSessionApi, (req, res) => {
+    const user = getReqUser(req);
+    const { submissionId } = req.params;
+
+    if (!isValidId(submissionId)) {
+      res.status(400).json({ error: 'Invalid submission ID format' });
+      return;
+    }
+
+    // Find submission in creator's data
+    const submissions = readSubmissions(user.userId);
+    const submission = submissions.find((s) => s.id === submissionId);
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    // Verify campaign ownership
+    const campaigns = readCampaigns(user.userId);
+    const campaign = campaigns.find((c) => c.id === submission.campaignId);
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.creatorId !== user.userId) {
+      res.status(403).json({ error: 'Forbidden: campaign belongs to another user' });
+      return;
+    }
+
+    // Only pending submissions can be approved
+    if (submission.status !== 'pending') {
+      res.status(400).json({ error: `Submission is already ${submission.status}` });
+      return;
+    }
+
+    // Find the task to get reward amount
+    const tasks = readTasks(user.userId);
+    const task = tasks.find((t) => t.id === submission.taskId);
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    // Debit escrow
+    try {
+      debitEscrow(user.userId, submission.campaignId, task.reward, submissionId, 'creator');
+    } catch (err: unknown) {
+      const escrowErr = err as { status?: number; message?: string };
+      if (escrowErr.status === 402) {
+        res.status(402).json({ error: 'Insufficient escrow balance' });
+        return;
+      }
+      if (escrowErr.status === 409) {
+        res.status(409).json({ error: 'Concurrent approval conflict, please retry' });
+        return;
+      }
+      throw err;
+    }
+
+    // Update submission status
+    submission.status = 'approved';
+    submission.reviewedAt = new Date().toISOString();
+    submission.pointsAwarded = task.reward;
+    writeSubmissions(user.userId, submissions);
+
+    console.log(`[bounty] Submission approved: ${submissionId}, ${task.reward} points debited from escrow`);
+    res.json({ approved: submissionId, pointsAwarded: task.reward });
+  });
+
+  // ─── Debit Function ─────────────────────────────────────────────────
+
+  /**
+   * Debit escrow: atomic read-modify-write with post-write rollback.
+   * Exposed on the router for Task 4 (auto-approve flow).
+   *
+   * @param creatorId - Creator user ID who owns the campaign
+   * @param campaignId - Campaign ID
+   * @param amount - Points to debit
+   * @param ref - Reference (submissionId or description)
+   * @param initiatedBy - 'creator' for manual approve, 'auto-approve' for automatic
+   * @returns New balance after debit
+   * @throws Error with status 402 if balance < amount (pre-check)
+   * @throws Error with status 409 if post-write balance < 0 (race condition rollback)
+   */
+  function debitEscrow(
+    creatorId: number,
+    campaignId: string,
+    amount: number,
+    ref: string,
+    initiatedBy: 'creator' | 'auto-approve',
+  ): number {
+    // Read snapshot for potential rollback
+    const snapshot = readEscrow(creatorId, campaignId);
+
+    // Pre-check: insufficient funds — avoid a pointless write
+    if (snapshot.balance < amount) {
+      const err = new Error('Insufficient escrow balance') as Error & { status: number };
+      err.status = 402;
+      throw err;
+    }
+
+    // Read-modify-write
+    const escrow = readEscrow(creatorId, campaignId);
+    escrow.balance -= amount;
+    escrow.transactions.push({
+      type: 'debit',
+      amount,
+      ref,
+      initiatedBy,
+      createdAt: new Date().toISOString(),
+    });
+    writeEscrow(creatorId, campaignId, escrow);
+
+    // Post-write check: re-read to detect race condition
+    const check = readEscrow(creatorId, campaignId);
+    if (check.balance < 0) {
+      // Rollback: restore pre-debit snapshot
+      writeEscrow(creatorId, campaignId, snapshot);
+      console.log(`[bounty] Escrow rollback: balance went negative for campaign ${campaignId}, restored to ${snapshot.balance}`);
+      const err = new Error('Concurrent debit detected, rollback applied') as Error & { status: number };
+      err.status = 409;
+      throw err;
+    }
+
+    return check.balance;
+  }
+
+  // Expose debitEscrow on the router for external use (Task 4: auto-approve)
+  (router as express.Router & { debitEscrow: typeof debitEscrow }).debitEscrow = debitEscrow;
+
   return router;
 }
+
+/**
+ * Type for the bounty router with debitEscrow attached.
+ * Used by Task 4 to call debitEscrow from auto-approve flow.
+ */
+export type BountyRouter = express.Router & {
+  debitEscrow: (
+    creatorId: number,
+    campaignId: string,
+    amount: number,
+    ref: string,
+    initiatedBy: 'creator' | 'auto-approve',
+  ) => number;
+};
