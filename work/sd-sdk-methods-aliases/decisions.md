@@ -32,3 +32,22 @@
 - Manual check → OK
 
 -->
+
+## Task 1: Расширить webchat.ts — SDK методы + backend handler
+
+**Status:** Done
+**Commit:** 98b4bab
+**Agent:** coder-webchat
+**Summary:** Added 5 aliases (list/create/update/patch/delete) to SD.data, two new methods (getOne for single-item fetch, upsert for idempotent create-or-update), and two SD.admin methods (getMembers with isOwner enrichment, removeMember with owner guard + atomic del + revokeAccess). Extended backend GET handler to return single item by id or null. All changes backward-compatible; npm run build passes cleanly.
+**Deviations:** Нет — реализация полностью соответствует спеку.
+
+**Reviews:**
+
+*Round 1:*
+- code-reviewer: OK → [logs/working/task-1/code-reviewer-round1.json]
+- security-auditor: OK → [logs/working/task-1/security-auditor-round1.json]
+- test-reviewer: OK → [logs/working/task-1/test-reviewer-round1.json]
+
+**Verification:**
+- `npm run build` → 0 errors (TypeScript compilation clean)
+- Pre-commit hooks → 67/67 checks passed (structure, templates, TS, security, linters)
