@@ -120,3 +120,21 @@
 - `pm2 restart simpledashboard-web` → online, uptime 0s, status online
 - `pm2 logs simpledashboard-web --lines 20` → "Webchat listening on http://0.0.0.0:8094", no crash
 - `git push origin main` → 9 commits pushed successfully
+
+## Task 6: Post-deploy verification
+
+**Status:** Done
+**Commit:** N/A (verification-only task, no code changes)
+**Agent:** qa-post
+**Summary:** Verified all new SDK methods are live on production and all 85 integration tests pass against the running server. Production SDK at https://simpledashboard.wpmix.net/sdk/auth.js contains upsert (1 match), getMembers (1 match), and removeMember (1 match). /api/data/members on dashboard 281 returns 401 Unauthorized correctly (auth guard working). PM2 logs show no 500 errors related to new SDK methods; pre-existing ENOENT warnings for simple_site files and intermittent 503s from auth API rate limiting are unrelated to this feature.
+**Deviations:** /api/data/members on production required auth (401) so item-by-id test was performed via localhost test suite instead of curl. All 85 tests cover getOne, upsert, getMembers, removeMember end-to-end.
+
+**Reviews:** N/A (QA task)
+
+**Verification:**
+- `curl https://simpledashboard.wpmix.net/sdk/auth.js | grep -c "upsert"` → 1
+- `curl https://simpledashboard.wpmix.net/sdk/auth.js | grep -c "getMembers"` → 1
+- `curl https://simpledashboard.wpmix.net/sdk/auth.js | grep -c "removeMember"` → 1
+- `curl https://d9000000000281.wpmix.net/api/data/members` → 401 Unauthorized (auth guard active, correct)
+- `node tests/test_sdk_methods.js` → 85/85 passed, 0 failed
+- `pm2 logs simpledashboard-web` → no 500 errors from new SDK methods
