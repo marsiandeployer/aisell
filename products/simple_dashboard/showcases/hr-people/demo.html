@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR People Analytics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:rgba(255,255,255,0.08);color:#fff; }
+    .nav-link.active { background:rgba(168,85,247,0.2);color:#c084fc; }
+    .kpi-card { transition:box-shadow 0.2s; }
+    .badge { display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700; }
+    .badge-active { background:#d1fae5;color:#065f46; }
+    .badge-leave { background:#fef3c7;color:#92400e; }
+    .badge-new { background:#dbeafe;color:#1d4ed8; }
+    .badge-term { background:#fee2e2;color:#991b1b; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.22s ease both; }
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar (REQUIRED at bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(88,28,135,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1)">
+    <span id="promptText"></span>
+    <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#a855f7,#9333ea);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(168,85,247,0.5)"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
+      <div class="p-4 pb-2 border-b border-gray-700">
+        <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
+        <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav"></nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+    <main class="flex-1 overflow-auto mini-scroll" id="mainContent" style="padding-bottom:80px"></main>
+  </div>
+
+<script>
+// ===== i18n =====
+var _s = { // cyrillic-ok
+  en: {
+    sidebarTitle: 'HR Analytics',
+    sidebarSubtitle: 'People Dashboard',
+    promptText: 'HR analytics \u2014 headcount, turnover, hiring funnel and team health without HR software',
+    ctaBtn: 'Try for free',
+    langBtn: 'English',
+
+    navOverview:   'Overview',
+    navHiring:     'Hiring',
+    navRetention:  'Retention',
+    navTeams:      'Teams',
+
+    // Overview
+    totalHeadcount: 'Total Headcount',
+    turnoverRate:   'Turnover Rate',
+    openPositions:  'Open Positions',
+    avgTenure:      'Avg Tenure',
+    headcountTrend: 'Headcount Trend (12 months)',
+    headcountByDept:'Headcount by Department',
+    employees:      'employees',
+    years:          'yrs',
+
+    // Hiring
+    positionsOpen:   'Positions Open',
+    avgTTH:          'Avg Time-to-Hire',
+    costPerHire:     'Cost-per-Hire',
+    offerAcceptance: 'Offer Acceptance',
+    hiringFunnel:    'Hiring Funnel',
+    tthByDept:       'Time-to-Hire by Department (days)',
+    days:            'days',
+    applied:         'Applied',
+    screened:        'Screened',
+    interviewed:     'Interviewed',
+    offered:         'Offered',
+    hired:           'Hired',
+
+    // Retention
+    monthlyAttrition:   'Monthly Attrition',
+    voluntaryExits:     'Voluntary Exits',
+    involuntaryExits:   'Involuntary Exits',
+    enps:               'eNPS Score',
+    turnoverTrend:      'Turnover by Month',
+    exitReasons:        'Exit Reasons',
+    betterOffer:        'Better offer',
+    workLife:           'Work-life balance',
+    management:         'Management',
+    careerGrowth:       'Career growth',
+    personal:           'Personal',
+
+    // Teams
+    deptCount:      'Departments',
+    avgTeamSize:    'Avg Team Size',
+    sickDays:       'Sick Days / Employee',
+    remotePercent:  'Remote %',
+    teamSizeByDept: 'Team Size by Department',
+    statusBreakdown:'Employee Status',
+    active:         'Active',
+    onLeave:        'On Leave',
+    newHire:        'New Hire',
+    terminated:     'Terminated',
+
+    deptEng:  'Engineering',
+    deptSales:'Sales',
+    deptMkt:  'Marketing',
+    deptOps:  'Operations',
+    deptHR:   'HR',
+    deptFin:  'Finance',
+
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    vsLastMonth: 'vs last month',
+    annually: 'annually',
+    perYear: '/yr'
+  },
+  ru: {
+    sidebarTitle: '\u0410\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 HR',
+    sidebarSubtitle: '\u041f\u0430\u043d\u0435\u043b\u044c \u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u0430',
+    promptText: 'HR-\u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 \u2014 \u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u0441\u0442\u044c, \u0442\u0435\u043a\u0443\u0447\u0435\u0441\u0442\u044c, \u0432\u043e\u0440\u043e\u043d\u043a\u0430 \u043d\u0430\u0439\u043c\u0430 \u0438 \u0437\u0434\u043e\u0440\u043e\u0432\u044c\u0435 \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u0431\u0435\u0437 HR-\u0441\u0438\u0441\u0442\u0435\u043c',
+    ctaBtn: '\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u043e',
+    langBtn: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439',
+
+    navOverview:   '\u041e\u0431\u0437\u043e\u0440',
+    navHiring:     '\u041d\u0430\u0439\u043c',
+    navRetention:  '\u0423\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435',
+    navTeams:      '\u041a\u043e\u043c\u0430\u043d\u0434\u044b',
+
+    totalHeadcount: '\u0427\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u0441\u0442\u044c',
+    turnoverRate:   '\u0422\u0435\u043a\u0443\u0447\u0435\u0441\u0442\u044c',
+    openPositions:  '\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0445 \u0432\u0430\u043a\u0430\u043d\u0441\u0438\u0439',
+    avgTenure:      '\u0421\u0440. \u0441\u0442\u0430\u0436',
+    headcountTrend: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0447\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u0441\u0442\u0438 (12 \u043c\u0435\u0441\u044f\u0446\u0435\u0432)',
+    headcountByDept:'\u0427\u0438\u0441\u043b\u0435\u043d\u043d\u043e\u0441\u0442\u044c \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c',
+    employees:      '\u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u043e\u0432',
+    years:          '\u043b\u0435\u0442',
+
+    positionsOpen:   '\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0445 \u0432\u0430\u043a\u0430\u043d\u0441\u0438\u0439',
+    avgTTH:          '\u0421\u0440. \u0432\u0440\u0435\u043c\u044f \u043d\u0430\u0439\u043c\u0430',
+    costPerHire:     '\u0421\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c \u043d\u0430\u0439\u043c\u0430',
+    offerAcceptance: '\u041f\u0440\u0438\u043d\u044f\u0442\u0438\u0435 \u043e\u0444\u0444\u0435\u0440\u0430',
+    hiringFunnel:    '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u043d\u0430\u0439\u043c\u0430',
+    tthByDept:       '\u0412\u0440\u0435\u043c\u044f \u043d\u0430\u0439\u043c\u0430 \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c (\u0434\u043d\u0435\u0439)',
+    days:            '\u0434\u043d.',
+    applied:         '\u041e\u0442\u043a\u043b\u0438\u043a\u043e\u0432',
+    screened:        '\u041f\u0440\u043e\u0448\u043b\u0438 \u0441\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u043a\u0443',
+    interviewed:     '\u041f\u0440\u043e\u0448\u043b\u0438 \u0438\u043d\u0442\u0435\u0440\u0432\u044c\u044e',
+    offered:         '\u041f\u043e\u043b\u0443\u0447\u0438\u043b\u0438 \u043e\u0444\u0444\u0435\u0440',
+    hired:           '\u041d\u0430\u043d\u044f\u0442\u044b',
+
+    monthlyAttrition:   '\u041c\u0435\u0441\u044f\u0447\u043d\u0430\u044f \u0442\u0435\u043a\u0443\u0447\u0435\u0441\u0442\u044c',
+    voluntaryExits:     '\u0414\u043e\u0431\u0440\u043e\u0432\u043e\u043b\u044c\u043d\u044b\u0445',
+    involuntaryExits:   '\u041f\u043e \u0438\u043d\u0438\u0446\u0438\u0430\u0442\u0438\u0432\u0435 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0438',
+    enps:               'eNPS',
+    turnoverTrend:      '\u0422\u0435\u043a\u0443\u0447\u0435\u0441\u0442\u044c \u043f\u043e \u043c\u0435\u0441\u044f\u0446\u0430\u043c',
+    exitReasons:        '\u041f\u0440\u0438\u0447\u0438\u043d\u044b \u0443\u0445\u043e\u0434\u0430',
+    betterOffer:        '\u0411\u043e\u043b\u0435\u0435 \u0432\u044b\u0433\u043e\u0434\u043d\u043e\u0435 \u043f\u0440\u0435\u0434\u043b\u043e\u0436\u0435\u043d\u0438\u0435',
+    workLife:           '\u0411\u0430\u043b\u0430\u043d\u0441 \u0440\u0430\u0431\u043e\u0442\u044b \u0438 \u0436\u0438\u0437\u043d\u0438',
+    management:         '\u041c\u0435\u043d\u0435\u0434\u0436\u043c\u0435\u043d\u0442',
+    careerGrowth:       '\u041a\u0430\u0440\u044c\u0435\u0440\u043d\u044b\u0439 \u0440\u043e\u0441\u0442',
+    personal:           '\u041b\u0438\u0447\u043d\u044b\u0435 \u043e\u0431\u0441\u0442\u043e\u044f\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u0430',
+
+    deptCount:      '\u041e\u0442\u0434\u0435\u043b\u043e\u0432',
+    avgTeamSize:    '\u0421\u0440. \u0440\u0430\u0437\u043c\u0435\u0440 \u043a\u043e\u043c\u0430\u043d\u0434\u044b',
+    sickDays:       '\u0411\u043e\u043b\u044c\u043d\u0438\u0447\u043d\u044b\u0445 / \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a',
+    remotePercent:  '\u0423\u0434\u0430\u043b\u0451\u043d\u043d\u044b\u0445 %',
+    teamSizeByDept: '\u0420\u0430\u0437\u043c\u0435\u0440 \u043a\u043e\u043c\u0430\u043d\u0434 \u043f\u043e \u043e\u0442\u0434\u0435\u043b\u0430\u043c',
+    statusBreakdown:'\u0421\u0442\u0430\u0442\u0443\u0441 \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u043e\u0432',
+    active:         '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435',
+    onLeave:        '\u0412 \u043e\u0442\u043f\u0443\u0441\u043a\u0435',
+    newHire:        '\u041d\u043e\u0432\u044b\u0435',
+    terminated:     '\u0423\u0432\u043e\u043b\u0435\u043d\u044b',
+
+    deptEng:  '\u0418\u043d\u0436\u0435\u043d\u0435\u0440\u0438\u043d\u0433',
+    deptSales:'\u041f\u0440\u043e\u0434\u0430\u0436\u0438',
+    deptMkt:  '\u041c\u0430\u0440\u043a\u0435\u0442\u0438\u043d\u0433',
+    deptOps:  '\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u0438',
+    deptHR:   'HR',
+    deptFin:  '\u0424\u0438\u043d\u0430\u043d\u0441\u044b',
+
+    months: ['\u042f\u043d\u0432','\u0424\u0435\u0432','\u041c\u0430\u0440','\u0410\u043f\u0440','\u041c\u0430\u0439','\u0418\u044e\u043d','\u0418\u044e\u043b','\u0410\u0432\u0433','\u0421\u0435\u043d','\u041e\u043a\u0442','\u041d\u043e\u044f','\u0414\u0435\u043a'],
+    vsLastMonth: '\u043f\u0440\u043e\u0448\u043b\u044b\u0439 \u043c\u0435\u0441\u044f\u0446',
+    annually: '\u0432 \u0433\u043e\u0434',
+    perYear: '/\u0433\u043e\u0434'
+  }
+};
+
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var _stored = localStorage.getItem('demo_lang'); if (_stored === 'en' || _stored === 'ru') _lang = _stored; } catch(_e) {}
+}
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = tt('langBtn');
+  navigateTo(_currentPage);
+}
+
+// ===== Static JIT Data =====
+var _data = {
+  headcount: (function() {
+    // Realistic 12-month headcount: starts 108, grows to ~128
+    var base = [108, 110, 112, 111, 115, 118, 120, 119, 122, 125, 127, 128];
+    return base;
+  })(),
+
+  deptHeadcount: [42, 28, 14, 22, 8, 10],  // Engineering, Sales, Marketing, Operations, HR, Finance
+
+  // Hiring funnel
+  funnel: [280, 140, 62, 28, 22],
+
+  // Turnover by month (exits)
+  turnoverMonthly: [2, 1, 3, 2, 2, 4, 3, 2, 1, 3, 2, 2],
+
+  // Time-to-hire by dept (days)
+  tthByDept: [38, 45, 30, 28, 18, 22],
+
+  // Exit reasons (%)
+  exitReasons: [34, 26, 18, 15, 7],
+
+  // Team status
+  status: [102, 10, 9, 7]  // Active, On Leave, New Hire, Terminated
+};
+
+// ===== Pages =====
+var _currentPage = 'overview';
+var _charts = {};
+
+function kpiCard(label, value, sub, trend) {
+  var trendHtml = '';
+  if (trend > 0) trendHtml = '<span style="color:#10b981;font-size:11px;font-weight:600">\u25b2 +' + trend + '%</span>';
+  else if (trend < 0) trendHtml = '<span style="color:#ef4444;font-size:11px;font-weight:600">\u25bc ' + trend + '%</span>';
+  else trendHtml = '<span style="color:#6b7280;font-size:11px">&mdash;</span>';
+  return '<div class="kpi-card rounded-xl p-4 shadow-sm">'
+    + '<div style="font-size:12px;font-weight:500;color:#6b7280;margin-bottom:4px">' + label + '</div>'
+    + '<div style="font-size:26px;font-weight:800;color:#1e1b4b;line-height:1.1">' + value + '</div>'
+    + '<div style="margin-top:4px;display:flex;align-items:center;gap:6px">' + trendHtml
+    + '<span style="font-size:11px;color:#9ca3af">' + sub + '</span></div>'
+    + '</div>';
+}
+
+function sectionTitle(text) {
+  return '<h2 style="font-size:15px;font-weight:700;color:#1e1b4b;margin:0 0 10px 0">' + text + '</h2>';
+}
+
+// ===== Page: Overview =====
+function pageOverview() {
+  var hc = _data.headcount;
+  var latest = hc[hc.length - 1];
+  var prev = hc[hc.length - 2];
+  var hcDelta = Math.round((latest - prev) / prev * 100);
+  var months = tt('months');
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+
+  return '<div class="fade-in p-5">'
+    // KPI row
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + kpiCard(tt('totalHeadcount'), latest + ' <span style="font-size:14px;font-weight:400;color:#6b7280">' + tt('employees') + '</span>', tt('vsLastMonth'), hcDelta)
+    + kpiCard(tt('turnoverRate'), '14.2%', tt('annually'), -2)
+    + kpiCard(tt('openPositions'), '11', tt('vsLastMonth'), 0)
+    + kpiCard(tt('avgTenure'), '2.8 <span style="font-size:14px;font-weight:400;color:#6b7280">' + tt('years') + '</span>', tt('vsLastMonth'), 0)
+    + '</div>'
+    // Charts row
+    + '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px">'
+    // Headcount trend
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('headcountTrend'))
+    + '<canvas id="chartHcTrend" height="120"></canvas>'
+    + '</div>'
+    // Dept breakdown
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('headcountByDept'))
+    + '<canvas id="chartDeptBar" height="120"></canvas>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderChartsOverview() {
+  destroyCharts(['chartHcTrend', 'chartDeptBar']);
+  var months = tt('months');
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+  var purple = '#a855f7';
+  var purpleLight = 'rgba(168,85,247,0.15)';
+
+  _charts['chartHcTrend'] = new Chart(document.getElementById('chartHcTrend'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: tt('totalHeadcount'),
+        data: _data.headcount,
+        borderColor: purple,
+        backgroundColor: purpleLight,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: purple,
+        pointRadius: 3
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+  });
+
+  _charts['chartDeptBar'] = new Chart(document.getElementById('chartDeptBar'), {
+    type: 'bar',
+    data: {
+      labels: depts,
+      datasets: [{
+        label: tt('employees'),
+        data: _data.deptHeadcount,
+        backgroundColor: '#a855f7',
+        borderRadius: 5,
+        indexAxis: 'y'
+      }]
+    },
+    options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+  });
+}
+
+// ===== Page: Hiring =====
+function pageHiring() {
+  var funnelLabels = [tt('applied'), tt('screened'), tt('interviewed'), tt('offered'), tt('hired')];
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+
+  return '<div class="fade-in p-5">'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + kpiCard(tt('positionsOpen'), '11', tt('vsLastMonth'), 0)
+    + kpiCard(tt('avgTTH'), '32 <span style="font-size:14px;font-weight:400;color:#6b7280">' + tt('days') + '</span>', tt('vsLastMonth'), -5)
+    + kpiCard(tt('costPerHire'), '$4,200', tt('vsLastMonth'), 0)
+    + kpiCard(tt('offerAcceptance'), '78.6%', tt('vsLastMonth'), 3)
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
+    // Hiring funnel
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('hiringFunnel'))
+    + '<canvas id="chartFunnel" height="140"></canvas>'
+    + '</div>'
+    // TTH by dept
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('tthByDept'))
+    + '<canvas id="chartTTH" height="140"></canvas>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderChartsHiring() {
+  destroyCharts(['chartFunnel', 'chartTTH']);
+  var funnelLabels = [tt('applied'), tt('screened'), tt('interviewed'), tt('offered'), tt('hired')];
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+  var purples = ['rgba(168,85,247,0.9)', 'rgba(168,85,247,0.75)', 'rgba(168,85,247,0.60)', 'rgba(168,85,247,0.45)', 'rgba(168,85,247,0.30)'];
+
+  _charts['chartFunnel'] = new Chart(document.getElementById('chartFunnel'), {
+    type: 'bar',
+    data: {
+      labels: funnelLabels,
+      datasets: [{
+        label: tt('hiringFunnel'),
+        data: _data.funnel,
+        backgroundColor: purples,
+        borderRadius: 6
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  _charts['chartTTH'] = new Chart(document.getElementById('chartTTH'), {
+    type: 'bar',
+    data: {
+      labels: depts,
+      datasets: [{
+        label: tt('days'),
+        data: _data.tthByDept,
+        backgroundColor: '#9333ea',
+        borderRadius: 5,
+        indexAxis: 'y'
+      }]
+    },
+    options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+  });
+}
+
+// ===== Page: Retention =====
+function pageRetention() {
+  var months = tt('months');
+
+  return '<div class="fade-in p-5">'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + kpiCard(tt('monthlyAttrition'), '1.8%', tt('vsLastMonth'), -1)
+    + kpiCard(tt('voluntaryExits'), '19', tt('vsLastMonth'), 0)
+    + kpiCard(tt('involuntaryExits'), '3', tt('vsLastMonth'), 0)
+    + kpiCard(tt('enps'), '+32', tt('vsLastMonth'), 4)
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px">'
+    // Turnover bar
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('turnoverTrend'))
+    + '<canvas id="chartTurnover" height="130"></canvas>'
+    + '</div>'
+    // Exit reasons pie
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('exitReasons'))
+    + '<canvas id="chartExitReasons" height="130"></canvas>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderChartsRetention() {
+  destroyCharts(['chartTurnover', 'chartExitReasons']);
+  var months = tt('months');
+  var exitLabels = [tt('betterOffer'), tt('workLife'), tt('management'), tt('careerGrowth'), tt('personal')];
+
+  _charts['chartTurnover'] = new Chart(document.getElementById('chartTurnover'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: tt('turnoverTrend'),
+        data: _data.turnoverMonthly,
+        backgroundColor: 'rgba(168,85,247,0.7)',
+        borderRadius: 5
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  _charts['chartExitReasons'] = new Chart(document.getElementById('chartExitReasons'), {
+    type: 'pie',
+    data: {
+      labels: exitLabels,
+      datasets: [{
+        data: _data.exitReasons,
+        backgroundColor: ['#a855f7', '#c084fc', '#7c3aed', '#d946ef', '#e879f9'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+  });
+}
+
+// ===== Page: Teams =====
+function pageTeams() {
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+
+  return '<div class="fade-in p-5">'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+    + kpiCard(tt('deptCount'), '6', tt('vsLastMonth'), 0)
+    + kpiCard(tt('avgTeamSize'), '21.3', tt('employees'), 0)
+    + kpiCard(tt('sickDays'), '5.2', tt('vsLastMonth'), -1)
+    + kpiCard(tt('remotePercent'), '38%', tt('vsLastMonth'), 2)
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px">'
+    // Team size bar
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('teamSizeByDept'))
+    + '<canvas id="chartTeamSize" height="120"></canvas>'
+    + '</div>'
+    // Status doughnut
+    + '<div class="bg-white rounded-xl p-4 shadow-sm">'
+    + sectionTitle(tt('statusBreakdown'))
+    + '<canvas id="chartStatus" height="120"></canvas>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderChartsTeams() {
+  destroyCharts(['chartTeamSize', 'chartStatus']);
+  var depts = [tt('deptEng'), tt('deptSales'), tt('deptMkt'), tt('deptOps'), tt('deptHR'), tt('deptFin')];
+  var statusLabels = [tt('active'), tt('onLeave'), tt('newHire'), tt('terminated')];
+
+  _charts['chartTeamSize'] = new Chart(document.getElementById('chartTeamSize'), {
+    type: 'bar',
+    data: {
+      labels: depts,
+      datasets: [{
+        label: tt('employees'),
+        data: _data.deptHeadcount,
+        backgroundColor: '#a855f7',
+        borderRadius: 6
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  _charts['chartStatus'] = new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: _data.status,
+        backgroundColor: ['#a855f7', '#fbbf24', '#3b82f6', '#ef4444'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: { responsive: true, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } } }
+  });
+}
+
+// ===== SPA Core =====
+function destroyCharts(ids) {
+  ids.forEach(function(id) {
+    if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  });
+}
+
+var _pages = {
+  overview: { render: pageOverview, charts: renderChartsOverview },
+  hiring:   { render: pageHiring,   charts: renderChartsHiring },
+  retention:{ render: pageRetention,charts: renderChartsRetention },
+  teams:    { render: pageTeams,    charts: renderChartsTeams }
+};
+
+var _navDefs = [
+  { id: 'overview',   icon: '&#128200;', key: 'navOverview' },
+  { id: 'hiring',     icon: '&#128640;', key: 'navHiring' },
+  { id: 'retention',  icon: '&#128196;', key: 'navRetention' },
+  { id: 'teams',      icon: '&#128101;', key: 'navTeams' }
+];
+
+function buildNav() {
+  var nav = document.getElementById('nav');
+  nav.innerHTML = _navDefs.map(function(n) {
+    return '<button onclick="navigateTo(\'' + n.id + '\')" id="nav_' + n.id + '" class="nav-link' + (n.id === _currentPage ? ' active' : '') + '">'
+      + '<span>' + n.icon + '</span><span>' + tt(n.key) + '</span></button>';
+  }).join('');
+}
+
+function navigateTo(page) {
+  _currentPage = page;
+  buildNav();
+  var mc = document.getElementById('mainContent');
+  mc.innerHTML = _pages[page].render();
+  setTimeout(function() { _pages[page].charts(); }, 50);
+}
+
+// ===== Init =====
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+  document.getElementById('sidebarSubtitle').textContent = tt('sidebarSubtitle');
+  document.getElementById('promptText').textContent = tt('promptText');
+  document.getElementById('ctaBtn').textContent = tt('ctaBtn');
+
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = tt('langBtn');
+  }
+
+  buildNav();
+  navigateTo('overview');
+});
+</script>
+</body>
+</html>

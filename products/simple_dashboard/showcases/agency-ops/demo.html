@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agency Operations Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:rgba(255,255,255,0.08);color:#fff; }
+    .nav-link.active { background:rgba(99,102,241,0.25);color:#818cf8; }
+    .kpi-card { transition:box-shadow 0.2s; }
+    .kpi-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.10); }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.22s ease both; }
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600; }
+    .badge-active { background:#dcfce7;color:#16a34a; }
+    .badge-planning { background:#fef9c3;color:#ca8a04; }
+    .badge-review { background:#e0e7ff;color:#4338ca; }
+    .badge-paused { background:#fee2e2;color:#dc2626; }
+    table { border-collapse:collapse;width:100%; }
+    th,td { padding:10px 12px;text-align:left;font-size:13px; }
+    th { font-weight:600;color:#6b7280;border-bottom:2px solid rgba(0,0,0,0.08); }
+    td { border-bottom:1px solid rgba(0,0,0,0.05); }
+    tr:last-child td { border-bottom:none; }
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar (REQUIRED at bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(49,46,129,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1)">
+    <span id="promptText"></span>
+    <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(99,102,241,0.5)"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <!-- Sidebar -->
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
+      <div class="p-4 pb-2 border-b border-gray-700">
+        <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
+        <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav">
+        <button onclick="navigateTo('overview')" data-page="overview" class="nav-link" data-icon="&#128200;">
+          <span>&#128200;</span><span data-i18n="navOverview"></span>
+        </button>
+        <button onclick="navigateTo('clients')" data-page="clients" class="nav-link" data-icon="&#128101;">
+          <span>&#128101;</span><span data-i18n="navClients"></span>
+        </button>
+        <button onclick="navigateTo('team')" data-page="team" class="nav-link" data-icon="&#9881;">
+          <span>&#9881;</span><span data-i18n="navTeam"></span>
+        </button>
+        <button onclick="navigateTo('finance')" data-page="finance" class="nav-link" data-icon="&#128184;">
+          <span>&#128184;</span><span data-i18n="navFinance"></span>
+        </button>
+      </nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto mini-scroll" id="mainContent" style="padding-bottom:80px"></main>
+  </div>
+
+<script>
+// ===== i18n =====
+var _s = {
+  en: {
+    sidebarTitle: 'Agency Ops',
+    sidebarSubtitle: 'Marketing Agency Dashboard',
+    navOverview: 'Overview',
+    navClients: 'Clients',
+    navTeam: 'Team',
+    navFinance: 'Finance',
+    // Overview
+    overviewTitle: 'Overview',
+    activeClients: 'Active Clients',
+    runningProjects: 'Running Projects',
+    teamUtilization: 'Team Utilization',
+    monthlyRevenue: 'Monthly Revenue',
+    revenueByClient: 'Revenue by Client',
+    projectStatus: 'Project Status',
+    active: 'Active',
+    planning: 'Planning',
+    review: 'In Review',
+    paused: 'Paused',
+    // Clients
+    clientsTitle: 'Clients',
+    clientsWon: 'Clients Won (YTD)',
+    clientsLost: 'Clients Lost (YTD)',
+    avgContract: 'Avg Contract Value',
+    retentionRate: 'Retention Rate',
+    clientList: 'Client List',
+    client: 'Client',
+    project: 'Project',
+    budget: 'Budget',
+    status: 'Status',
+    manager: 'Manager',
+    revenueByClientH: 'Revenue by Client (YTD)',
+    // Team
+    teamTitle: 'Team',
+    totalStaff: 'Total Staff',
+    utilizationPct: 'Avg Utilization',
+    billableHours: 'Billable Hours (Mo)',
+    overtime: 'Overtime Hours (Mo)',
+    teamUtilizationChart: 'Team Utilization by Person',
+    workloadChart: 'Workload by Role (This Month)',
+    billable: 'Billable',
+    internal: 'Internal',
+    ot: 'Overtime',
+    // Finance
+    financeTitle: 'Finance',
+    grossRevenue: 'Gross Revenue (Mo)',
+    expenses: 'Expenses (Mo)',
+    profitMargin: 'Profit Margin',
+    avgProjectProfit: 'Avg Project Profit',
+    plChart: 'Monthly P&L (12 months)',
+    revenue: 'Revenue',
+    expense: 'Expenses',
+    profit: 'Profit',
+    revenueBreakdown: 'Revenue Breakdown by Client',
+    // Prompt
+    promptText: 'Build an agency operations dashboard \u2014 clients, projects, team utilization and P&L in one place',
+    ctaBtn: 'Try SimpleDashboard',
+    // misc
+    vsLastMonth: 'vs last month',
+    mo: '/mo',
+    k: 'k',
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  },
+  ru: { // cyrillic-ok
+    sidebarTitle: '\u0410\u0433\u0435\u043d\u0442\u0441\u0442\u0432\u043e',
+    sidebarSubtitle: '\u0414\u0430\u0448\u0431\u043e\u0440\u0434 \u043c\u0430\u0440\u043a\u0435\u0442\u0438\u043d\u0433\u043e\u0432\u043e\u0433\u043e \u0430\u0433\u0435\u043d\u0442\u0441\u0442\u0432\u0430',
+    navOverview: '\u041e\u0431\u0437\u043e\u0440',
+    navClients: '\u041a\u043b\u0438\u0435\u043d\u0442\u044b',
+    navTeam: '\u041a\u043e\u043c\u0430\u043d\u0434\u0430',
+    navFinance: '\u0424\u0438\u043d\u0430\u043d\u0441\u044b',
+    overviewTitle: '\u041e\u0431\u0437\u043e\u0440',
+    activeClients: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    runningProjects: '\u0422\u0435\u043a\u0443\u0449\u0438\u0445 \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432',
+    teamUtilization: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043a\u043e\u043c\u0430\u043d\u0434\u044b',
+    monthlyRevenue: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u0432 \u043c\u0435\u0441\u044f\u0446',
+    revenueByClient: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u043a\u043b\u0438\u0435\u043d\u0442\u0430\u043c',
+    projectStatus: '\u0421\u0442\u0430\u0442\u0443\u0441 \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432',
+    active: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435',
+    planning: '\u041f\u043b\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435',
+    review: '\u041d\u0430 \u0440\u0435\u0432\u044e',
+    paused: '\u041f\u0440\u0438\u043e\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e',
+    clientsTitle: '\u041a\u043b\u0438\u0435\u043d\u0442\u044b',
+    clientsWon: '\u041f\u0440\u0438\u0432\u043b\u0435\u0447\u0435\u043d\u043e (\u0437\u0430 \u0433\u043e\u0434)',
+    clientsLost: '\u041f\u043e\u0442\u0435\u0440\u044f\u043d\u043e (\u0437\u0430 \u0433\u043e\u0434)',
+    avgContract: '\u0421\u0440. \u0447\u0435\u043a \u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u0430',
+    retentionRate: '\u0423\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    clientList: '\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    client: '\u041a\u043b\u0438\u0435\u043d\u0442',
+    project: '\u041f\u0440\u043e\u0435\u043a\u0442',
+    budget: '\u0411\u044e\u0434\u0436\u0435\u0442',
+    status: '\u0421\u0442\u0430\u0442\u0443\u0441',
+    manager: '\u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440',
+    revenueByClientH: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u043a\u043b\u0438\u0435\u043d\u0442\u0430\u043c (\u0437\u0430 \u0433\u043e\u0434)',
+    teamTitle: '\u041a\u043e\u043c\u0430\u043d\u0434\u0430',
+    totalStaff: '\u0421\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u043e\u0432',
+    utilizationPct: '\u0421\u0440. \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430',
+    billableHours: '\u0411\u0438\u043b\u043b\u0438\u043d\u0433\u043e\u0432\u044b\u0445 \u0447\u0430\u0441\u043e\u0432 (\u043c\u0435\u0441)',
+    overtime: '\u041f\u0435\u0440\u0435\u0440\u0430\u0431\u043e\u0442\u043a\u0430 (\u043c\u0435\u0441)',
+    teamUtilizationChart: '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043f\u043e \u0441\u043e\u0442\u0440\u0443\u0434\u043d\u0438\u043a\u0430\u043c',
+    workloadChart: '\u0420\u0430\u0431\u043e\u0447\u0430\u044f \u043d\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043f\u043e \u0440\u043e\u043b\u044f\u043c',
+    billable: '\u0411\u0438\u043b\u043b\u0438\u043d\u0433\u043e\u0432\u044b\u0435',
+    internal: '\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u0438\u0435',
+    ot: '\u041f\u0435\u0440\u0435\u0440\u0430\u0431\u043e\u0442\u043a\u0430',
+    financeTitle: '\u0424\u0438\u043d\u0430\u043d\u0441\u044b',
+    grossRevenue: '\u0412\u0430\u043b\u043e\u0432\u0430\u044f \u0432\u044b\u0440\u0443\u0447\u043a\u0430 (\u043c\u0435\u0441)',
+    expenses: '\u0420\u0430\u0441\u0445\u043e\u0434\u044b (\u043c\u0435\u0441)',
+    profitMargin: '\u041c\u0430\u0440\u0436\u0430 \u043f\u0440\u0438\u0431\u044b\u043b\u0438',
+    avgProjectProfit: '\u0421\u0440. \u043f\u0440\u0438\u0431\u044b\u043b\u044c \u043f\u0440\u043e\u0435\u043a\u0442\u0430',
+    plChart: '\u041c\u0435\u0441\u044f\u0447\u043d\u044b\u0439 P&L (12 \u043c\u0435\u0441)',
+    revenue: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430',
+    expense: '\u0420\u0430\u0441\u0445\u043e\u0434\u044b',
+    profit: '\u041f\u0440\u0438\u0431\u044b\u043b\u044c',
+    revenueBreakdown: '\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430 \u0432\u044b\u0440\u0443\u0447\u043a\u0438 \u043f\u043e \u043a\u043b\u0438\u0435\u043d\u0442\u0430\u043c',
+    promptText: '\u0421\u043e\u0437\u0434\u0430\u0439\u0442\u0435 \u0434\u0430\u0448\u0431\u043e\u0440\u0434 \u0430\u0433\u0435\u043d\u0442\u0441\u0442\u0432\u0430 \u2014 \u043a\u043b\u0438\u0435\u043d\u0442\u044b, \u043f\u0440\u043e\u0435\u043a\u0442\u044b, \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0438 P&L \u0432 \u043e\u0434\u043d\u043e\u043c \u043c\u0435\u0441\u0442\u0435',
+    ctaBtn: '\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c',
+    vsLastMonth: '\u043a \u043f\u0440\u043e\u0448\u043b\u043e\u043c\u0443 \u043c\u0435\u0441\u044f\u0446\u0443',
+    mo: '/\u043c\u0435\u0441',
+    k: '\u0442\u044b\u0441',
+    months: ['\u042f\u043d\u0432','\u0424\u0435\u0432','\u041c\u0430\u0440','\u0410\u043f\u0440','\u041c\u0430\u0439','\u0418\u044e\u043d','\u0418\u044e\u043b','\u0410\u0432\u0433','\u0421\u0435\u043d','\u041e\u043a\u0442','\u041d\u043e\u044f','\u0414\u0435\u043a'],
+  }
+};
+
+// ===== Language detection =====
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+}
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = _lang === 'ru' ? '\u0420\u0443\u0441\u0441\u043a\u0438\u0439' : 'English';
+  navigateTo(currentPage);
+}
+
+// ===== JIT Data =====
+var clients = [
+  { name: 'Horizon Media', project: 'Brand Campaign Q2', budget: 28000, status: 'active', manager: 'Sarah K.', revenue: 41200 },
+  { name: 'TechVentures', project: 'Product Launch', budget: 45000, status: 'active', manager: 'Mike T.', revenue: 53800 },
+  { name: 'GreenBrand', project: 'SEO & Content', budget: 12000, status: 'review', manager: 'Alex P.', revenue: 18900 },
+  { name: 'Apex Retail', project: 'Social Media Mgmt', budget: 9500, status: 'active', manager: 'Sarah K.', revenue: 14200 },
+  { name: 'NovaCorp', project: 'PPC Campaign', budget: 31000, status: 'active', manager: 'Jake L.', revenue: 36700 },
+  { name: 'BlueSky SaaS', project: 'Influencer Push', budget: 18000, status: 'planning', manager: 'Mike T.', revenue: 9400 },
+  { name: 'Urban Eats', project: 'Local SEO', budget: 6800, status: 'active', manager: 'Alex P.', revenue: 11600 },
+  { name: 'Pinnacle Law', project: 'LinkedIn Ads', budget: 14500, status: 'review', manager: 'Jake L.', revenue: 21300 },
+  { name: 'ClearPath EDU', project: 'Google Ads + CRO', budget: 22000, status: 'active', manager: 'Sarah K.', revenue: 29500 },
+  { name: 'FutureMed', project: 'Website Redesign', budget: 38000, status: 'active', manager: 'Mike T.', revenue: 44100 },
+  { name: 'StyleHouse', project: 'Instagram Growth', budget: 8200, status: 'paused', manager: 'Alex P.', revenue: 6300 },
+  { name: 'DeepLogic AI', project: 'Content Strategy', budget: 16500, status: 'active', manager: 'Jake L.', revenue: 24800 },
+];
+
+var team = [
+  { name: 'Sarah K.', role: 'Account Manager', utilization: 92, billable: 147, internal: 14, ot: 9 },
+  { name: 'Mike T.', role: 'Creative Director', utilization: 88, billable: 141, internal: 18, ot: 6 },
+  { name: 'Alex P.', role: 'SEO Specialist', utilization: 79, billable: 126, internal: 20, ot: 0 },
+  { name: 'Jake L.', role: 'Paid Media Lead', utilization: 95, billable: 152, internal: 8, ot: 14 },
+  { name: 'Emma W.', role: 'Copywriter', utilization: 71, billable: 114, internal: 24, ot: 0 },
+  { name: 'Liam H.', role: 'Designer', utilization: 83, billable: 133, internal: 16, ot: 4 },
+  { name: 'Olivia R.', role: 'Social Media Mgr', utilization: 76, billable: 122, internal: 22, ot: 0 },
+  { name: 'Noah C.', role: 'Analytics Lead', utilization: 68, billable: 109, internal: 30, ot: 0 },
+  { name: 'Ava M.', role: 'Dev / Tech', utilization: 85, billable: 136, internal: 12, ot: 7 },
+  { name: 'Carter B.', role: 'Video Producer', utilization: 73, billable: 117, internal: 19, ot: 0 },
+  { name: 'Isla F.', role: 'PR Specialist', utilization: 67, billable: 107, internal: 26, ot: 0 },
+  { name: 'Ethan D.', role: 'Junior Designer', utilization: 62, billable: 99, internal: 34, ot: 0 },
+  { name: 'Mia S.', role: 'Junior Copywriter', utilization: 69, billable: 110, internal: 28, ot: 0 },
+  { name: 'Lucas V.', role: 'Strategist', utilization: 90, billable: 144, internal: 10, ot: 11 },
+];
+
+var monthlyRevenue = [26400, 29800, 31200, 35600, 38900, 42300, 44700, 48200, 51600, 55100, 58800, 63400];
+var monthlyExpenses = [19800, 21500, 22400, 24800, 27100, 28900, 30200, 32500, 34100, 36700, 38900, 41200];
+
+function fmtUSD(v) { return '$' + Number(v).toLocaleString('en-US'); }
+
+function getStatusBadge(s) {
+  var map = { active: 'badge-active', planning: 'badge-planning', review: 'badge-review', paused: 'badge-paused' };
+  var labelKey = { active: 'active', planning: 'planning', review: 'review', paused: 'paused' };
+  return '<span class="badge ' + (map[s] || '') + '">' + tt(labelKey[s] || s) + '</span>';
+}
+
+// ===== Pages =====
+var currentPage = 'overview';
+var _charts = {};
+
+function destroyCharts() {
+  Object.values(_charts).forEach(function(c) { try { c.destroy(); } catch(_e) {} });
+  _charts = {};
+}
+
+function navigateTo(page) {
+  currentPage = page;
+  destroyCharts();
+  var content = document.getElementById('mainContent');
+  var html = '';
+  if (page === 'overview') html = renderOverview();
+  else if (page === 'clients') html = renderClients();
+  else if (page === 'team') html = renderTeam();
+  else if (page === 'finance') html = renderFinance();
+  content.innerHTML = '<div class="p-6 fade-in">' + html + '</div>';
+
+  document.querySelectorAll('.nav-link').forEach(function(l) {
+    l.classList.toggle('active', l.dataset.page === page);
+  });
+
+  // Update i18n nav labels
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    el.textContent = tt(el.getAttribute('data-i18n'));
+  });
+
+  setTimeout(function() { renderCharts(page); }, 50);
+}
+
+// ===== Overview =====
+function renderOverview() {
+  var activeClients = clients.filter(function(c) { return c.status === 'active'; }).length;
+  var runningProjects = clients.filter(function(c) { return c.status === 'active' || c.status === 'review'; }).length;
+  var avgUtil = Math.round(team.reduce(function(s, m) { return s + m.utilization; }, 0) / team.length);
+  var monthRev = monthlyRevenue[11];
+  var prevRev = monthlyRevenue[10];
+  var revDelta = Math.round((monthRev - prevRev) / prevRev * 100);
+
+  var kpis = [
+    { label: tt('activeClients'), value: activeClients, delta: '+2', positive: true, icon: '&#128101;' },
+    { label: tt('runningProjects'), value: runningProjects, delta: '+1', positive: true, icon: '&#128196;' },
+    { label: tt('teamUtilization'), value: avgUtil + '%', delta: '+3%', positive: true, icon: '&#9881;' },
+    { label: tt('monthlyRevenue'), value: fmtUSD(monthRev), delta: (revDelta > 0 ? '+' : '') + revDelta + '% ' + tt('vsLastMonth'), positive: revDelta >= 0, icon: '&#128184;' },
+  ];
+
+  var statusCounts = { active: 0, planning: 0, review: 0, paused: 0 };
+  clients.forEach(function(c) { statusCounts[c.status] = (statusCounts[c.status] || 0) + 1; });
+
+  return '<h2 class="text-xl font-bold text-gray-800 mb-5">' + tt('overviewTitle') + '</h2>'
+    + renderKPIRow(kpis)
+    + '<div class="grid grid-cols-2 gap-4 mt-4">'
+    + '<div class="bg-white rounded-xl p-4 card">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('revenueByClient') + '</div>'
+    + '<canvas id="chartRevClient" height="220"></canvas></div>'
+    + '<div class="bg-white rounded-xl p-4 card">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('projectStatus') + '</div>'
+    + '<canvas id="chartProjStatus" height="220"></canvas></div>'
+    + '</div>';
+}
+
+// ===== Clients =====
+function renderClients() {
+  var rows = clients.map(function(c) {
+    return '<tr>'
+      + '<td class="font-medium text-gray-800">' + c.name + '</td>'
+      + '<td class="text-gray-600">' + c.project + '</td>'
+      + '<td class="text-gray-800">' + fmtUSD(c.budget) + '</td>'
+      + '<td>' + getStatusBadge(c.status) + '</td>'
+      + '<td class="text-gray-500">' + c.manager + '</td>'
+      + '</tr>';
+  }).join('');
+
+  var kpis = [
+    { label: tt('clientsWon'), value: '14', delta: '+3', positive: true, icon: '&#9989;' },
+    { label: tt('clientsLost'), value: '2', delta: '-1', positive: true, icon: '&#10060;' },
+    { label: tt('avgContract'), value: fmtUSD(21800), delta: '+8%', positive: true, icon: '&#128179;' },
+    { label: tt('retentionRate'), value: '87%', delta: '+4%', positive: true, icon: '&#128200;' },
+  ];
+
+  return '<h2 class="text-xl font-bold text-gray-800 mb-5">' + tt('clientsTitle') + '</h2>'
+    + renderKPIRow(kpis)
+    + '<div class="grid grid-cols-2 gap-4 mt-4">'
+    + '<div class="bg-white rounded-xl p-4 card col-span-1">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('clientList') + '</div>'
+    + '<div style="overflow-x:auto"><table>'
+    + '<thead><tr>'
+    + '<th>' + tt('client') + '</th><th>' + tt('project') + '</th><th>' + tt('budget') + '</th><th>' + tt('status') + '</th><th>' + tt('manager') + '</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table></div></div>'
+    + '<div class="bg-white rounded-xl p-4 card col-span-1">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('revenueByClientH') + '</div>'
+    + '<canvas id="chartClientRevH" height="340"></canvas></div>'
+    + '</div>';
+}
+
+// ===== Team =====
+function renderTeam() {
+  var totalBillable = team.reduce(function(s, m) { return s + m.billable; }, 0);
+  var totalOT = team.reduce(function(s, m) { return s + m.ot; }, 0);
+  var avgUtil = Math.round(team.reduce(function(s, m) { return s + m.utilization; }, 0) / team.length);
+
+  var kpis = [
+    { label: tt('totalStaff'), value: team.length, delta: '+2', positive: true, icon: '&#128101;' },
+    { label: tt('utilizationPct'), value: avgUtil + '%', delta: '+3%', positive: true, icon: '&#9881;' },
+    { label: tt('billableHours'), value: totalBillable.toLocaleString('en-US'), delta: '+5%', positive: true, icon: '&#9200;' },
+    { label: tt('overtime'), value: totalOT, delta: '-8%', positive: true, icon: '&#128337;' },
+  ];
+
+  return '<h2 class="text-xl font-bold text-gray-800 mb-5">' + tt('teamTitle') + '</h2>'
+    + renderKPIRow(kpis)
+    + '<div class="grid grid-cols-2 gap-4 mt-4">'
+    + '<div class="bg-white rounded-xl p-4 card">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('teamUtilizationChart') + '</div>'
+    + '<canvas id="chartTeamUtil" height="280"></canvas></div>'
+    + '<div class="bg-white rounded-xl p-4 card">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('workloadChart') + '</div>'
+    + '<canvas id="chartWorkload" height="280"></canvas></div>'
+    + '</div>';
+}
+
+// ===== Finance =====
+function renderFinance() {
+  var revNow = monthlyRevenue[11];
+  var expNow = monthlyExpenses[11];
+  var profitNow = revNow - expNow;
+  var margin = Math.round(profitNow / revNow * 100);
+  var avgProfit = Math.round(clients.reduce(function(s, c) { return s + (c.revenue - c.budget * 0.65); }, 0) / clients.length);
+
+  var kpis = [
+    { label: tt('grossRevenue'), value: fmtUSD(revNow), delta: '+8%', positive: true, icon: '&#128184;' },
+    { label: tt('expenses'), value: fmtUSD(expNow), delta: '+6%', positive: false, icon: '&#128197;' },
+    { label: tt('profitMargin'), value: margin + '%', delta: '+2%', positive: true, icon: '&#128200;' },
+    { label: tt('avgProjectProfit'), value: fmtUSD(avgProfit), delta: '+11%', positive: true, icon: '&#129297;' },
+  ];
+
+  return '<h2 class="text-xl font-bold text-gray-800 mb-5">' + tt('financeTitle') + '</h2>'
+    + renderKPIRow(kpis)
+    + '<div class="grid grid-cols-3 gap-4 mt-4">'
+    + '<div class="bg-white rounded-xl p-4 card col-span-2">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('plChart') + '</div>'
+    + '<canvas id="chartPL" height="220"></canvas></div>'
+    + '<div class="bg-white rounded-xl p-4 card col-span-1">'
+    + '<div class="font-semibold text-gray-700 mb-3 text-sm">' + tt('revenueBreakdown') + '</div>'
+    + '<canvas id="chartRevBreak" height="220"></canvas></div>'
+    + '</div>';
+}
+
+// ===== KPI Card helper =====
+function renderKPIRow(kpis) {
+  return '<div class="grid grid-cols-4 gap-4">'
+    + kpis.map(function(k) {
+      return '<div class="kpi-card bg-white rounded-xl p-4 flex flex-col gap-1">'
+        + '<div class="flex items-center gap-2 text-gray-500 text-xs font-medium">'
+        + '<span style="font-size:18px">' + k.icon + '</span>' + k.label + '</div>'
+        + '<div class="text-2xl font-bold text-gray-900">' + k.value + '</div>'
+        + '<div class="text-xs ' + (k.positive ? 'text-green-600' : 'text-red-500') + ' font-medium">'
+        + (k.positive ? '&#9650; ' : '&#9660; ') + k.delta + '</div>'
+        + '</div>';
+    }).join('') + '</div>';
+}
+
+// ===== Charts =====
+function renderCharts(page) {
+  var months = tt('months');
+  if (page === 'overview') {
+    // Revenue by client bar
+    var sortedClients = clients.slice().sort(function(a, b) { return b.revenue - a.revenue; }).slice(0, 8);
+    _charts.revClient = new Chart(document.getElementById('chartRevClient'), {
+      type: 'bar',
+      data: {
+        labels: sortedClients.map(function(c) { return c.name; }),
+        datasets: [{
+          label: tt('revenue'),
+          data: sortedClients.map(function(c) { return c.revenue; }),
+          backgroundColor: 'rgba(99,102,241,0.75)',
+          borderRadius: 5,
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return '$' + (v/1000) + 'k'; } } } } }
+    });
+    // Project status pie
+    var sc = { active: 0, planning: 0, review: 0, paused: 0 };
+    clients.forEach(function(c) { sc[c.status] = (sc[c.status]||0)+1; });
+    _charts.projStatus = new Chart(document.getElementById('chartProjStatus'), {
+      type: 'pie',
+      data: {
+        labels: [tt('active'), tt('planning'), tt('review'), tt('paused')],
+        datasets: [{
+          data: [sc.active, sc.planning, sc.review, sc.paused],
+          backgroundColor: ['#22c55e','#eab308','#6366f1','#ef4444'],
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+  } else if (page === 'clients') {
+    var sortedByRev = clients.slice().sort(function(a, b) { return b.revenue - a.revenue; });
+    _charts.clientRevH = new Chart(document.getElementById('chartClientRevH'), {
+      type: 'bar',
+      data: {
+        labels: sortedByRev.map(function(c) { return c.name; }),
+        datasets: [{
+          label: tt('revenue'),
+          data: sortedByRev.map(function(c) { return c.revenue; }),
+          backgroundColor: 'rgba(99,102,241,0.7)',
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { callback: function(v) { return '$' + (v/1000) + 'k'; } } } }
+      }
+    });
+  } else if (page === 'team') {
+    // Team utilization bar
+    _charts.teamUtil = new Chart(document.getElementById('chartTeamUtil'), {
+      type: 'bar',
+      data: {
+        labels: team.map(function(m) { return m.name; }),
+        datasets: [{
+          label: tt('utilizationPct'),
+          data: team.map(function(m) { return m.utilization; }),
+          backgroundColor: team.map(function(m) {
+            if (m.utilization >= 90) return 'rgba(239,68,68,0.75)';
+            if (m.utilization >= 75) return 'rgba(99,102,241,0.75)';
+            return 'rgba(34,197,94,0.7)';
+          }),
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min: 0, max: 100, ticks: { callback: function(v) { return v + '%'; } } },
+          x: { ticks: { maxRotation: 45, font: { size: 10 } } }
+        }
+      }
+    });
+    // Workload stacked bar (by role group)
+    var roleGroups = {};
+    team.forEach(function(m) {
+      var r = m.role.replace(/Junior\s/, '').replace(/Lead/, 'Mgr').split(' ').slice(0,2).join(' ');
+      if (!roleGroups[r]) roleGroups[r] = { billable: 0, internal: 0, ot: 0, count: 0 };
+      roleGroups[r].billable += m.billable;
+      roleGroups[r].internal += m.internal;
+      roleGroups[r].ot += m.ot;
+      roleGroups[r].count++;
+    });
+    var rLabels = Object.keys(roleGroups);
+    _charts.workload = new Chart(document.getElementById('chartWorkload'), {
+      type: 'bar',
+      data: {
+        labels: rLabels,
+        datasets: [
+          { label: tt('billable'), data: rLabels.map(function(k) { return Math.round(roleGroups[k].billable/roleGroups[k].count); }), backgroundColor: 'rgba(99,102,241,0.8)', borderRadius: 4 },
+          { label: tt('internal'), data: rLabels.map(function(k) { return Math.round(roleGroups[k].internal/roleGroups[k].count); }), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
+          { label: tt('ot'), data: rLabels.map(function(k) { return Math.round(roleGroups[k].ot/roleGroups[k].count); }), backgroundColor: 'rgba(239,68,68,0.65)', borderRadius: 4 },
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { stacked: true, ticks: { maxRotation: 40, font: { size: 10 } } },
+          y: { stacked: true }
+        },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  } else if (page === 'finance') {
+    // P&L line chart
+    var profitData = monthlyRevenue.map(function(r, i) { return r - monthlyExpenses[i]; });
+    _charts.pl = new Chart(document.getElementById('chartPL'), {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          { label: tt('revenue'), data: monthlyRevenue, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.12)', fill: true, tension: 0.35, pointRadius: 4 },
+          { label: tt('expense'), data: monthlyExpenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: true, tension: 0.35, pointRadius: 4 },
+          { label: tt('profit'), data: profitData, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', fill: false, tension: 0.35, borderDash: [4,3], pointRadius: 3 },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { ticks: { callback: function(v) { return '$' + (v/1000) + 'k'; } } } }
+      }
+    });
+    // Revenue breakdown doughnut
+    var top6 = clients.slice().sort(function(a,b) { return b.revenue-a.revenue; }).slice(0,6);
+    var otherRev = clients.slice(6).reduce(function(s,c) { return s+c.revenue; }, 0);
+    _charts.revBreak = new Chart(document.getElementById('chartRevBreak'), {
+      type: 'doughnut',
+      data: {
+        labels: top6.map(function(c) { return c.name; }).concat(['Others']),
+        datasets: [{
+          data: top6.map(function(c) { return c.revenue; }).concat([otherRev]),
+          backgroundColor: ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#4f46e5','#7c3aed','#d1d5db'],
+          borderWidth: 2,
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+    });
+  }
+}
+
+// ===== Init =====
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+  document.getElementById('sidebarSubtitle').textContent = tt('sidebarSubtitle');
+  document.getElementById('promptText').textContent = tt('promptText');
+  document.getElementById('ctaBtn').textContent = tt('ctaBtn');
+
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = _lang === 'ru' ? '\u0420\u0443\u0441\u0441\u043a\u0438\u0439' : 'English';
+  }
+
+  navigateTo('overview');
+});
+</script>
+</body>
+</html>

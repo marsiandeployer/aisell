@@ -1,0 +1,25 @@
+showcase:
+  slug: ecommerce-orders
+  product: simple_dashboard
+  type: spa
+  prompt: "Build an e-commerce dashboard — orders, products, traffic channels and returns analytics for an online store with 5000+ orders"
+  prompt_title: "E-commerce orders & returns analytics"
+  caption: "E-commerce Dashboard — Orders, Products, Channels & Returns"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  pages:
+    - id: overview
+      components: [kpi_cards, orders_trend, revenue_doughnut]
+    - id: products
+      components: [kpi_cards, top_products_bar, inventory_table]
+    - id: channels
+      components: [kpi_cards, channel_bar, conversion_bar]
+    - id: returns
+      components: [kpi_cards, returns_trend, reasons_pie]
+
+design:
+  colors:
+    primary: "teal-500"
+    accent: "teal-600"

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaaS Metrics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:rgba(255,255,255,0.08);color:#fff; }
+    .nav-link.active { background:rgba(16,185,129,0.2);color:#34d399; }
+    .kpi-card { transition:box-shadow 0.2s; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.22s ease both; }
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .cohort-cell { width:52px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.4); }
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar (REQUIRED at bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(6,78,59,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1)">
+    <span id="promptText"></span>
+    <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(16,185,129,0.5)"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <!-- Sidebar -->
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
+      <div class="p-4 pb-2 border-b border-gray-700">
+        <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
+        <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav"></nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <main class="flex-1 overflow-auto mini-scroll" id="mainContent" style="padding-bottom:80px"></main>
+  </div>
+
+<script>
+// ===== i18n =====
+var _s = { // cyrillic-ok
+  en: {
+    sidebarTitle: 'SaaS Metrics',
+    sidebarSubtitle: 'micro-SaaS analytics',
+    navOverview: 'Overview',
+    navGrowth: 'Growth',
+    navAcquisition: 'Acquisition',
+    navHealth: 'Health',
+    langBtn: 'English',
+    promptText: 'Track MRR, churn, LTV and CAC without paying $100/mo for Baremetrics',
+    ctaBtn: 'Build your dashboard',
+    // KPI labels
+    mrr: 'MRR',
+    arr: 'ARR',
+    activeCustomers: 'Active Customers',
+    churnRate: 'Churn Rate',
+    newMrr: 'New MRR',
+    expansionMrr: 'Expansion MRR',
+    churnedMrr: 'Churned MRR',
+    netNewMrr: 'Net New MRR',
+    cac: 'CAC',
+    ltv: 'LTV',
+    ltvCacRatio: 'LTV:CAC Ratio',
+    trialConversion: 'Trial\u2192Paid',
+    dau: 'DAU',
+    mau: 'MAU',
+    dauMau: 'DAU/MAU',
+    nps: 'NPS Score',
+    // Chart labels
+    mrrTrend: 'MRR Trend (12 months)',
+    customerGrowth: 'Customer Growth',
+    mrrWaterfall: 'MRR Waterfall — This Month',
+    cohortRetention: 'Cohort Retention',
+    cacVsLtv: 'CAC vs LTV',
+    trialFunnel: 'Trial Conversion Funnel',
+    dauChart: 'Daily Active Users (30 days)',
+    planDistribution: 'Plan Distribution',
+    month: 'Month',
+    customers: 'Customers',
+    value: 'Value ($)',
+    users: 'Users',
+    cohortLabel: 'Cohort',
+    // Cohort months
+    cohortM0: 'Month 0',
+    cohortM1: 'Month 1',
+    cohortM2: 'Month 2',
+    cohortM3: 'Month 3',
+    cohortM4: 'Month 4',
+    cohortM5: 'Month 5',
+    // Waterfall bars
+    waterfallNew: 'New',
+    waterfallExpansion: 'Expansion',
+    waterfallChurned: 'Churned',
+    waterfallNet: 'Net New',
+    // Funnel stages
+    funnelTrialStart: 'Trial Started',
+    funnelEngaged: 'Engaged (3+ sessions)',
+    funnelConversion: 'Converted to Paid',
+    funnelExpanded: 'Expanded Plan',
+    // Plans
+    planStarter: 'Starter',
+    planPro: 'Pro',
+    planEnterprise: 'Enterprise',
+    // Trend indicators
+    vsLastMonth: 'vs last month',
+    vsLastQuarter: 'vs last quarter',
+    target: 'Target',
+    good: 'Good',
+    // Page headings
+    overviewTitle: 'Business Overview',
+    growthTitle: 'MRR Growth Analysis',
+    acquisitionTitle: 'Customer Acquisition',
+    healthTitle: 'Product Health',
+    overviewDesc: 'Monthly recurring revenue and customer metrics',
+    growthDesc: 'MRR breakdown and cohort retention',
+    acquisitionDesc: 'CAC, LTV and trial conversion analysis',
+    healthDesc: 'Engagement, retention and plan distribution'
+  },
+  ru: {
+    sidebarTitle: '\u0421\u0430\u0430\u0421-\u041c\u0435\u0442\u0440\u0438\u043a\u0438',
+    sidebarSubtitle: '\u0430\u043d\u0430\u043b\u0438\u0442\u0438\u043a\u0430 micro-SaaS',
+    navOverview: '\u041e\u0431\u0437\u043e\u0440',
+    navGrowth: '\u0420\u043e\u0441\u0442',
+    navAcquisition: '\u041f\u0440\u0438\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u0435',
+    navHealth: '\u0417\u0434\u043e\u0440\u043e\u0432\u044c\u0435',
+    langBtn: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439',
+    promptText: '\u041e\u0442\u0441\u043b\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 MRR, churn, LTV \u0438 CAC \u0431\u0435\u0437 $100/\u043c\u0435\u0441 \u0437\u0430 Baremetrics', // currency-ok
+    ctaBtn: '\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u0434\u0430\u0448\u0431\u043e\u0440\u0434',
+    mrr: 'MRR',
+    arr: 'ARR',
+    activeCustomers: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    churnRate: '\u041e\u0442\u0442\u043e\u043a',
+    newMrr: '\u041d\u043e\u0432\u044b\u0439 MRR',
+    expansionMrr: '\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043d\u0438\u0435 MRR',
+    churnedMrr: '\u041f\u043e\u0442\u0435\u0440\u044f\u043d\u043d\u044b\u0439 MRR',
+    netNewMrr: '\u0427\u0438\u0441\u0442\u044b\u0439 \u043d\u043e\u0432\u044b\u0439 MRR',
+    cac: 'CAC',
+    ltv: 'LTV',
+    ltvCacRatio: '\u041a\u043e\u044d\u0444\u0444 LTV:CAC',
+    trialConversion: '\u041f\u0435\u0440\u0435\u0445\u043e\u0434 \u0432 \u043f\u043b\u0430\u0442\u043d\u044b\u0439',
+    dau: 'DAU',
+    mau: 'MAU',
+    dauMau: 'DAU/MAU',
+    nps: 'NPS',
+    mrrTrend: 'MRR \u0437\u0430 12 \u043c\u0435\u0441\u044f\u0446\u0435\u0432',
+    customerGrowth: '\u0420\u043e\u0441\u0442 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    mrrWaterfall: 'MRR \u0432\u043e\u0434\u043e\u043f\u0430\u0434 \u2014 \u044d\u0442\u043e\u0442 \u043c\u0435\u0441\u044f\u0446',
+    cohortRetention: '\u041a\u043e\u0433\u043e\u0440\u0442\u043d\u043e\u0435 \u0443\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435',
+    cacVsLtv: 'CAC \u043f\u0440\u043e\u0442\u0438\u0432 LTV',
+    trialFunnel: '\u0412\u043e\u0440\u043e\u043d\u043a\u0430 \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0438 \u0442\u0440\u0438\u0430\u043b\u0430',
+    dauChart: '\u0414\u0435\u043d\u0435\u0432\u043d\u044b\u0435 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0435 \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438 (30 \u0434\u043d\u0435\u0439)',
+    planDistribution: '\u0420\u0430\u0441\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u043b\u0430\u043d\u043e\u0432',
+    month: '\u041c\u0435\u0441\u044f\u0446',
+    customers: '\u041a\u043b\u0438\u0435\u043d\u0442\u044b',
+    value: '\u0421\u0443\u043c\u043c\u0430 ($)',
+    users: '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0438',
+    cohortLabel: '\u041a\u043e\u0433\u043e\u0440\u0442\u0430',
+    cohortM0: '\u041c\u0435\u0441. 0',
+    cohortM1: '\u041c\u0435\u0441. 1',
+    cohortM2: '\u041c\u0435\u0441. 2',
+    cohortM3: '\u041c\u0435\u0441. 3',
+    cohortM4: '\u041c\u0435\u0441. 4',
+    cohortM5: '\u041c\u0435\u0441. 5',
+    waterfallNew: '\u041d\u043e\u0432\u044b\u0435',
+    waterfallExpansion: '\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043d\u0438\u0435',
+    waterfallChurned: '\u041f\u043e\u0442\u0435\u0440\u0438',
+    waterfallNet: '\u0427\u0438\u0441\u0442\u044b\u0435',
+    funnelTrialStart: '\u041d\u0430\u0447\u0430\u043b\u0438 \u0442\u0440\u0438\u0430\u043b',
+    funnelEngaged: '\u0410\u043a\u0442\u0438\u0432\u043d\u044b\u0435 (3+ \u0441\u0435\u0441\u0441\u0438\u0438)',
+    funnelConversion: '\u041f\u0435\u0440\u0435\u0448\u043b\u0438 \u043d\u0430 \u043f\u043b\u0430\u0442\u043d\u044b\u0439',
+    funnelExpanded: '\u0420\u0430\u0441\u0448\u0438\u0440\u0438\u043b\u0438 \u043f\u043b\u0430\u043d',
+    planStarter: 'Starter',
+    planPro: 'Pro',
+    planEnterprise: 'Enterprise',
+    vsLastMonth: '\u043f\u0440\u043e\u0448\u043b\u044b\u0439 \u043c\u0435\u0441\u044f\u0446',
+    vsLastQuarter: '\u043f\u0440\u043e\u0448\u043b\u044b\u0439 \u043a\u0432\u0430\u0440\u0442\u0430\u043b',
+    target: '\u0426\u0435\u043b\u044c',
+    good: '\u0425\u043e\u0440\u043e\u0448\u043e',
+    overviewTitle: '\u041e\u0431\u0449\u0438\u0439 \u043e\u0431\u0437\u043e\u0440',
+    growthTitle: '\u0410\u043d\u0430\u043b\u0438\u0437 \u0440\u043e\u0441\u0442\u0430 MRR',
+    acquisitionTitle: '\u041f\u0440\u0438\u0432\u043b\u0435\u0447\u0435\u043d\u0438\u0435 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    healthTitle: '\u0417\u0434\u043e\u0440\u043e\u0432\u044c\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u0430',
+    overviewDesc: '\u0415\u0436\u0435\u043c\u0435\u0441\u044f\u0447\u043d\u0430\u044f \u0432\u044b\u0440\u0443\u0447\u043a\u0430 \u0438 \u0431\u0430\u0437\u0430 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432',
+    growthDesc: '\u0414\u0435\u043a\u043e\u043c\u043f\u043e\u0437\u0438\u0446\u0438\u044f MRR \u0438 \u043a\u043e\u0433\u043e\u0440\u0442\u043d\u044b\u0439 \u0430\u043d\u0430\u043b\u0438\u0437',
+    acquisitionDesc: 'CAC, LTV \u0438 \u0430\u043d\u0430\u043b\u0438\u0437 \u043a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u0438 \u0442\u0440\u0438\u0430\u043b\u0430',
+    healthDesc: '\u0412\u043e\u0432\u043b\u0435\u0447\u0435\u043d\u043d\u043e\u0441\u0442\u044c, \u0443\u0434\u0435\u0440\u0436\u0430\u043d\u0438\u0435 \u0438 \u0440\u0430\u0441\u043f\u0440\u0435\u0434\u0435\u043b\u0435\u043d\u0438\u0435 \u043f\u043b\u0430\u043d\u043e\u0432'
+  }
+};
+
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+}
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = tt('langBtn');
+  render();
+}
+
+// ===== JIT Data =====
+function genMrrSeries() {
+  // MRR: $8k → $28k over 12 months, realistic tapering growth
+  var base = 8000;
+  var rates = [0.18, 0.17, 0.16, 0.15, 0.14, 0.13, 0.12, 0.11, 0.10, 0.09, 0.08, 0.07];
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var vals = [base];
+  for (var i = 1; i < 12; i++) {
+    var noise = (Math.random() - 0.5) * 0.04;
+    vals.push(Math.round(vals[i-1] * (1 + rates[i] + noise)));
+  }
+  return { labels: months, values: vals };
+}
+function genCustomerSeries(mrrVals) {
+  // Customers: 45 → 180 over 12 months, proportional to MRR
+  var start = 45; var end = 180;
+  return mrrVals.map(function(m, i) {
+    var frac = i / 11;
+    var noise = Math.round((Math.random() - 0.5) * 4);
+    return Math.round(start + (end - start) * (frac * frac * 0.5 + frac * 0.5) + noise);
+  });
+}
+function genDauSeries() {
+  // DAU: 30-day series, base ~420, weekly patterns
+  var base = 420;
+  return Array.from({length: 30}, function(_, i) {
+    var dow = i % 7;
+    var weekMult = (dow === 0 || dow === 6) ? 0.72 : 1.0;
+    var trend = 1 + i * 0.003;
+    var noise = (Math.random() - 0.5) * 0.15;
+    return Math.round(base * weekMult * trend * (1 + noise));
+  });
+}
+
+var MRR_DATA = genMrrSeries();
+var CUSTOMER_DATA = genCustomerSeries(MRR_DATA.values);
+
+// Derived metrics
+var CURR_MRR = MRR_DATA.values[11];
+var PREV_MRR = MRR_DATA.values[10];
+var CURR_ARR = CURR_MRR * 12;
+var CURR_CUSTOMERS = CUSTOMER_DATA[11];
+var CHURN_RATE = +(3.2 + Math.random() * 1.8).toFixed(1); // 3.2-5.0%
+var NEW_MRR = Math.round(CURR_MRR * 0.14);
+var EXPANSION_MRR = Math.round(CURR_MRR * 0.06);
+var CHURNED_MRR = Math.round(CURR_MRR * 0.04);
+var NET_NEW_MRR = NEW_MRR + EXPANSION_MRR - CHURNED_MRR;
+var CAC = Math.round(180 + Math.random() * 60);
+var LTV = Math.round(CAC * (3.5 + Math.random() * 1.5));
+var LTV_CAC = +(LTV / CAC).toFixed(1);
+var TRIAL_CONV = Math.round(18 + Math.random() * 10); // 18-28%
+
+// DAU/MAU
+var DAU_SERIES = genDauSeries();
+var CURR_DAU = DAU_SERIES[29];
+var CURR_MAU = Math.round(CURR_DAU * (4.5 + Math.random() * 1.5));
+var DAU_MAU = +(CURR_DAU / CURR_MAU * 100).toFixed(1);
+var NPS = Math.round(42 + Math.random() * 18); // 42-60
+
+// Cohort retention data (6 cohorts x 6 months)
+var COHORTS = [
+  [100, 74, 62, 55, 49, 44],
+  [100, 78, 65, 58, 52, null],
+  [100, 76, 63, 56, null, null],
+  [100, 80, 67, null, null, null],
+  [100, 77, null, null, null, null],
+  [100, null, null, null, null, null]
+];
+var COHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+
+function fmt(n) { return '$' + n.toLocaleString('en-US'); }
+function fmtPct(n) { return n + '%'; }
+function trendUp(pct) {
+  return '<span style="color:#10b981;font-size:11px;font-weight:600">&#9650; +' + pct + '% ' + tt('vsLastMonth') + '</span>';
+}
+function trendDown(pct) {
+  return '<span style="color:#ef4444;font-size:11px;font-weight:600">&#9660; -' + pct + '% ' + tt('vsLastMonth') + '</span>';
+}
+function trendNeutral(label) {
+  return '<span style="color:#6b7280;font-size:11px;font-weight:600">' + label + '</span>';
+}
+
+// ===== Pages =====
+var currentPage = 'overview';
+var _charts = {};
+
+function kpiCard(label, value, trend, sub) {
+  return '<div class="kpi-card rounded-xl p-4 shadow-sm" style="background:rgba(255,255,255,0.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.35)">'
+    + '<div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">' + label + '</div>'
+    + '<div style="font-size:26px;font-weight:800;color:#111827;line-height:1.1;margin-bottom:4px">' + value + '</div>'
+    + '<div>' + trend + '</div>'
+    + (sub ? '<div style="font-size:10px;color:#9ca3af;margin-top:2px">' + sub + '</div>' : '')
+    + '</div>';
+}
+
+function pageHeader(title, desc) {
+  return '<div class="fade-in" style="padding:24px 28px 0">'
+    + '<h1 style="font-size:20px;font-weight:800;color:#111827;margin:0 0 2px">' + title + '</h1>'
+    + '<p style="font-size:13px;color:#6b7280;margin:0 0 20px">' + desc + '</p>'
+    + '</div>';
+}
+
+function chartCard(id, title, height) {
+  height = height || 220;
+  return '<div class="card rounded-xl shadow-sm" style="background:rgba(255,255,255,0.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.35);padding:18px">'
+    + '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">' + title + '</div>'
+    + '<div style="height:' + height + 'px"><canvas id="' + id + '"></canvas></div>'
+    + '</div>';
+}
+
+// ---- Overview Page ----
+var pages = {
+  overview: function() {
+    var mrrDelta = +(((CURR_MRR - PREV_MRR) / PREV_MRR) * 100).toFixed(1);
+    return pageHeader(tt('overviewTitle'), tt('overviewDesc'))
+      + '<div style="padding:0 28px 20px">'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">'
+      + kpiCard(tt('mrr'), fmt(CURR_MRR), trendUp(mrrDelta), 'Monthly Recurring Revenue')
+      + kpiCard(tt('arr'), fmt(CURR_ARR), trendUp((mrrDelta * 1.05).toFixed(1)), 'Annual Run Rate')
+      + kpiCard(tt('activeCustomers'), CURR_CUSTOMERS, trendUp('12.4'), 'Paying subscribers')
+      + kpiCard(tt('churnRate'), fmtPct(CHURN_RATE), trendDown('0.3'), '< 5% is healthy')
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + chartCard('chartMrrTrend', tt('mrrTrend'), 220)
+      + chartCard('chartCustomerGrowth', tt('customerGrowth'), 220)
+      + '</div>'
+      + '</div>';
+  },
+
+  growth: function() {
+    var mrrDelta = +(((CURR_MRR - PREV_MRR) / PREV_MRR) * 100).toFixed(1);
+    return pageHeader(tt('growthTitle'), tt('growthDesc'))
+      + '<div style="padding:0 28px 20px">'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">'
+      + kpiCard(tt('newMrr'), fmt(NEW_MRR), trendUp('8.2'), 'From new customers')
+      + kpiCard(tt('expansionMrr'), fmt(EXPANSION_MRR), trendUp('3.1'), 'Upgrades & seats')
+      + kpiCard(tt('churnedMrr'), fmt(CHURNED_MRR), trendDown('1.4'), 'Cancellations')
+      + kpiCard(tt('netNewMrr'), fmt(NET_NEW_MRR), trendUp(mrrDelta), 'New + Expansion - Churned')
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + chartCard('chartWaterfall', tt('mrrWaterfall'), 220)
+      + '<div class="card rounded-xl shadow-sm" style="background:rgba(255,255,255,0.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.35);padding:18px">'
+      + '<div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px">' + tt('cohortRetention') + '</div>'
+      + '<div id="cohortTable" style="overflow-x:auto"></div>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  },
+
+  acquisition: function() {
+    return pageHeader(tt('acquisitionTitle'), tt('acquisitionDesc'))
+      + '<div style="padding:0 28px 20px">'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">'
+      + kpiCard(tt('cac'), fmt(CAC), trendDown('4.2'), 'Cost to acquire 1 customer')
+      + kpiCard(tt('ltv'), fmt(LTV), trendUp('6.7'), 'Lifetime value per customer')
+      + kpiCard(tt('ltvCacRatio'), LTV_CAC + 'x', trendNeutral(tt('good') + ' > 3x'), 'Payback efficiency')
+      + kpiCard(tt('trialConversion'), TRIAL_CONV + '%', trendUp('2.1'), 'Trial \u2192 paid subscribers')
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+      + chartCard('chartLtvCac', tt('cacVsLtv'), 220)
+      + chartCard('chartFunnel', tt('trialFunnel'), 220)
+      + '</div>'
+      + '</div>';
+  },
+
+  health: function() {
+    return pageHeader(tt('healthTitle'), tt('healthDesc'))
+      + '<div style="padding:0 28px 20px">'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">'
+      + kpiCard(tt('dau'), CURR_DAU, trendUp('3.8'), 'Daily active users')
+      + kpiCard(tt('mau'), CURR_MAU, trendUp('7.2'), 'Monthly active users')
+      + kpiCard(tt('dauMau'), DAU_MAU + '%', trendNeutral('> 20% ' + tt('good')), 'Engagement ratio')
+      + kpiCard(tt('nps'), NPS, trendUp('4'), '> 40 is excellent')
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">'
+      + chartCard('chartDau', tt('dauChart'), 220)
+      + chartCard('chartPlans', tt('planDistribution'), 220)
+      + '</div>'
+      + '</div>';
+  }
+};
+
+// ===== Chart renderers =====
+function destroyCharts() {
+  Object.keys(_charts).forEach(function(k) {
+    try { _charts[k].destroy(); } catch(e) {}
+  });
+  _charts = {};
+}
+
+var EMERALD = '#10b981';
+var EMERALD2 = '#059669';
+var EMERALD_LIGHT = 'rgba(16,185,129,0.18)';
+var TEAL = '#14b8a6';
+var RED = '#ef4444';
+var RED_LIGHT = 'rgba(239,68,68,0.18)';
+var AMBER = '#f59e0b';
+var BLUE = '#3b82f6';
+
+function renderCharts(page) {
+  destroyCharts();
+
+  if (page === 'overview') {
+    var ctxMrr = document.getElementById('chartMrrTrend');
+    var ctxCust = document.getElementById('chartCustomerGrowth');
+    if (ctxMrr) {
+      _charts.mrr = new Chart(ctxMrr, {
+        type: 'line',
+        data: {
+          labels: MRR_DATA.labels,
+          datasets: [{
+            label: 'MRR ($)',
+            data: MRR_DATA.values,
+            borderColor: EMERALD,
+            backgroundColor: EMERALD_LIGHT,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: EMERALD
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { font: { size: 11 }, callback: function(v) { return '$' + (v/1000).toFixed(0) + 'k'; } }
+            }
+          }
+        }
+      });
+    }
+    if (ctxCust) {
+      _charts.cust = new Chart(ctxCust, {
+        type: 'line',
+        data: {
+          labels: MRR_DATA.labels,
+          datasets: [{
+            label: tt('customers'),
+            data: CUSTOMER_DATA,
+            borderColor: TEAL,
+            backgroundColor: 'rgba(20,184,166,0.15)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: TEAL
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }
+
+  else if (page === 'growth') {
+    var ctxWf = document.getElementById('chartWaterfall');
+    if (ctxWf) {
+      // Waterfall: New, Expansion, Churned (negative), Net
+      _charts.wf = new Chart(ctxWf, {
+        type: 'bar',
+        data: {
+          labels: [tt('waterfallNew'), tt('waterfallExpansion'), tt('waterfallChurned'), tt('waterfallNet')],
+          datasets: [{
+            label: tt('value'),
+            data: [NEW_MRR, EXPANSION_MRR, -CHURNED_MRR, NET_NEW_MRR],
+            backgroundColor: [EMERALD, TEAL, RED, EMERALD2],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { font: { size: 11 }, callback: function(v) { return '$' + Math.abs(v/1000).toFixed(1) + 'k'; } }
+            }
+          }
+        }
+      });
+    }
+
+    // Cohort heatmap (pure HTML/CSS table)
+    var tbl = document.getElementById('cohortTable');
+    if (tbl) {
+      var cohortColLabels = [tt('cohortM0'), tt('cohortM1'), tt('cohortM2'), tt('cohortM3'), tt('cohortM4'), tt('cohortM5')];
+      var html = '<table style="border-collapse:separate;border-spacing:3px;font-size:11px">'
+        + '<thead><tr><th style="padding:4px 8px;color:#6b7280;font-weight:600;text-align:left">' + tt('cohortLabel') + '</th>'
+        + cohortColLabels.map(function(m) {
+            return '<th style="padding:4px 6px;color:#6b7280;font-weight:600;text-align:center">' + m + '</th>';
+          }).join('')
+        + '</tr></thead><tbody>';
+      COHORTS.forEach(function(row, ri) {
+        html += '<tr><td style="padding:4px 8px;color:#374151;font-weight:600;white-space:nowrap">' + COHORT_MONTHS[ri] + '</td>';
+        row.forEach(function(val) {
+          if (val === null) {
+            html += '<td></td>';
+          } else {
+            // color: 100% = emerald, 44% = orange-red
+            var pct = val / 100;
+            var r = Math.round(239 + (16 - 239) * pct);
+            var g = Math.round(68 + (185 - 68) * pct);
+            var b = Math.round(68 + (129 - 68) * pct);
+            html += '<td><div class="cohort-cell" style="background:rgb(' + r + ',' + g + ',' + b + ')">' + val + '%</div></td>';
+          }
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      tbl.innerHTML = html;
+    }
+  }
+
+  else if (page === 'acquisition') {
+    var ctxLtv = document.getElementById('chartLtvCac');
+    var ctxFunnel = document.getElementById('chartFunnel');
+    if (ctxLtv) {
+      _charts.ltv = new Chart(ctxLtv, {
+        type: 'bar',
+        data: {
+          labels: [tt('cac'), tt('ltv')],
+          datasets: [{
+            label: tt('value'),
+            data: [CAC, LTV],
+            backgroundColor: [RED, EMERALD],
+            borderRadius: 8,
+            borderSkipped: false,
+            barPercentage: 0.45
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return '$' + ctx.parsed.y.toLocaleString(); }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 12, weight: '600' } } },
+            y: {
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: { font: { size: 11 }, callback: function(v) { return '$' + v.toLocaleString(); } }
+            }
+          }
+        }
+      });
+    }
+    if (ctxFunnel) {
+      var trialStart = 280;
+      var engaged = Math.round(trialStart * 0.64);
+      var converted = Math.round(trialStart * TRIAL_CONV / 100);
+      var expanded = Math.round(converted * 0.24);
+      _charts.funnel = new Chart(ctxFunnel, {
+        type: 'bar',
+        data: {
+          labels: [tt('funnelTrialStart'), tt('funnelEngaged'), tt('funnelConversion'), tt('funnelExpanded')],
+          datasets: [{
+            label: tt('users'),
+            data: [trialStart, engaged, converted, expanded],
+            backgroundColor: [
+              'rgba(16,185,129,0.85)',
+              'rgba(20,184,166,0.85)',
+              'rgba(5,150,105,0.85)',
+              'rgba(16,185,129,0.55)'
+            ],
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+  }
+
+  else if (page === 'health') {
+    var ctxDau = document.getElementById('chartDau');
+    var ctxPlans = document.getElementById('chartPlans');
+    if (ctxDau) {
+      var dayLabels = Array.from({length: 30}, function(_, i) { return (i + 1) + ''; });
+      _charts.dau = new Chart(ctxDau, {
+        type: 'line',
+        data: {
+          labels: dayLabels,
+          datasets: [{
+            label: 'DAU',
+            data: DAU_SERIES,
+            borderColor: EMERALD,
+            backgroundColor: EMERALD_LIGHT,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, maxTicksLimit: 10 } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+    if (ctxPlans) {
+      // Plan distribution: Starter/Pro/Enterprise roughly 55/35/10%
+      var planStarter = Math.round(CURR_CUSTOMERS * 0.55);
+      var planPro = Math.round(CURR_CUSTOMERS * 0.35);
+      var planEnt = CURR_CUSTOMERS - planStarter - planPro;
+      _charts.plans = new Chart(ctxPlans, {
+        type: 'doughnut',
+        data: {
+          labels: [tt('planStarter'), tt('planPro'), tt('planEnterprise')],
+          datasets: [{
+            data: [planStarter, planPro, planEnt],
+            backgroundColor: [EMERALD_LIGHT.replace('0.18', '0.9'), EMERALD, EMERALD2],
+            borderColor: ['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.8)', 'rgba(255,255,255,0.8)'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
+          },
+          cutout: '62%'
+        }
+      });
+    }
+  }
+}
+
+// ===== Navigation =====
+var NAV_PAGES = [
+  { id: 'overview', icon: '&#128200;', labelKey: 'navOverview' },
+  { id: 'growth', icon: '&#128640;', labelKey: 'navGrowth' },
+  { id: 'acquisition', icon: '&#127919;', labelKey: 'navAcquisition' },
+  { id: 'health', icon: '&#10084;', labelKey: 'navHealth' }
+];
+
+function buildNav() {
+  var nav = document.getElementById('nav');
+  if (!nav) return;
+  nav.innerHTML = NAV_PAGES.map(function(p) {
+    return '<button onclick="navigateTo(\'' + p.id + '\')" data-page="' + p.id + '" class="nav-link' + (p.id === currentPage ? ' active' : '') + '">'
+      + '<span>' + p.icon + '</span><span>' + tt(p.labelKey) + '</span></button>';
+  }).join('');
+}
+
+function navigateTo(page) {
+  currentPage = page;
+  var main = document.getElementById('mainContent');
+  if (main) main.innerHTML = pages[page]();
+  buildNav();
+  setTimeout(function() { renderCharts(page); }, 50);
+}
+
+function render() {
+  // Sidebar strings
+  var st = document.getElementById('sidebarTitle');
+  var ss = document.getElementById('sidebarSubtitle');
+  if (st) st.textContent = tt('sidebarTitle');
+  if (ss) ss.textContent = tt('sidebarSubtitle');
+  // Prompt bar
+  var pt = document.getElementById('promptText');
+  var cb = document.getElementById('ctaBtn');
+  if (pt) pt.textContent = tt('promptText');
+  if (cb) cb.textContent = tt('ctaBtn');
+  // Lang toggle
+  var lb = document.getElementById('langBtn');
+  if (lb) lb.textContent = tt('langBtn');
+  // Navigate to re-render current page
+  navigateTo(currentPage);
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = tt('langBtn');
+  }
+  render();
+});
+</script>
+</body>
+</html>

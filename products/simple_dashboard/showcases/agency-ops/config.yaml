@@ -1,0 +1,25 @@
+showcase:
+  slug: agency-ops
+  product: simple_dashboard
+  type: spa
+  prompt: "Build a marketing agency dashboard — clients, projects, team utilization and P&L in one place"
+  prompt_title: "Agency operations in one dashboard"
+  caption: "Agency Ops Dashboard — clients, projects, team & P&L"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  pages:
+    - id: overview
+      components: [kpi_cards, bar_chart, pie_chart]
+    - id: clients
+      components: [kpi_cards, table, horizontal_bar]
+    - id: team
+      components: [kpi_cards, bar_chart, stacked_bar]
+    - id: finance
+      components: [kpi_cards, line_chart, doughnut]
+
+design:
+  colors:
+    primary: "indigo-500"
+    accent: "violet-500"

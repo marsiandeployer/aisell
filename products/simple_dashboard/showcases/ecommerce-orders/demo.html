@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-commerce Orders Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:rgba(255,255,255,0.08);color:#fff; }
+    .nav-link.active { background:rgba(20,184,166,0.2);color:#2dd4bf; }
+    .kpi-card { transition:box-shadow 0.2s; }
+    .badge { display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700; }
+    .badge-green { background:#d1fae5;color:#065f46; }
+    .badge-yellow { background:#fef3c7;color:#92400e; }
+    .badge-red { background:#fee2e2;color:#991b1b; }
+    .badge-blue { background:#dbeafe;color:#1d4ed8; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.22s ease both; }
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar (REQUIRED at bottom) -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(15,118,110,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1)">
+    <span id="promptText"></span>
+    <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(20,184,166,0.5)"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
+      <div class="p-4 pb-2 border-b border-gray-700">
+        <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
+        <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav"></nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+    <main class="flex-1 overflow-auto mini-scroll" id="mainContent" style="padding-bottom:80px"></main>
+  </div>
+
+<script>
+// ===== i18n =====
+// cyrillic-ok
+var _s = {
+  en: {
+    sidebarTitle: 'E-commerce',
+    sidebarSubtitle: 'Orders Dashboard',
+    navOverview: 'Overview',
+    navProducts: 'Products',
+    navChannels: 'Channels',
+    navReturns: 'Returns',
+    langLabel: '\ud83c\udf10 English',
+
+    // Overview KPIs
+    kpiOrdersToday: 'Orders Today',
+    kpiRevenueToday: 'Revenue Today',
+    kpiAOV: 'Avg Order Value',
+    kpiConversion: 'Conversion Rate',
+    chartOrdersTrend: '30-Day Orders Trend',
+    chartRevenueCategory: 'Revenue by Category',
+
+    // Products KPIs
+    kpiTopSkuOrders: 'Top SKU Orders',
+    kpiLowStockAlerts: 'Low Stock Alerts',
+    kpiAvgMargin: 'Avg Margin %',
+    kpiReturnRate: 'Return Rate',
+    chartTopProducts: 'Top 10 Products by Revenue',
+    tableInventory: 'Inventory Status',
+    colProduct: 'Product',
+    colStock: 'Stock',
+    colStatus: 'Status',
+    statusInStock: 'In Stock',
+    statusLow: 'Low Stock',
+    statusOut: 'Out of Stock',
+
+    // Channels KPIs
+    kpiOrganic: 'Organic Orders',
+    kpiPaid: 'Paid Orders',
+    kpiSocial: 'Social Orders',
+    kpiDirect: 'Direct Orders',
+    chartChannelOrders: 'Orders by Channel (30 days)',
+    chartChannelConversion: 'Conversion Rate by Channel',
+
+    // Returns KPIs
+    kpiTotalReturns: 'Total Returns',
+    kpiReturnRatePct: 'Return Rate %',
+    kpiReturnRevLost: 'Revenue Lost',
+    kpiAvgDaysReturn: 'Avg Days to Return',
+    chartReturnsTrend: 'Returns 30-Day Trend',
+    chartReturnReasons: 'Return Reasons',
+
+    // Shared
+    orders: 'Orders',
+    revenue: 'Revenue',
+    vs: 'vs last period',
+    today: 'Today',
+    days30: 'Last 30 days',
+    conversion: 'Conversion',
+    returns: 'Returns',
+    products: 'Products',
+    channels: 'Channels',
+    overview: 'Overview',
+
+    // Trend labels
+    trendUp: '\u25b2',
+    trendDown: '\u25bc',
+
+    // Months
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+
+    // Categories
+    catElectronics: 'Electronics',
+    catClothing: 'Clothing',
+    catHome: 'Home & Garden',
+    catSports: 'Sports',
+    catBeauty: 'Beauty',
+    catOther: 'Other',
+
+    // Channels
+    chanOrganic: 'Organic',
+    chanPaid: 'Paid Ads',
+    chanSocial: 'Social',
+    chanDirect: 'Direct',
+    chanEmail: 'Email',
+
+    // Return reasons
+    reasonSize: 'Wrong Size',
+    reasonDefect: 'Defective',
+    reasonMind: 'Changed Mind',
+    reasonDesc: 'Not as Described',
+
+    // Prompt bar
+    promptText: 'Monitor orders, channels, inventory and returns for your online store in one dashboard',
+    ctaLabel: 'Try SimpleDashboard',
+
+    // Products list
+    products12: [
+      'Wireless Headphones Pro',
+      'Running Sneakers X200',
+      'Smart Watch Series 5',
+      'Cotton Hoodie Classic',
+      'Yoga Mat Premium',
+      'Protein Powder 1kg',
+      'Bluetooth Speaker Mini',
+      'Denim Jacket Slim',
+      'Face Serum Vitamin C',
+      'Laptop Stand Aluminium',
+      'Travel Backpack 40L',
+      'LED Desk Lamp'
+    ]
+  },
+  ru: {
+    sidebarTitle: '\u042d\u043a\u043e\u043c\u043c\u0435\u0440\u0446\u0438\u044f',
+    sidebarSubtitle: '\u0414\u0430\u0448\u0431\u043e\u0440\u0434 \u0437\u0430\u043a\u0430\u0437\u043e\u0432',
+    navOverview: '\u041e\u0431\u0437\u043e\u0440',
+    navProducts: '\u0422\u043e\u0432\u0430\u0440\u044b',
+    navChannels: '\u041a\u0430\u043d\u0430\u043b\u044b',
+    navReturns: '\u0412\u043e\u0437\u0432\u0440\u0430\u0442\u044b',
+    langLabel: '\ud83c\udf10 \u0420\u0443\u0441\u0441\u043a\u0438\u0439',
+
+    kpiOrdersToday: '\u0417\u0430\u043a\u0430\u0437\u043e\u0432 \u0441\u0435\u0433\u043e\u0434\u043d\u044f',
+    kpiRevenueToday: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u0441\u0435\u0433\u043e\u0434\u043d\u044f',
+    kpiAOV: '\u0421\u0440\u0435\u0434\u043d\u0438\u0439 \u0447\u0435\u043a',
+    kpiConversion: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+    chartOrdersTrend: '\u0422\u0440\u0435\u043d\u0434 \u0437\u0430\u043a\u0430\u0437\u043e\u0432 \u0437\u0430 30 \u0434\u043d\u0435\u0439',
+    chartRevenueCategory: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430 \u043f\u043e \u043a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f\u043c',
+
+    kpiTopSkuOrders: '\u0417\u0430\u043a\u0430\u0437\u044b \u0442\u043e\u043f SKU',
+    kpiLowStockAlerts: '\u0410\u043b\u0435\u0440\u0442\u044b \u043e\u0441\u0442\u0430\u0442\u043a\u043e\u0432',
+    kpiAvgMargin: '\u0421\u0440\u0435\u0434\u043d\u044f\u044f \u043c\u0430\u0440\u0436\u0430 %',
+    kpiReturnRate: '\u0414\u043e\u043b\u044f \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u043e\u0432',
+    chartTopProducts: '\u0422\u043e\u043f-10 \u0442\u043e\u0432\u0430\u0440\u043e\u0432 \u043f\u043e \u0432\u044b\u0440\u0443\u0447\u043a\u0435',
+    tableInventory: '\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435 \u0441\u043a\u043b\u0430\u0434\u0430',
+    colProduct: '\u0422\u043e\u0432\u0430\u0440',
+    colStock: '\u041e\u0441\u0442\u0430\u0442\u043e\u043a',
+    colStatus: '\u0421\u0442\u0430\u0442\u0443\u0441',
+    statusInStock: '\u0412 \u043d\u0430\u043b\u0438\u0447\u0438\u0438',
+    statusLow: '\u041c\u0430\u043b\u043e',
+    statusOut: '\u041d\u0435\u0442 \u0432 \u043d\u0430\u043b\u0438\u0447\u0438\u0438',
+
+    kpiOrganic: '\u041e\u0440\u0433\u0430\u043d\u0438\u043a\u0430',
+    kpiPaid: '\u041f\u043b\u0430\u0442\u043d\u044b\u0435 \u0437\u0430\u043a\u0430\u0437\u044b',
+    kpiSocial: '\u0421\u043e\u0446\u0441\u0435\u0442\u0438',
+    kpiDirect: '\u041f\u0440\u044f\u043c\u044b\u0435 \u0437\u0430\u0445\u043e\u0434\u044b',
+    chartChannelOrders: '\u0417\u0430\u043a\u0430\u0437\u044b \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c (30 \u0434\u043d\u0435\u0439)',
+    chartChannelConversion: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f \u043f\u043e \u043a\u0430\u043d\u0430\u043b\u0430\u043c',
+
+    kpiTotalReturns: '\u0412\u0441\u0435\u0433\u043e \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u043e\u0432',
+    kpiReturnRatePct: '\u0414\u043e\u043b\u044f \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u043e\u0432',
+    kpiReturnRevLost: '\u041f\u043e\u0442\u0435\u0440\u044f \u0432\u044b\u0440\u0443\u0447\u043a\u0438',
+    kpiAvgDaysReturn: '\u0421\u0440\u0435\u0434\u043d\u0435\u0435 \u0432\u0440\u0435\u043c\u044f \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u0430',
+    chartReturnsTrend: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u043e\u0432 (30 \u0434\u043d\u0435\u0439)',
+    chartReturnReasons: '\u041f\u0440\u0438\u0447\u0438\u043d\u044b \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u043e\u0432',
+
+    orders: '\u0417\u0430\u043a\u0430\u0437\u044b',
+    revenue: '\u0412\u044b\u0440\u0443\u0447\u043a\u0430',
+    vs: '\u043a \u043f\u0440\u043e\u0448\u043b\u043e\u043c\u0443 \u043f\u0435\u0440\u0438\u043e\u0434\u0443',
+    today: '\u0421\u0435\u0433\u043e\u0434\u043d\u044f',
+    days30: '\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 30 \u0434\u043d\u0435\u0439',
+    conversion: '\u041a\u043e\u043d\u0432\u0435\u0440\u0441\u0438\u044f',
+    returns: '\u0412\u043e\u0437\u0432\u0440\u0430\u0442\u044b',
+    products: '\u0422\u043e\u0432\u0430\u0440\u044b',
+    channels: '\u041a\u0430\u043d\u0430\u043b\u044b',
+    overview: '\u041e\u0431\u0437\u043e\u0440',
+
+    trendUp: '\u25b2',
+    trendDown: '\u25bc',
+
+    months: ['\u042f\u043d\u0432','\u0424\u0435\u0432','\u041c\u0430\u0440','\u0410\u043f\u0440','\u041c\u0430\u0439','\u0418\u044e\u043d','\u0418\u044e\u043b','\u0410\u0432\u0433','\u0421\u0435\u043d','\u041e\u043a\u0442','\u041d\u043e\u044f','\u0414\u0435\u043a'],
+
+    catElectronics: '\u042d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u0438\u043a\u0430',
+    catClothing: '\u041e\u0434\u0435\u0436\u0434\u0430',
+    catHome: '\u0414\u043e\u043c \u0438 \u0441\u0430\u0434',
+    catSports: '\u0421\u043f\u043e\u0440\u0442',
+    catBeauty: '\u041a\u0440\u0430\u0441\u043e\u0442\u0430',
+    catOther: '\u041f\u0440\u043e\u0447\u0435\u0435',
+
+    chanOrganic: '\u041e\u0440\u0433\u0430\u043d\u0438\u043a\u0430',
+    chanPaid: '\u041f\u043b\u0430\u0442\u043d\u0430\u044f \u0440\u0435\u043a\u043b\u0430\u043c\u0430',
+    chanSocial: '\u0421\u043e\u0446\u0441\u0435\u0442\u0438',
+    chanDirect: '\u041f\u0440\u044f\u043c\u043e\u0439',
+    chanEmail: 'Email',
+
+    reasonSize: '\u041d\u0435 \u043f\u043e\u0434\u043e\u0448\u0451\u043b \u0440\u0430\u0437\u043c\u0435\u0440',
+    reasonDefect: '\u0411\u0440\u0430\u043a',
+    reasonMind: '\u041f\u0435\u0440\u0435\u0434\u0443\u043c\u0430\u043b',
+    reasonDesc: '\u041d\u0435 \u0441\u043e\u043e\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u043e\u043f\u0438\u0441\u0430\u043d\u0438\u044e',
+
+    promptText: '\u041e\u0442\u0441\u043b\u0435\u0436\u0438\u0432\u0430\u0439\u0442\u0435 \u0437\u0430\u043a\u0430\u0437\u044b, \u043a\u0430\u043d\u0430\u043b\u044b, \u0441\u043a\u043b\u0430\u0434 \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0442\u044b \u0432\u0430\u0448\u0435\u0433\u043e \u043c\u0430\u0433\u0430\u0437\u0438\u043d\u0430 \u0432 \u043e\u0434\u043d\u043e\u043c \u0434\u0430\u0448\u0431\u043e\u0440\u0434\u0435',
+    ctaLabel: '\u041f\u043e\u043f\u0440\u043e\u0431\u043e\u0432\u0430\u0442\u044c SimpleDashboard',
+
+    products12: [
+      '\u0411\u0435\u0441\u043f\u0440\u043e\u0432\u043e\u0434\u043d\u044b\u0435 \u043d\u0430\u0443\u0448\u043d\u0438\u043a\u0438 Pro',
+      '\u041a\u0440\u043e\u0441\u0441\u043e\u0432\u043a\u0438 \u0434\u043b\u044f \u0431\u0435\u0433\u0430 X200',
+      '\u0423\u043c\u043d\u044b\u0435 \u0447\u0430\u0441\u044b Series 5',
+      '\u041a\u043e\u0442\u043e\u043d\u043e\u0432\u043e\u0435 \u0445\u0443\u0434\u0438 Classic',
+      '\u041a\u043e\u0432\u0440\u0438\u043a \u0434\u043b\u044f \u0439\u043e\u0433\u0438 Premium',
+      '\u041f\u0440\u043e\u0442\u0435\u0438\u043d 1\u043a\u0433',
+      '\u0411\u043b\u044e\u0442\u0443\u0437-\u043a\u043e\u043b\u043e\u043d\u043a\u0430 Mini',
+      '\u0414\u0436\u0438\u043d\u0441\u043e\u0432\u0430\u044f \u043a\u0443\u0440\u0442\u043a\u0430 Slim',
+      '\u0421\u044b\u0432\u043e\u0440\u043e\u0442\u043a\u0430 \u0441 \u0432\u0438\u0442. C',
+      '\u041f\u043e\u0434\u0441\u0442\u0430\u0432\u043a\u0430 \u0434\u043b\u044f \u043d\u043e\u0443\u0442\u0431\u0443\u043a\u0430 Al',
+      '\u0420\u044e\u043a\u0437\u0430\u043a \u0434\u043b\u044f \u043f\u0443\u0442\u0435\u0448\u0435\u0441\u0442\u0432\u0438\u0439 40\u043b',
+      '\u041d\u0430\u0441\u0442\u043e\u043b\u044c\u043d\u0430\u044f \u043b\u0430\u043c\u043f\u0430 LED'
+    ]
+  }
+};
+
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var stored = localStorage.getItem('demo_lang_ecom'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+}
+
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang_ecom', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = tt('langLabel');
+  buildNav();
+  navigateTo(currentPage);
+}
+
+// ===== JIT DATA GENERATORS =====
+
+function rnd(min, max) { return Math.round(min + Math.random() * (max - min)); }
+function rndF(min, max, dec) { return parseFloat((min + Math.random() * (max - min)).toFixed(dec)); }
+
+function gen30DayOrders() {
+  var data = [];
+  var base = 280;
+  for (var i = 0; i < 30; i++) {
+    var dow = (i + 1) % 7; // 0=Mon
+    var weekendBoost = (dow === 5 || dow === 6) ? 1.35 : 1.0;
+    var noise = 0.8 + Math.random() * 0.4;
+    data.push(Math.round(base * weekendBoost * noise));
+  }
+  return data;
+}
+
+function gen30DayLabels() {
+  var labels = [];
+  var now = new Date();
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date(now);
+    d.setDate(d.getDate() - i);
+    labels.push((d.getMonth() + 1) + '/' + d.getDate());
+  }
+  return labels;
+}
+
+function gen30DayReturns() {
+  var orders = gen30DayOrders();
+  return orders.map(function(o) { return Math.round(o * (0.08 + Math.random() * 0.06)); });
+}
+
+function genProductRevenues() {
+  var base = [48000, 39000, 34000, 28500, 26000, 23000, 20500, 18000, 15500, 13000, 10500, 8500];
+  return base.map(function(v) { return Math.round(v * (0.85 + Math.random() * 0.3)); });
+}
+
+function genInventoryStocks() {
+  return [
+    rnd(120, 400), rnd(5, 35), rnd(80, 250), rnd(0, 8),
+    rnd(50, 200), rnd(0, 5), rnd(30, 150), rnd(15, 60),
+    rnd(0, 12), rnd(70, 300), rnd(25, 90), rnd(3, 18)
+  ];
+}
+
+function stockStatus(qty) {
+  if (qty === 0) return 'out';
+  if (qty < 15) return 'low';
+  return 'in';
+}
+
+function genChannelOrders30() {
+  var days = 30;
+  var organic = [], paid = [], social = [], direct = [];
+  for (var i = 0; i < days; i++) {
+    var total = rnd(180, 420);
+    organic.push(Math.round(total * 0.35));
+    paid.push(Math.round(total * 0.28));
+    social.push(Math.round(total * 0.22));
+    direct.push(Math.round(total * 0.15));
+  }
+  return { organic: organic, paid: paid, social: social, direct: direct };
+}
+
+// ===== SPA NAVIGATION =====
+var currentPage = 'overview';
+var _charts = {};
+
+function destroyCharts() {
+  Object.keys(_charts).forEach(function(k) { try { _charts[k].destroy(); } catch(_e) {} });
+  _charts = {};
+}
+
+function kpiCard(label, value, sub, subClass) {
+  return '<div class="kpi-card rounded-xl p-4 shadow-sm">' +
+    '<div class="text-xs text-gray-500 font-medium mb-1">' + label + '</div>' +
+    '<div class="text-2xl font-bold text-gray-800">' + value + '</div>' +
+    '<div class="text-xs mt-1 ' + (subClass || 'text-gray-400') + '">' + sub + '</div>' +
+  '</div>';
+}
+
+function sectionHeader(title) {
+  return '<div class="flex items-center gap-2 mb-3"><h2 class="text-sm font-semibold text-gray-700">' + title + '</h2></div>';
+}
+
+// ===== PAGES =====
+
+function pageOverview() {
+  var ordersToday = rnd(180, 420);
+  var revenueToday = rnd(8000, 22000);
+  var aov = rndF(45, 85, 2);
+  var conv = rndF(2.4, 3.8, 1);
+
+  var ordChange = rnd(-8, 18);
+  var revChange = rnd(-5, 22);
+  var aovChange = rndF(-3, 6, 1);
+  var convChange = rndF(-0.3, 0.5, 1);
+
+  var ordSign = ordChange >= 0 ? '+' : '';
+  var revSign = revChange >= 0 ? '+' : '';
+  var aovSign = aovChange >= 0 ? '+' : '';
+  var convSign = convChange >= 0 ? '+' : '';
+
+  var ordClass = ordChange >= 0 ? 'text-emerald-600' : 'text-red-500';
+  var revClass = revChange >= 0 ? 'text-emerald-600' : 'text-red-500';
+  var aovClass = aovChange >= 0 ? 'text-emerald-600' : 'text-red-500';
+  var convClass = convChange >= 0 ? 'text-emerald-600' : 'text-red-500';
+
+  return '<div class="p-5 fade-in">' +
+    '<h1 class="text-lg font-bold text-gray-800 mb-4">' + tt('navOverview') + '</h1>' +
+    '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">' +
+      kpiCard(tt('kpiOrdersToday'), ordersToday.toLocaleString(), ordSign + ordChange + '% ' + tt('vs'), ordClass) +
+      kpiCard(tt('kpiRevenueToday'), '$' + revenueToday.toLocaleString(), revSign + revChange + '% ' + tt('vs'), revClass) +
+      kpiCard(tt('kpiAOV'), '$' + aov.toFixed(2), aovSign + aovChange + '% ' + tt('vs'), aovClass) +
+      kpiCard(tt('kpiConversion'), conv + '%', convSign + convChange + 'pp ' + tt('vs'), convClass) +
+    '</div>' +
+    '<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">' +
+      '<div class="lg:col-span-2 bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartOrdersTrend')) +
+        '<canvas id="chartOrdersTrend" height="120"></canvas>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartRevenueCategory')) +
+        '<canvas id="chartRevCat" height="200"></canvas>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderChartsOverview() {
+  var labels = gen30DayLabels();
+  var ordersData = gen30DayOrders();
+
+  _charts.ordersTrend = new Chart(document.getElementById('chartOrdersTrend'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: tt('orders'),
+        data: ordersData,
+        borderColor: '#14b8a6',
+        backgroundColor: 'rgba(20,184,166,0.12)',
+        tension: 0.35,
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  _charts.revCat = new Chart(document.getElementById('chartRevCat'), {
+    type: 'doughnut',
+    data: {
+      labels: [tt('catElectronics'), tt('catClothing'), tt('catHome'), tt('catSports'), tt('catBeauty'), tt('catOther')],
+      datasets: [{
+        data: [32, 24, 16, 13, 9, 6],
+        backgroundColor: ['#14b8a6','#0d9488','#5eead4','#99f6e4','#ccfbf1','#e6fffa'],
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } }
+      }
+    }
+  });
+}
+
+function pageProducts() {
+  var stocks = genInventoryStocks();
+  var products = tt('products12');
+  var revenues = genProductRevenues();
+
+  var topSkuOrders = rnd(420, 890);
+  var lowAlerts = stocks.filter(function(s) { return s < 15; }).length;
+  var avgMargin = rndF(28, 46, 1);
+  var retRate = rndF(8, 14, 1);
+
+  var rows = '';
+  for (var i = 0; i < products.length; i++) {
+    var qty = stocks[i];
+    var stat = stockStatus(qty);
+    var badgeClass = stat === 'in' ? 'badge-green' : (stat === 'low' ? 'badge-yellow' : 'badge-red');
+    var statusLabel = stat === 'in' ? tt('statusInStock') : (stat === 'low' ? tt('statusLow') : tt('statusOut'));
+    rows += '<tr class="border-b border-gray-100 hover:bg-teal-50/30 transition">' +
+      '<td class="py-2 px-3 text-xs text-gray-700">' + products[i] + '</td>' +
+      '<td class="py-2 px-3 text-xs text-gray-600 text-right">' + qty + '</td>' +
+      '<td class="py-2 px-3 text-right"><span class="badge ' + badgeClass + '">' + statusLabel + '</span></td>' +
+    '</tr>';
+  }
+
+  return '<div class="p-5 fade-in">' +
+    '<h1 class="text-lg font-bold text-gray-800 mb-4">' + tt('navProducts') + '</h1>' +
+    '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">' +
+      kpiCard(tt('kpiTopSkuOrders'), topSkuOrders.toLocaleString(), tt('days30'), 'text-gray-400') +
+      kpiCard(tt('kpiLowStockAlerts'), lowAlerts, lowAlerts > 3 ? '&#9888; critical' : 'OK', lowAlerts > 3 ? 'text-red-500 font-semibold' : 'text-emerald-600') +
+      kpiCard(tt('kpiAvgMargin'), avgMargin + '%', rndF(-2, 4, 1) + 'pp ' + tt('vs'), 'text-emerald-600') +
+      kpiCard(tt('kpiReturnRate'), retRate + '%', '+' + rndF(0.1, 1.2, 1) + 'pp ' + tt('vs'), 'text-amber-600') +
+    '</div>' +
+    '<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">' +
+      '<div class="lg:col-span-2 bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartTopProducts')) +
+        '<canvas id="chartTopProducts" height="260"></canvas>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl p-4 shadow-sm overflow-auto mini-scroll" style="max-height:360px">' +
+        sectionHeader(tt('tableInventory')) +
+        '<table class="w-full text-left">' +
+          '<thead><tr class="border-b border-gray-200">' +
+            '<th class="py-1.5 px-3 text-xs font-semibold text-gray-500">' + tt('colProduct') + '</th>' +
+            '<th class="py-1.5 px-3 text-xs font-semibold text-gray-500 text-right">' + tt('colStock') + '</th>' +
+            '<th class="py-1.5 px-3 text-xs font-semibold text-gray-500 text-right">' + tt('colStatus') + '</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderChartsProducts() {
+  var products = tt('products12');
+  var top10 = products.slice(0, 10);
+  var revenues = genProductRevenues().slice(0, 10);
+
+  _charts.topProducts = new Chart(document.getElementById('chartTopProducts'), {
+    type: 'bar',
+    data: {
+      labels: top10,
+      datasets: [{
+        label: tt('revenue'),
+        data: revenues,
+        backgroundColor: revenues.map(function(v, i) {
+          return i === 0 ? '#0d9488' : (i < 3 ? '#14b8a6' : '#5eead4');
+        }),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, callback: function(v) { return '$' + (v/1000).toFixed(0) + 'k'; } },
+          grid: { display: false }
+        },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function pageChannels() {
+  var chanData = genChannelOrders30();
+  var sumOrganic = chanData.organic.reduce(function(a, b) { return a + b; }, 0);
+  var sumPaid = chanData.paid.reduce(function(a, b) { return a + b; }, 0);
+  var sumSocial = chanData.social.reduce(function(a, b) { return a + b; }, 0);
+  var sumDirect = chanData.direct.reduce(function(a, b) { return a + b; }, 0);
+
+  var cOrganic = rndF(3.1, 4.2, 1);
+  var cPaid = rndF(2.0, 3.2, 1);
+  var cSocial = rndF(1.4, 2.6, 1);
+  var cDirect = rndF(3.8, 5.2, 1);
+  var cEmail = rndF(4.5, 6.1, 1);
+
+  return '<div class="p-5 fade-in">' +
+    '<h1 class="text-lg font-bold text-gray-800 mb-4">' + tt('navChannels') + '</h1>' +
+    '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">' +
+      kpiCard(tt('kpiOrganic'), sumOrganic.toLocaleString(), tt('days30'), 'text-gray-400') +
+      kpiCard(tt('kpiPaid'), sumPaid.toLocaleString(), tt('days30'), 'text-gray-400') +
+      kpiCard(tt('kpiSocial'), sumSocial.toLocaleString(), tt('days30'), 'text-gray-400') +
+      kpiCard(tt('kpiDirect'), sumDirect.toLocaleString(), tt('days30'), 'text-gray-400') +
+    '</div>' +
+    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">' +
+      '<div class="bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartChannelOrders')) +
+        '<canvas id="chartChannelOrders" height="180"></canvas>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartChannelConversion')) +
+        '<canvas id="chartChannelConv" height="180"></canvas>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderChartsChannels() {
+  var labels = gen30DayLabels();
+  var chanData = genChannelOrders30();
+
+  // Downsample to weekly for readability
+  var wLabels = [], wOrganic = [], wPaid = [], wSocial = [], wDirect = [];
+  for (var i = 0; i < 30; i += 5) {
+    wLabels.push(labels[i]);
+    var slice = function(arr) { return arr.slice(i, i+5).reduce(function(a,b){return a+b;},0); };
+    wOrganic.push(slice(chanData.organic));
+    wPaid.push(slice(chanData.paid));
+    wSocial.push(slice(chanData.social));
+    wDirect.push(slice(chanData.direct));
+  }
+
+  _charts.channelOrders = new Chart(document.getElementById('chartChannelOrders'), {
+    type: 'bar',
+    data: {
+      labels: wLabels,
+      datasets: [
+        { label: tt('chanOrganic'), data: wOrganic, backgroundColor: '#14b8a6', borderRadius: 3 },
+        { label: tt('chanPaid'), data: wPaid, backgroundColor: '#0d9488', borderRadius: 3 },
+        { label: tt('chanSocial'), data: wSocial, backgroundColor: '#5eead4', borderRadius: 3 },
+        { label: tt('chanDirect'), data: wDirect, backgroundColor: '#99f6e4', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  var cOrganic = rndF(3.1, 4.2, 1);
+  var cPaid = rndF(2.0, 3.2, 1);
+  var cSocial = rndF(1.4, 2.6, 1);
+  var cDirect = rndF(3.8, 5.2, 1);
+  var cEmail = rndF(4.5, 6.1, 1);
+
+  _charts.channelConv = new Chart(document.getElementById('chartChannelConv'), {
+    type: 'bar',
+    data: {
+      labels: [tt('chanOrganic'), tt('chanPaid'), tt('chanSocial'), tt('chanDirect'), tt('chanEmail')],
+      datasets: [{
+        label: tt('conversion') + ' %',
+        data: [cOrganic, cPaid, cSocial, cDirect, cEmail],
+        backgroundColor: ['#0d9488','#14b8a6','#5eead4','#0f766e','#134e4a'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, callback: function(v) { return v + '%'; } },
+          grid: { display: false }
+        },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function pageReturns() {
+  var returnData = gen30DayReturns();
+  var totalReturns = returnData.reduce(function(a, b) { return a + b; }, 0);
+  var totalOrders = gen30DayOrders().reduce(function(a, b) { return a + b; }, 0);
+  var returnRatePct = ((totalReturns / totalOrders) * 100).toFixed(1);
+  var revLost = Math.round(totalReturns * rndF(45, 85, 0));
+  var avgDays = rndF(3.2, 6.8, 1);
+
+  return '<div class="p-5 fade-in">' +
+    '<h1 class="text-lg font-bold text-gray-800 mb-4">' + tt('navReturns') + '</h1>' +
+    '<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">' +
+      kpiCard(tt('kpiTotalReturns'), totalReturns.toLocaleString(), tt('days30'), 'text-gray-400') +
+      kpiCard(tt('kpiReturnRatePct'), returnRatePct + '%', '+' + rndF(0.2, 1.5, 1) + 'pp ' + tt('vs'), 'text-amber-600') +
+      kpiCard(tt('kpiReturnRevLost'), '$' + revLost.toLocaleString(), tt('days30'), 'text-red-500') +
+      kpiCard(tt('kpiAvgDaysReturn'), avgDays + ' days', tt('days30'), 'text-gray-400') +
+    '</div>' +
+    '<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">' +
+      '<div class="lg:col-span-2 bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartReturnsTrend')) +
+        '<canvas id="chartReturnsTrend" height="120"></canvas>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl p-4 shadow-sm">' +
+        sectionHeader(tt('chartReturnReasons')) +
+        '<canvas id="chartReturnReasons" height="200"></canvas>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderChartsReturns() {
+  var labels = gen30DayLabels();
+  var returnData = gen30DayReturns();
+
+  _charts.returnsTrend = new Chart(document.getElementById('chartReturnsTrend'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: tt('returns'),
+        data: returnData,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.1)',
+        tension: 0.35,
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  _charts.returnReasons = new Chart(document.getElementById('chartReturnReasons'), {
+    type: 'pie',
+    data: {
+      labels: [tt('reasonSize'), tt('reasonDefect'), tt('reasonMind'), tt('reasonDesc')],
+      datasets: [{
+        data: [38, 24, 21, 17],
+        backgroundColor: ['#14b8a6','#0d9488','#f59e0b','#ef4444'],
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } }
+      }
+    }
+  });
+}
+
+// ===== NAVIGATION =====
+var pageRenderers = {
+  overview: { html: pageOverview, charts: renderChartsOverview },
+  products: { html: pageProducts, charts: renderChartsProducts },
+  channels: { html: pageChannels, charts: renderChartsChannels },
+  returns:  { html: pageReturns,  charts: renderChartsReturns  }
+};
+
+function navigateTo(page) {
+  if (!pageRenderers[page]) page = 'overview';
+  currentPage = page;
+  destroyCharts();
+
+  var mc = document.getElementById('mainContent');
+  mc.innerHTML = pageRenderers[page].html();
+
+  document.querySelectorAll('.nav-link').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+
+  setTimeout(function() { pageRenderers[page].charts(); }, 40);
+}
+
+function buildNav() {
+  var navDef = [
+    { page: 'overview', icon: '&#128200;', key: 'navOverview' },
+    { page: 'products', icon: '&#128230;', key: 'navProducts' },
+    { page: 'channels', icon: '&#128268;', key: 'navChannels' },
+    { page: 'returns',  icon: '&#128257;', key: 'navReturns'  }
+  ];
+
+  var nav = document.getElementById('nav');
+  nav.innerHTML = navDef.map(function(n) {
+    return '<button onclick="navigateTo(\'' + n.page + '\')" data-page="' + n.page + '" class="nav-link">' +
+      '<span style="font-size:14px">' + n.icon + '</span>' +
+      '<span>' + tt(n.key) + '</span>' +
+    '</button>';
+  }).join('');
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+  document.getElementById('sidebarSubtitle').textContent = tt('sidebarSubtitle');
+  document.getElementById('promptText').textContent = tt('promptText');
+  document.getElementById('ctaBtn').textContent = tt('ctaLabel');
+
+  buildNav();
+  navigateTo('overview');
+
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = tt('langLabel');
+  }
+});
+</script>
+</body>
+</html>

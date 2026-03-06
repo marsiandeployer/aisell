@@ -129,6 +129,10 @@ document.getElementById('btn-logout').onclick = function() { SD.logout(); };
 | [`restaurant-analytics`](showcases/restaurant-analytics/SKILL.md) | Дашборд ресторана — выручка, меню, часы пик, food cost | 4 |
 | [`freelancer-dashboard`](showcases/freelancer-dashboard/SKILL.md) | Фрилансер — доходы, проекты, учёт времени, счета | 4 |
 | [`morning-snapshot`](showcases/morning-snapshot/SKILL.md) | Утренний брифинг — KPI, задачи, алерты, тёмная тема | 2 |
+| [`agency-ops`](showcases/agency-ops/SKILL.md) | Операции агентства — клиенты, проекты, утилизация, P&L | 4 |
+| [`saas-metrics`](showcases/saas-metrics/SKILL.md) | SaaS-метрики — MRR/ARR, churn, LTV/CAC, когортная таблица | 4 |
+| [`ecommerce-orders`](showcases/ecommerce-orders/SKILL.md) | Интернет-магазин — заказы, товары, каналы трафика, возвраты | 4 |
+| [`hr-people`](showcases/hr-people/SKILL.md) | HR-аналитика — численность, воронка найма, текучесть, команды | 4 |
 
 **Как использовать:**
 1. Прочитай `showcases/{slug}/SKILL.md` — там описание, промпт для воспроизведения, ключевые особенности
@@ -600,6 +604,10 @@ gh issue list --repo "$REPO" --state all --limit 200 \
 - [Restaurant Analytics](https://simpledashboard.wpmix.net/showcases/restaurant-analytics/demo)
 - [Freelancer Dashboard](https://simpledashboard.wpmix.net/showcases/freelancer-dashboard/demo)
 - [Morning Snapshot](https://simpledashboard.wpmix.net/showcases/morning-snapshot/demo)
+- [Agency Operations](https://simpledashboard.wpmix.net/showcases/agency-ops/demo)
+- [SaaS Metrics](https://simpledashboard.wpmix.net/showcases/saas-metrics/demo)
+- [E-commerce Orders](https://simpledashboard.wpmix.net/showcases/ecommerce-orders/demo)
+- [HR People Analytics](https://simpledashboard.wpmix.net/showcases/hr-people/demo)
 
 ## Self-Test (после генерации index.html)
 

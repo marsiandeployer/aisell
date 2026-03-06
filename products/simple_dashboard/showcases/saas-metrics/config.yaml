@@ -1,0 +1,25 @@
+showcase:
+  slug: saas-metrics
+  product: simple_dashboard
+  type: spa
+  prompt: "Build a SaaS metrics dashboard — MRR, ARR, churn rate, LTV/CAC and trial conversion without paying for Baremetrics"
+  prompt_title: "SaaS metrics without $100/mo tools"
+  caption: "SaaS Metrics — MRR, Churn, LTV/CAC, Cohort Retention"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  pages:
+    - id: overview
+      components: [kpi_cards, line_chart_mrr, line_chart_customers]
+    - id: growth
+      components: [kpi_cards, waterfall_bar, cohort_heatmap]
+    - id: acquisition
+      components: [kpi_cards, ltv_cac_bar, funnel_bar]
+    - id: health
+      components: [kpi_cards, dau_line, plan_doughnut]
+
+design:
+  colors:
+    primary: "emerald-500"
+    accent: "green-600"

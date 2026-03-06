@@ -1,0 +1,25 @@
+showcase:
+  slug: hr-people
+  product: simple_dashboard
+  type: spa
+  prompt: "Build an HR people analytics dashboard — headcount trends, hiring funnel, turnover analysis and team health metrics"
+  prompt_title: "HR analytics — headcount, hiring & turnover"
+  caption: "HR People Analytics — Headcount, Hiring, Retention & Teams"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  pages:
+    - id: overview
+      components: [kpi_cards, headcount_trend, dept_breakdown]
+    - id: hiring
+      components: [kpi_cards, hiring_funnel, tth_by_dept]
+    - id: retention
+      components: [kpi_cards, turnover_trend, exit_reasons]
+    - id: teams
+      components: [kpi_cards, team_size_bar, status_doughnut]
+
+design:
+  colors:
+    primary: "purple-500"
+    accent: "purple-600"
