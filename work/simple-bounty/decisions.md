@@ -76,3 +76,22 @@
 - `npm test` → 54 passed (pre-commit hooks)
 - All pre-commit hooks pass (TS checks, security, product YAML, showcase linters)
 
+## Task 6: AI webchat prompt (SKILL.md)
+
+**Status:** Done
+**Commit:** 3fe4e84
+**Agent:** prompt-writer
+**Summary:** Created SKILL.md with full campaign creation dialog flow, API reference for all four bounty endpoints (campaigns, tasks, escrow/deposit, publish) with request/response shapes, error handling guidance, and security rules. Updated CLAUDE.md.workspace with participant instructions covering submission statuses, auto-approve, and leaderboard. Added simple_bounty branch to bot.ts handleStart routing with bilingual i18n translation keys.
+**Deviations:** Нет. Escrow endpoint (POST /escrow/deposit) is documented in SKILL.md per spec even though the backend implementation (Task 3) is not yet complete. The prompt references it so the AI knows the full workflow once the endpoint exists.
+
+**Reviews:**
+
+*Round 1:*
+- prompt-reviewer: OK (pass with suggestions, no blocking findings) → [logs/working/task-6/prompt-reviewer-round1.json]
+
+**Verification:**
+- `ls products/simple_bounty/SKILL.md products/simple_bounty/CLAUDE.md.workspace` → both exist
+- `grep -n "simple_bounty" botplatform/src/bot.ts` → line 1263
+- `npm test` → 54 passed (pre-commit hooks)
+- All pre-commit hooks pass (54 template tests, 8 TS checks, 10 security checks)
+
