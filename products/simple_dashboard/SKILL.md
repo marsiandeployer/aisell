@@ -58,6 +58,143 @@ SD.admin.getUsers()             // → список авторизованных
 SD.admin.revokeAccess(email)    // → отозвать доступ (только для owner)
 ```
 
+### Форматы ответов SDK
+
+**`SD.getUser()`** — текущий залогиненный пользователь:
+```javascript
+{ email: "user@example.com", name: "Ivan Petrov", address: "0xABC...", dashboardId: "d9000000000281" }
+// null если не залогинен
+```
+
+**`SD.admin.getUsers()`** — список ВСЕХ пользователей с доступом (⚠️ только для owner):
+```javascript
+{ users: [
+    { email: "owner@example.com", address: "0xABC...", createdAt: "2026-03-01T10:00:00Z", isOwner: true },
+    { email: "guest@example.com",  address: "0xDEF...", createdAt: "2026-03-06T12:00:00Z", isOwner: false }
+] }
+// 401 если вызывает не owner
+```
+
+**`SD.data.get(collection)`** — массив всех записей:
+```javascript
+// SD.data.get('members') →
+[
+  { id: "m6a2f4", name: "Ivan Petrov", email: "ivan@example.com", joinedAt: "2026-03-06T12:00:00Z" },
+  { id: "n7b3g5", name: "Anna Smith",  email: "anna@example.com", joinedAt: "2026-03-06T13:00:00Z" }
+]
+// [] если коллекция пуста
+```
+
+**`SD.data.post(collection, item)`** — создать запись (id генерируется автоматически):
+```javascript
+// SD.data.post('members', { name: "Ivan", email: "ivan@example.com" }) →
+{ id: "m6a2f4", name: "Ivan", email: "ivan@example.com" }
+```
+
+**`SD.data.put(collection, id, item)`** — обновить запись:
+```javascript
+// SD.data.put('members', 'm6a2f4', { score: 42 }) →
+{ id: "m6a2f4", name: "Ivan", email: "ivan@example.com", score: 42 }
+```
+
+**`SD.data.del(collection, id)`** — удалить запись:
+```javascript
+// SD.data.del('members', 'm6a2f4') →
+{ deleted: "m6a2f4" }
+```
+
+### Паттерн: Community / список участников (open-mode)
+
+Когда пользователи могут регистрироваться (`accessMode: 'open'`) и нужно показывать список членов:
+
+```javascript
+document.addEventListener('sd:auth', async function() {
+  var user = SD.getUser();
+  if (!user) { showEmpty(); return; }
+
+  // Показать имя в хедере
+  document.getElementById('hdr-user').textContent = user.name || user.email;
+
+  // Зарегистрировать себя в списке (идемпотентно по email)
+  try {
+    var existing = await SD.data.get('members');
+    var alreadyIn = existing.some(function(m) { return m.email === user.email; });
+    if (!alreadyIn) {
+      await SD.data.post('members', {
+        name: user.name || '',
+        email: user.email,
+        joinedAt: new Date().toISOString()
+      });
+    }
+  } catch(e) { console.warn('register member failed', e); }
+
+  loadMembers();
+});
+
+async function loadMembers() {
+  try {
+    var members = await SD.data.get('members');
+    renderMembers(members);  // массив [{ id, name, email, joinedAt }]
+  } catch(e) {
+    showEmpty();
+  }
+}
+```
+
+### Паттерн: Таблица пользователей для owner
+
+Если нужно показать owner'у кто имеет доступ и дать возможность отозвать:
+
+```javascript
+document.addEventListener('sd:auth', async function() {
+  if (!SD.isOwner()) return;  // только для owner
+
+  try {
+    var result = await SD.admin.getUsers();
+    // result.users = [{ email, address, createdAt, isOwner }]
+    result.users.forEach(function(u) {
+      if (!u.isOwner) {
+        renderUserRow(u.email, u.createdAt);
+      }
+    });
+  } catch(e) { console.warn('getUsers failed', e); }
+});
+
+function revokeUser(email) {
+  SD.admin.revokeAccess(email).then(function() {
+    alert('Access revoked');
+    location.reload();
+  });
+}
+```
+
+### Паттерн: Сохранение данных формы
+
+Например, пользователь заполняет анкету или добавляет запись:
+
+```javascript
+async function submitForm(data) {
+  try {
+    var saved = await SD.data.post('submissions', {
+      ...data,
+      submittedBy: SD.getUser().email,
+      submittedAt: new Date().toISOString()
+    });
+    console.log('saved with id:', saved.id);
+    loadSubmissions();
+  } catch(e) { alert('Save failed'); }
+}
+
+async function updateRecord(id, changes) {
+  await SD.data.put('submissions', id, changes);
+}
+
+async function deleteRecord(id) {
+  await SD.data.del('submissions', id);
+  loadSubmissions();
+}
+```
+
 ### Готовый код для header с юзером и кнопкой выхода
 
 ```html
@@ -650,6 +787,7 @@ gh issue list --repo "$REPO" --state all --limit 200 \
   ✓ `accessMode: 'open'` выставлен в settings.json дашборда (если нет — выставить!)
   ✓ SDK подключён: <script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
   ✓ В index.html НЕТ самописных форм логина, /login роутов, кнопок "Sign in" (SDK делает всё сам)
+  ✓ В sd:auth listener: `if (!user)` → `showState('state-empty')` или аналог, НЕ просто `return` — иначе лоадер зависнет навсегда
 — Если accessMode не выставлен — не просто предупредить, а выполнить: записать "accessMode": "open" в settings.json
 ```
 

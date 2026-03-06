@@ -29,6 +29,20 @@ SDK автоматически показывает overlay "Sign in with Google
 JWT хранится в `sessionStorage` → ключ `dashboard_jwt`.
 API доступен через `window.SD`.
 
+### Открытая регистрация / «любой может войти»
+
+Если пользователь говорит: «пусть все могут зарегистрироваться», «открытый доступ», «публичный», «клуб», «любой может войти», «sign up», «registration» — **обязательно выполни два шага:**
+
+1. Запиши `"accessMode": "open"` в `settings.json` текущего workspace (файл `settings.json` рядом с `index.html`):
+   ```json
+   { "accessMode": "open" }
+   ```
+   Используй Read → Edit (или Write если файл новый). Не забудь сохранить остальные поля (chatId, ownerAddress, lastModified).
+
+2. Убедись, что в index.html есть SDK: `<script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>`
+
+SDK сам покажет Google Sign-In overlay всем посетителям. Доступ выдаётся автоматически.
+
 ### ЗАПРЕЩЕНО создавать в index.html:
 - Экраны логина / login-формы / кнопки `href="/login"`
 - Google OAuth / Firebase Auth / Auth0 вручную

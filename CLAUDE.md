@@ -94,6 +94,24 @@ Monorepo **Noxon Digital Factory** — AI-конструкторы для соз
 4. **Webchat rate limit** - не отключай в продакшене (`WEBCHAT_RATE_LIMIT=0` только для дебага)
 5. **Безопасность** - не используй `--dangerously-bypass-approvals-and-sandbox` для пользовательских запросов
 
+### SimpleDashboard Auth Modes
+
+Авторизация дашбордов управляется полем `accessMode` в `settings.json` пользователя:
+
+| Режим | Поведение | Когда |
+|-------|-----------|-------|
+| `invite` (default) | Контент виден всем без входа; оверлей только при `?invite=TOKEN` | Закрытые дашборды |
+| `open` | Google Sign-In оверлей для всех; гости получают доступ автоматически | Публичные / клубные дашборды |
+
+```bash
+# Установить open mode для пользователя:
+# Отредактировать settings.json в папке юзера:
+# /root/aisell/botplatform/group_data/user_{ID}/settings.json
+# Добавить: "accessMode": "open"
+```
+
+Полная документация: `memory/auth-flow.md` → секция "Access Modes".
+
 ## 🚀 Быстрые команды
 
 ### Деплой (всегда на 95.217.227.164)
@@ -199,5 +217,5 @@ node build.js --name "SimpleCrypto" --short-name "SimpleCrypto" --url "https://s
 
 ---
 
-**Последнее обновление:** 2026-03-04
-**Версия:** 1.1
+**Последнее обновление:** 2026-03-06
+**Версия:** 1.2

@@ -133,6 +133,31 @@ cd /root/aisell/botplatform && npm run build
 pm2 reload simpledashboard-web --update-env
 ```
 
+## SimpleDashboard Auth
+
+Авторизация дашбордов (`d{USERID}.wpmix.net`) управляется SDK + полем `accessMode` в `settings.json`.
+
+| Режим | SDK поведение | OAuth callback |
+|-------|---------------|----------------|
+| `invite` (default) | Контент виден без входа; оверлей только при `?invite=TOKEN` | Гость без инвайта → `no_access` |
+| `open` | Google Sign-In оверлей для всех посетителей | Любой гость → auto-share |
+
+**Установить режим:**
+```bash
+# Открыть settings.json нужного пользователя и добавить:
+# "accessMode": "open"
+# Файл: /root/aisell/botplatform/group_data/user_{ID}/settings.json
+```
+
+**SDK** подключается в `index.html` одной строкой:
+```html
+<script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+```
+
+**Конфиг API**: `GET /api/auth/config` → возвращает `{ authEnabled, accessMode, googleClientId }`.
+
+Полная документация: `memory/auth-flow.md`.
+
 ## Синхронизация Claude/Codex credentials
 
 Credentials (`.claude.json`, `.claude/settings.json`, `.codex/auth.json` и др.)

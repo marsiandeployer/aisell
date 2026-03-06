@@ -360,6 +360,7 @@ export interface ChatSettings {
   useBwrap?: boolean; // undefined = use global default, true/false = override
   ownerAddress?: string; // Ethereum address from SimpleDashboard extension
   ownerPrivateKey?: string; // Ethereum private key from SimpleDashboard extension
+  accessMode?: 'invite' | 'open'; // Dashboard access mode: 'invite' (default) = auth only with invite link, 'open' = anyone can sign in
   lastModified: string;
 }
 
@@ -1912,7 +1913,18 @@ export class NoxonBot {
     type: MediaType,
     options: { originalName?: string; mimeType?: string } = {}
   ): Promise<string> {
-    const fileLink = await ctx.telegram.getFileLink(fileId);
+    // CHANGE: Retry при ECONNRESET (keep-alive connection reset by Telegram API)
+    // WHY: telegraf переиспользует HTTP connections, Telegram может закрыть их между запросами
+    let fileLink: URL;
+    try {
+      fileLink = await ctx.telegram.getFileLink(fileId);
+    } catch (err) {
+      const isConnReset = err instanceof Error && (err.message.includes('ECONNRESET') || err.message.includes('socket hang up'));
+      if (!isConnReset) throw err;
+      console.warn('⚠️ ECONNRESET при getFileLink, повтор через 1 сек...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      fileLink = await ctx.telegram.getFileLink(fileId);
+    }
 
     // Создаем папку для медиа если её нет
     const mediaDir = path.join('/root/space2/image-share/uploads', type);

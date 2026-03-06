@@ -635,15 +635,22 @@ function getAuthSdkJs(): string {
     if (document.getElementById('sd-auth-overlay')) return;
     var ov = document.createElement('div');
     ov.id = 'sd-auth-overlay';
-    ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);z-index:10000;display:flex;align-items:center;justify-content:center;';
-    ov.innerHTML = '<div style="text-align:center;max-width:400px;">'
-      + '<div id="sd-ov-auth" style="display:none;"><p style="font-size:18px;margin-bottom:16px;">Sign in to access this dashboard</p>'
+    ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:10000;display:flex;align-items:center;justify-content:center;background-size:cover;background-position:center;';
+    ov.innerHTML = '<div style="text-align:center;max-width:400px;position:relative;z-index:2;background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.14);border-radius:20px;padding:40px 32px;box-shadow:0 8px 40px rgba(0,0,0,0.35);">'
+      + '<div id="sd-ov-auth" style="display:none;"><p style="font-size:18px;margin-bottom:16px;color:#f1f5f9;">Sign in to access this dashboard</p>'
       + '<button id="sd-google-btn" style="display:inline-block;padding:12px 24px;background:#4285F4;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">Sign in with Google</button></div>'
-      + '<div id="sd-ov-denied" style="display:none;"><p style="font-size:18px;">Access denied. You do not have permission to view this dashboard.</p></div>'
-      + '<div id="sd-ov-error" style="display:none;"><p style="font-size:18px;">Authentication service is temporarily unavailable. Please try again later.</p></div>'
-      + '<div id="sd-ov-loading" style="display:none;"><p style="font-size:16px;color:#666;">Checking authentication...</p></div>'
+      + '<div id="sd-ov-denied" style="display:none;"><p style="font-size:18px;color:#f1f5f9;">Access denied. You do not have permission to view this dashboard.</p></div>'
+      + '<div id="sd-ov-error" style="display:none;"><p style="font-size:18px;color:#f1f5f9;">Authentication service is temporarily unavailable. Please try again later.</p></div>'
+      + '<div id="sd-ov-loading" style="display:none;"><p style="font-size:16px;color:#94a3b8;">Checking authentication...</p></div>'
       + '</div>';
     document.body.appendChild(ov);
+
+    // Try to load login-bg.jpg from dashboard domain
+    var img = new Image();
+    img.onload = function() {
+      ov.style.backgroundImage = 'url(login-bg.jpg)';
+    };
+    img.src = 'login-bg.jpg';
   }
 
   function showPanel(name) {
@@ -728,8 +735,15 @@ function getAuthSdkJs(): string {
       return !!payload.address && payload.dashboardId === dashboardId;
     },
     logout: function() {
-      removeJwt();
-      location.reload();
+      fetch(AUTH_API + '/api/auth/dashboard-logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dashboardId: dashboardId })
+      }).catch(function(){}).finally(function() {
+        removeJwt();
+        location.reload();
+      });
     },
     data: {
       get: function(collection) {
@@ -786,6 +800,16 @@ function getAuthSdkJs(): string {
         if (!cfg.authEnabled) {
           fireEvent();
           return;
+        }
+
+        // invite-only mode: show auth only when invite token present
+        if (cfg.accessMode !== 'open') {
+          var hasInvite = !!params.get('invite') || false;
+          try { hasInvite = hasInvite || !!sessionStorage.getItem('guestInviteToken'); } catch(e) {}
+          if (!hasInvite) {
+            fireEvent();
+            return;
+          }
         }
 
         // Auth is required — show loading, try silent auto-auth
@@ -1785,42 +1809,22 @@ function renderAppHtml(): string {
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 18px;
-      background: rgba(2, 6, 23, 0.35);
+      background: rgba(255,255,255,0.97);
       z-index: 20;
     }
     .modal.open { display: flex; }
     .modal-card {
       width: 100%;
-      max-width: 520px;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
-      box-shadow: 0 30px 80px rgba(2, 6, 23, 0.22);
-      backdrop-filter: blur(10px);
-      padding: 16px 16px 14px 16px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      padding: 24px;
     }
-    .modal-title { margin: 0; font-size: 14px; font-weight: 900; }
-    .modal-sub { margin: 8px 0 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
-    .modal-grid { display: grid; gap: 10px; margin-top: 14px; }
-    .modal-grid label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 6px; }
-    .modal-grid input {
-      width: 100%;
-      box-sizing: border-box;
-      background: rgba(255,255,255,0.86);
-      border: 1px solid rgba(2, 6, 23, 0.10);
-      color: var(--text);
-      padding: 11px 12px;
-      border-radius: 12px;
-      outline: none;
-      font-family: var(--mono);
-      font-size: 13px;
-    }
-    .modal-grid input:focus {
-      border-color: rgba(45,212,191,0.55);
-      box-shadow: 0 0 0 3px rgba(45,212,191,0.10);
-    }
-    .modal-actions { display: grid; grid-template-columns: 1fr 120px; gap: 10px; margin-top: 12px; }
+    .modal-title { margin: 0; font-size: 20px; font-weight: 900; text-align: center; }
+    .modal-sub { margin: 10px 0 24px 0; font-size: 14px; color: var(--muted); line-height: 1.5; text-align: center; max-width: 400px; }
     .btn {
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.14);
@@ -2090,14 +2094,11 @@ function renderAppHtml(): string {
       background: rgba(2,6,23,0.62);
       color: rgba(226, 232, 240, 0.80);
     }
-    body.theme-dark .modal-card {
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      background: linear-gradient(180deg, rgba(2,6,23,0.92), rgba(2,6,23,0.84));
+    body.theme-dark .modal {
+      background: rgba(2,6,23,0.97);
     }
-    body.theme-dark .modal-grid input {
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      background: rgba(2,6,23,0.62);
-      color: rgba(226, 232, 240, 0.92);
+    body.theme-dark .modal-card {
+      background: transparent;
     }
     body.theme-dark .btn.secondary {
       border: 1px solid rgba(148, 163, 184, 0.18);
@@ -2175,7 +2176,7 @@ function renderAppHtml(): string {
 	      <p class="modal-sub" id="loginSubtitle"></p>
 
 	      ${enableGoogleAuth && googleClientId ? `
-	      <div id="googleSignInContainer" style="margin-bottom: 24px;">
+	      <div id="googleSignInContainer">
 	        <div id="g_id_onload"
 	             data-client_id="${googleClientId}"
 	             data-callback="handleGoogleSignIn"
@@ -2190,27 +2191,10 @@ function renderAppHtml(): string {
 	             data-logo_alignment="left"
 	             data-width="400">
 	        </div>
-	        <div id="orEmailText" style="text-align: center; margin: 16px 0; color: rgba(15, 23, 42, 0.60); font-size: 13px;">or continue with email</div>
 	      </div>
 	      ` : ''}
-
-	      <form id="loginForm">
-	        <div class="modal-grid">
-	          <div>
-	            <label for="loginName">Name</label>
-	            <input id="loginName" name="name" autocomplete="name" required />
-	          </div>
-	          <div>
-	            <label for="loginEmail">Email</label>
-	            <input id="loginEmail" name="email" type="email" autocomplete="email" required />
-	          </div>
-	        </div>
-	        <div class="modal-actions">
-	          <button id="loginCancel" class="btn secondary" type="button">Cancel</button>
-	          <button id="loginSubmit" class="btn primary" type="submit">OK</button>
-	        </div>
-	        <div id="loginStatus" class="modal-status"></div>
-		      </form>
+	      <div id="loginStatus" class="modal-status"></div>
+	      <button id="loginCancel" class="btn secondary" type="button" style="margin-top: 16px;">Cancel</button>
 		    </div>
 		  </div>
 
@@ -2285,9 +2269,6 @@ function renderAppHtml(): string {
 	    const themeToggle = document.getElementById('themeToggle');
     const loginBtn = document.getElementById('loginBtn');
 	    const loginModal = document.getElementById('loginModal');
-	    const loginForm = document.getElementById('loginForm');
-	    const loginName = document.getElementById('loginName');
-	    const loginEmail = document.getElementById('loginEmail');
 	    const loginStatus = document.getElementById('loginStatus');
 	    const loginTitle = document.getElementById('loginTitle');
 	    const loginSubtitle = document.getElementById('loginSubtitle');
@@ -2303,9 +2284,7 @@ function renderAppHtml(): string {
 	        send: 'Send',
 	        loginBtnText: 'Login',
 	        loginTitle: 'Continue',
-	        loginSubtitle: 'Enter your name and email. You will be able to return to this dialog later using this email. We will not send any sign-in link.',
-	        labelName: 'Name',
-	        labelEmail: 'Email',
+	        loginSubtitle: 'Sign in with Google to continue. You can return to this dialog later.',
 	        cancel: 'Cancel',
 	        placeholder: 'Type a message... (try: /start)',
 	        langToggle: '🌐 English',
@@ -2316,7 +2295,6 @@ function renderAppHtml(): string {
 	        showcases: 'Showcases',
 	        profile: 'Profile',
 	        logout: 'Logout',
-	        orContinueWithEmail: 'or continue with email',
 	        clearHistoryFailed: 'Failed to clear history before auto prompt',
           introTitle: 'Simple way to build dashboards',
           introSubtitle: 'Explore ready examples and launch your own version in one click.',
@@ -2328,9 +2306,7 @@ function renderAppHtml(): string {
 	        send: 'Отправить',
 	        loginBtnText: 'Войти',
 	        loginTitle: 'Продолжить',
-	        loginSubtitle: 'Введите имя и email. По этому email вы сможете в будущем вернуться к диалогу, чтобы мы не потерялись. Ссылку на почту не отправляем.',
-	        labelName: 'Имя',
-	        labelEmail: 'Email',
+	        loginSubtitle: 'Войдите через Google, чтобы продолжить. Вы сможете вернуться к диалогу позже.',
 	        cancel: 'Отмена',
 	        placeholder: 'Напишите сообщение... (например: /start)',
 	        langToggle: '🌐 Русский',
@@ -2341,7 +2317,6 @@ function renderAppHtml(): string {
 	        showcases: 'Витрина',
 	        profile: 'Профиль',
 	        logout: 'Выход',
-	        orContinueWithEmail: 'или продолжить через email',
 	        clearHistoryFailed: 'Не удалось очистить историю',
           introTitle: 'Простой способ создавать дашборды',
           introSubtitle: 'Смотрите готовые примеры и сразу запускайте свой вариант.',
@@ -2391,12 +2366,6 @@ function renderAppHtml(): string {
 	      if (loginCancel) loginCancel.textContent = tt('cancel');
 	      var langEl = document.getElementById('langToggle');
 	      if (langEl) langEl.textContent = tt('langToggle');
-	      var nameLabel = document.querySelector('label[for="loginName"]');
-	      var emailLabel = document.querySelector('label[for="loginEmail"]');
-	      if (nameLabel) nameLabel.textContent = tt('labelName');
-	      if (emailLabel) emailLabel.textContent = tt('labelEmail');
-	      var orEmailEl = document.getElementById('orEmailText');
-	      if (orEmailEl) orEmailEl.textContent = tt('orContinueWithEmail');
         var introTitleEl = document.getElementById('introTitle');
         var introSubtitleEl = document.getElementById('introSubtitle');
         var introViewExamplesEl = document.getElementById('introViewExamplesBtn');
@@ -3308,10 +3277,6 @@ function renderAppHtml(): string {
 	      loginStatus.classList.remove('error');
 	      loginStatus.textContent = '';
 	      loginModal.classList.add('open');
-	      setTimeout(() => {
-	        if (!loginName.value) loginName.focus();
-	        else loginEmail.focus();
-	      }, 0);
 	    }
 
 	    function closeLoginModal() {
@@ -3605,62 +3570,6 @@ function renderAppHtml(): string {
 	      closeLoginModal();
 	    });
 
-	    loginForm.addEventListener('submit', async (e) => {
-	      e.preventDefault();
-	      loginStatus.classList.remove('error');
-	      loginStatus.textContent = tt('working');
-	      // CHANGE: include startParam so server sends correct welcome on first visit
-	      // REF: User message 2026-02-10
-	      // CHANGE: include startParam so server sends correct welcome on first visit
-	      // REF: User message 2026-02-10
-	      const payload = {
-	        name: (loginName.value || '').trim(),
-	        email: (loginEmail.value || '').trim(),
-	        ...(startParam ? { startParam } : {}),
-	      };
-	      try {
-	        const resp = await fetch('/api/auth/claim', {
-	          method: 'POST',
-	          headers: { 'Content-Type': 'application/json' },
-	          body: JSON.stringify(payload),
-	        });
-	        const data = await resp.json();
-	        if (!resp.ok) {
-	          loginStatus.classList.add('error');
-	          loginStatus.textContent = (data && data.error) ? data.error : tt('failed');
-	          return;
-	        }
-
-	        closeLoginModal();
-	        const ok = await loadMeAndHistory();
-	        if (ok) {
-	          setupSse();
-	        }
-
-	        if (pendingText) {
-	          const text = pendingText;
-	          pendingText = null;
-	          input.value = '';
-	          autoResizeTextarea();
-	          const sendResp = await fetch('/api/message', {
-	            method: 'POST',
-	            headers: { 'Content-Type': 'application/json' },
-	            body: JSON.stringify({ text }),
-	          });
-	          if (!sendResp.ok) {
-	            let sendData = null;
-	            try { sendData = await sendResp.json(); } catch (_e) {}
-	            const sendErr = (sendData && sendData.error) ? sendData.error : ('Request failed (' + sendResp.status + ')');
-	            showLocalSystem('⚠️ ' + sendErr);
-	          }
-	          await pollOnce();
-	          scrollToBottom();
-	        }
-	      } catch (err) {
-	        loginStatus.classList.add('error');
-	        loginStatus.textContent = tt('networkError');
-	      }
-	    });
 
     messagesEl.addEventListener('click', async (e) => {
       const target = e.target;
@@ -4030,6 +3939,49 @@ async function main(): Promise<void> {
     }
   }
 
+  // OPTIONS preflight for POST /api/auth/dashboard-logout
+  app.options('/api/auth/dashboard-logout', (req, res) => {
+    applyCorsForDashboardOrigin(req, res);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.status(204).end();
+  });
+
+  // POST /api/auth/dashboard-logout — mark session as logged out from a specific dashboard
+  app.post('/api/auth/dashboard-logout', express.json(), (req, res) => {
+    applyCorsForDashboardOrigin(req, res);
+
+    const cookies = parseCookieHeader(req.headers.cookie);
+    const sid = cookies['webchat_session'];
+    if (!sid) {
+      res.status(401).json({ error: 'No valid session' });
+      return;
+    }
+
+    const sessions = cleanupExpired(readSessions());
+    const session = sessions.find((s) => s.sessionId === sid);
+    if (!session) {
+      res.status(401).json({ error: 'No valid session' });
+      return;
+    }
+
+    const dashboardId = typeof req.body?.dashboardId === 'string' ? req.body.dashboardId : '';
+    if (!dashboardId || !/^d\d+$/.test(dashboardId)) {
+      res.status(400).json({ error: 'Invalid dashboardId' });
+      return;
+    }
+
+    let loggedOutSet = dashboardLogouts.get(sid);
+    if (!loggedOutSet) {
+      loggedOutSet = new Set();
+      dashboardLogouts.set(sid, loggedOutSet);
+    }
+    loggedOutSet.add(dashboardId);
+
+    console.log(`[AUDIT] dashboard-logout: sessionUserId=${session.userId} dashboardId=${dashboardId}`);
+    res.status(200).json({ success: true });
+  });
+
   // OPTIONS preflight for GET /api/auth/invite/status
   app.options('/api/auth/invite/status', (req, res) => {
     applyCorsForDashboardOrigin(req, res);
@@ -4074,6 +4026,13 @@ async function main(): Promise<void> {
     const session = sessions.find((s) => s.sessionId === sid);
     if (!session) {
       res.status(401).json({ error: 'No valid session' });
+      return;
+    }
+
+    // Check if user explicitly logged out from this dashboard
+    const loggedOutDashboards = dashboardLogouts.get(sid);
+    if (loggedOutDashboards?.has(dashboardId)) {
+      res.status(401).json({ error: 'Logged out from this dashboard' });
       return;
     }
 
@@ -4482,7 +4441,7 @@ async function main(): Promise<void> {
         const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
         const oauthCallbackUrl = process.env.GOOGLE_OAUTH_REDIRECT_URI ||
           'https://simpledashboard.wpmix.net/api/auth/google-dashboard-callback';
-        res.json({ authEnabled: true, googleClientId, oauthCallbackUrl });
+        res.json({ authEnabled: true, accessMode: configSettings.accessMode || 'invite', googleClientId, oauthCallbackUrl });
       } else {
         res.json({ authEnabled: false });
       }
@@ -4655,6 +4614,9 @@ async function main(): Promise<void> {
 
   // In-memory storage for OAuth nonces (TTL 10 min, used by SDK auth flow)
   const oauthNonces = new Map<string, { dashboardId: string; expires: number }>();
+
+  // sessionId → Set of dashboardIds user explicitly logged out from
+  const dashboardLogouts = new Map<string, Set<string>>();
   // Hydrate invite tokens from disk (survive process restarts).
   for (const record of readInvites()) {
     inviteTokens.set(record.dashboardUserId, record.token);
@@ -4697,6 +4659,13 @@ async function main(): Promise<void> {
     }
     for (const [k, v] of oauthNonces) {
       if (v.expires < now) oauthNonces.delete(k);
+    }
+    // Clean up dashboardLogouts for expired sessions
+    const activeSessions = cleanupExpired(readSessions());
+    for (const [sid] of dashboardLogouts) {
+      if (!activeSessions.some(s => s.sessionId === sid)) {
+        dashboardLogouts.delete(sid);
+      }
     }
   }, 60 * 1000);
   sweepTimer.unref?.();
@@ -6157,7 +6126,7 @@ async function main(): Promise<void> {
       // --- Load or generate guest keypair ---
       let chatSettings = loadChatSettings(user.userId);
       if (!chatSettings.ownerAddress || !chatSettings.ownerPrivateKey) {
-        // Guest not yet registered in PG (or private key missing) — generate keypair and register
+        // Guest has no keypair yet — generate a new one
         let wallet: import('ethers').HDNodeWallet;
         try {
           wallet = ethers.Wallet.createRandom();
@@ -6167,43 +6136,44 @@ async function main(): Promise<void> {
           res.redirect(302, `${safeRedirectBase}?error=service_unavailable`);
           return;
         }
+        chatSettings.ownerAddress = wallet.address;
+        chatSettings.ownerPrivateKey = wallet.privateKey;
+        saveChatSettings(chatSettings);
+        // Reload to ensure cache is fresh
+        chatSettings = loadChatSettings(user.userId);
+        console.log(`[AUDIT] guest wallet generated: email=${normalizedEmail}`);
+      }
 
-        try {
-          const registerResp = await fetch(`${AUTH_API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(INTERNAL_API_KEY ? { Authorization: `Bearer ${INTERNAL_API_KEY}` } : {}),
-            },
-            body: JSON.stringify({
-              address: wallet.address,
-              privateKey: wallet.privateKey,
-              email: normalizedEmail,
-              dashboardId,
-            }),
-            signal: AbortSignal.timeout(10000),
-          });
+      // --- Register keypair for THIS dashboardId (idempotent — handles returning users on new dashboards) ---
+      try {
+        const registerResp = await fetch(`${AUTH_API_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(INTERNAL_API_KEY ? { Authorization: `Bearer ${INTERNAL_API_KEY}` } : {}),
+          },
+          body: JSON.stringify({
+            address: chatSettings.ownerAddress,
+            privateKey: chatSettings.ownerPrivateKey,
+            email: normalizedEmail,
+            dashboardId,
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
 
-          // 409 means this email already has a keypair (race condition) — treat as success
-          if (registerResp.status !== 201 && registerResp.status !== 409) {
-            const body = await registerResp.text().catch(() => '');
-            console.error(`[ERROR] guest keypair generation failed for email=${normalizedEmail}: Auth API register returned ${registerResp.status}: ${body}`);
-            res.redirect(302, `${safeRedirectBase}?error=service_unavailable`);
-            return;
-          }
-
-          chatSettings.ownerAddress = wallet.address;
-          chatSettings.ownerPrivateKey = wallet.privateKey;
-          saveChatSettings(chatSettings);
-          // Reload to ensure cache is fresh
-          chatSettings = loadChatSettings(user.userId);
-          console.log(`[AUDIT] guest registered: email=${normalizedEmail} dashboardId=${dashboardId}`);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error(`[ERROR] guest keypair generation failed for email=${normalizedEmail}: ${msg}`);
+        // 409 means already registered for this user/dashboard — treat as success
+        if (registerResp.status !== 201 && registerResp.status !== 409) {
+          const body = await registerResp.text().catch(() => '');
+          console.error(`[ERROR] guest keypair registration failed for email=${normalizedEmail}: Auth API register returned ${registerResp.status}: ${body}`);
           res.redirect(302, `${safeRedirectBase}?error=service_unavailable`);
           return;
         }
+        console.log(`[AUDIT] guest registered for dashboardId: email=${normalizedEmail} dashboardId=${dashboardId}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[ERROR] guest keypair registration failed for email=${normalizedEmail}: ${msg}`);
+        res.redirect(302, `${safeRedirectBase}?error=service_unavailable`);
+        return;
       }
 
       const guestPrivateKey = chatSettings.ownerPrivateKey!;
@@ -6211,6 +6181,9 @@ async function main(): Promise<void> {
       // --- Validate invite token and grant access if valid ---
       const storedInviteToken = inviteTokens.get(dashboardUserIdStr);
       const isValidInvite = inviteToken && storedInviteToken && inviteToken === storedInviteToken;
+      const _inv = inviteToken ? inviteToken.slice(0, 8) + '...' : 'NONE';
+      const _stored = storedInviteToken ? storedInviteToken.slice(0, 8) + '...' : 'NONE';
+      console.log(`[DEBUG] google-dashboard-callback: email=${normalizedEmail} dashboardId=${dashboardId} invite=${_inv} storedInvite=${_stored} isValidInvite=${isValidInvite}`);
 
       if (isValidInvite) {
         // Fetch dashboard owner's address for the share call
@@ -6255,6 +6228,7 @@ async function main(): Promise<void> {
         }
       } else {
         // No valid invite — check if guest already has access via dashboard_access
+        console.log(`[DEBUG] google-dashboard-callback: no valid invite, checking access-list for email=${normalizedEmail} dashboardId=${dashboardId}`);
         let alreadyHasAccess = false;
         try {
           const accessResp = await fetch(
@@ -6270,9 +6244,14 @@ async function main(): Promise<void> {
             const accessBody = await accessResp.json() as { emails?: string[] };
             const emails: string[] = Array.isArray(accessBody.emails) ? accessBody.emails : [];
             alreadyHasAccess = emails.map((e) => normalizeEmail(e)).includes(normalizedEmail);
+            console.log(`[DEBUG] google-dashboard-callback: access-list emails=${JSON.stringify(emails)} alreadyHasAccess=${alreadyHasAccess}`);
+          } else {
+            console.log(`[DEBUG] google-dashboard-callback: access-list returned status=${accessResp.status}`);
           }
-        } catch {
+        } catch (err) {
           // Access list check failed — treat as no access
+          const msg = err instanceof Error ? err.message : String(err);
+          console.log(`[DEBUG] google-dashboard-callback: access-list call failed: ${msg}`);
           alreadyHasAccess = false;
         }
 
@@ -6283,6 +6262,7 @@ async function main(): Promise<void> {
           const guestAddress = chatSettings.ownerAddress;
           const isOwner = ownerAddress && guestAddress &&
             ownerAddress.toLowerCase() === guestAddress.toLowerCase();
+          console.log(`[DEBUG] google-dashboard-callback: owner check — ownerAddress=${ownerAddress || 'NONE'} guestAddress=${guestAddress || 'NONE'} isOwner=${isOwner}`);
 
           if (isOwner) {
             // Owner logging in via Google for the first time — auto-share
@@ -6301,7 +6281,25 @@ async function main(): Promise<void> {
               const msg = err instanceof Error ? err.message : String(err);
               console.error(`[ERROR] google-dashboard-callback: auto-share owner failed: ${msg}`);
             }
+          } else if (ownerSettings.accessMode === 'open') {
+            // Open mode — auto-share any guest who signs in
+            try {
+              await fetch(`${AUTH_API_URL}/api/auth/share`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(INTERNAL_API_KEY ? { Authorization: `Bearer ${INTERNAL_API_KEY}` } : {}),
+                },
+                body: JSON.stringify({ dashboardId, email: normalizedEmail, ownerAddress }),
+                signal: AbortSignal.timeout(10000),
+              });
+              console.log(`[AUDIT] auto-shared open-mode guest: email=${normalizedEmail} dashboardId=${dashboardId}`);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error(`[ERROR] google-dashboard-callback: auto-share open-mode guest failed: ${msg}`);
+            }
           } else {
+            console.log(`[DEBUG] google-dashboard-callback: DENIED — email=${normalizedEmail} dashboardId=${dashboardId} (not owner, not in access-list, no invite)`);
             res.redirect(302, `${safeRedirectBase}?error=no_access`);
             return;
           }
@@ -6342,6 +6340,17 @@ async function main(): Promise<void> {
       }
 
       console.log(`[AUDIT] guest login: email=${normalizedEmail} dashboardId=${dashboardId}`);
+
+      // Clear dashboard logout flag (user is explicitly re-authenticating)
+      const logoutCookies = parseCookieHeader(req.headers.cookie);
+      const logoutSid = logoutCookies['webchat_session'];
+      if (logoutSid) {
+        const loggedOutSet = dashboardLogouts.get(logoutSid);
+        if (loggedOutSet) {
+          loggedOutSet.delete(dashboardId);
+          if (loggedOutSet.size === 0) dashboardLogouts.delete(logoutSid);
+        }
+      }
 
       // --- Issue ml-token (5 min TTL) carrying dashboardJwt ---
       // BUG-FIX: userId must be the dashboard owner's userId (from redirect_to),
