@@ -31,13 +31,14 @@ SDK автоматически:
 - Email + имя — `/api/auth/claim`
 - Google Sign-In — `/api/auth/google`
 
-**Доступ к дашборду** (d{USERID}.wpmix.net) — три варианта:
+**Доступ к дашборду** (d{USERID}.wpmix.net) — два режима (`accessMode`):
 
-| Сценарий | Как получить |
-|----------|-------------|
-| Владелец с телефона/без Extension | Попросить в чате «пришли magic link» → получает ссылку на 24ч |
-| Поделиться с гостем | Попросить «пришли invite link» → гость входит через Google OAuth |
-| Публичный дашборд | По умолчанию — никакой auth не нужен |
+| Режим | Поведение | Когда использовать |
+|-------|-----------|-------------------|
+| `invite` (default) | Без invite-ссылки контент виден, auth не показывается. С `?invite=TOKEN` — overlay с Google Sign-In | Закрытый дашборд — доступ только по приглашению |
+| `open` | Google Sign-In overlay показан всем. Любой может войти без инвайта — auto-share | Публичный дашборд / клуб — все могут зарегистрироваться |
+
+**Magic Link** (оба режима): Попросить в чате «пришли magic link» → ссылка на 24ч для владельца.
 
 **Твой index.html НЕ должен содержать никаких экранов логина, кнопок "/login", форм авторизации.**
 
@@ -46,7 +47,7 @@ SDK автоматически:
 ```javascript
 SD.getUser()                    // → { email, name, address, dashboardId } или null
 SD.isOwner()                    // → true если JWT.address === ownerAddress
-SD.logout()                     // → clear JWT, reload
+SD.logout()                     // → server-side logout + clear JWT, reload
 
 SD.data.get(collection)         // → GET /api/data/{collection} с JWT
 SD.data.post(collection, item)  // → POST
@@ -85,7 +86,18 @@ document.getElementById('btn-logout').onclick = function() { SD.logout(); };
 
 2. **«Пусть другие тоже видят» / «поделись с командой»** → объясни: используй Invite Link из чата. Гости войдут через Google. Кода в index.html не нужно.
 
-3. **«Пусть пользователи регаются на моём дашборде / клубе»** → это работает через Invite Link:
+3. **«Пусть пользователи регаются на моём дашборде / клубе»** → **обязательно выполни два шага:**
+
+   **Шаг 1:** Запиши `"accessMode": "open"` в `settings.json` рабочей папки пользователя (тот же каталог где лежит `index.html`). Не просто рекомендуй — выполни это сам.
+
+   **Шаг 2:** Убедись, что SDK подключён в index.html (`<script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>`).
+
+   Результат:
+   - Все посетители видят Google Sign-In overlay
+   - Любой может войти — доступ предоставляется автоматически (auto-share)
+   - Не нужен invite link — достаточно обычной ссылки `https://d{USERID}.wpmix.net`
+
+4. **«Поделись с конкретными людьми»** → используй Invite Link (режим `invite`, default):
    - Попросить в чате «пришли invite link» → получит ссылку вида `https://d{USERID}.wpmix.net?invite=...`
    - Ссылка **бессрочная и без лимита использований** — как Google Docs "у кого есть ссылка"
    - Каждый кто переходит по ней — входит через Google Sign-In и попадает в базу платформы
@@ -114,6 +126,9 @@ document.getElementById('btn-logout').onclick = function() { SD.logout(); };
 | [`invoice-generator`](showcases/invoice-generator/SKILL.md) | Генератор счетов — 5 стран, PDF | 3 |
 | [`lead-tracker`](showcases/lead-tracker/SKILL.md) | Трекер лидов — pipeline, CRM | 4 |
 | [`project-kanban`](showcases/project-kanban/SKILL.md) | Kanban-доска — задачи, проекты, календарь | 4 |
+| [`restaurant-analytics`](showcases/restaurant-analytics/SKILL.md) | Дашборд ресторана — выручка, меню, часы пик, food cost | 4 |
+| [`freelancer-dashboard`](showcases/freelancer-dashboard/SKILL.md) | Фрилансер — доходы, проекты, учёт времени, счета | 4 |
+| [`morning-snapshot`](showcases/morning-snapshot/SKILL.md) | Утренний брифинг — KPI, задачи, алерты, тёмная тема | 2 |
 
 **Как использовать:**
 1. Прочитай `showcases/{slug}/SKILL.md` — там описание, промпт для воспроизведения, ключевые особенности
@@ -582,6 +597,9 @@ gh issue list --repo "$REPO" --state all --limit 200 \
 - [Invoice Generator](https://simpledashboard.wpmix.net/showcases/invoice-generator/)
 - [Lead Tracker](https://simpledashboard.wpmix.net/showcases/lead-tracker/)
 - [Project Kanban](https://simpledashboard.wpmix.net/showcases/project-kanban/)
+- [Restaurant Analytics](https://simpledashboard.wpmix.net/showcases/restaurant-analytics/demo)
+- [Freelancer Dashboard](https://simpledashboard.wpmix.net/showcases/freelancer-dashboard/demo)
+- [Morning Snapshot](https://simpledashboard.wpmix.net/showcases/morning-snapshot/demo)
 
 ## Self-Test (после генерации index.html)
 
@@ -617,6 +635,14 @@ gh issue list --repo "$REPO" --state all --limit 200 \
 ✓ Минимум 2 графика Chart.js
 ✓ Данные генерируются динамически (JIT), не захардкожены
 ✓ Responsive layout (работает на мобильных)
+
+Проверка 6: Режим доступа (если был запрос на регистрацию / авторизацию)
+— Триггер: в запросе пользователя было: «регистрация», «зарегистрироваться», «войти», «авторизация», «login», «sign in», «sign up», «любой может», «открытый доступ», «публичный», «клуб», «membership»
+— Если триггер сработал:
+  ✓ `accessMode: 'open'` выставлен в settings.json дашборда (если нет — выставить!)
+  ✓ SDK подключён: <script src="https://simpledashboard.wpmix.net/sdk/auth.js"></script>
+  ✓ В index.html НЕТ самописных форм логина, /login роутов, кнопок "Sign in" (SDK делает всё сам)
+— Если accessMode не выставлен — не просто предупредить, а выполнить: записать "accessMode": "open" в settings.json
 ```
 
 Формат вывода после проверки:
@@ -626,6 +652,12 @@ gh issue list --repo "$REPO" --state all --limit 200 \
 ✅ i18n — ok (42 keys EN, 42 keys RU)
 ✅ CDN — ok (Tailwind + Chart.js)
 ✅ Structure — ok (4 KPI cards, 3 charts)
+✅ Access mode — ok (accessMode: 'open' set, SDK included, no custom auth forms)
+```
+
+или (если запроса на регистрацию не было):
+```
+⏭️ Access mode — skipped (no auth/registration request detected)
 ```
 
 Если есть ошибки:

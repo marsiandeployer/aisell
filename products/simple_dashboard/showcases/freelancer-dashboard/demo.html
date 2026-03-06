@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freelancer Business Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .nav-link { display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;text-align:left;border:none;cursor:pointer;background:transparent;color:#94a3b8;transition:background 0.15s,color 0.15s; }
+    .nav-link:hover { background:#374151;color:#fff; }
+    .nav-link.active { background:#7C3AED;color:#fff; }
+    .kpi-card { background:#fff;border-radius:12px;padding:18px 20px;border:1px solid #ede9fe;box-shadow:0 1px 4px rgba(124,58,237,0.07); }
+    .badge { display:inline-flex;align-items:center;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap; }
+    .badge-paid    { background:#d1fae5;color:#065f46; }
+    .badge-unpaid  { background:#fef3c7;color:#92400e; }
+    .badge-overdue { background:#fee2e2;color:#991b1b; }
+    .badge-inprog  { background:#ede9fe;color:#5b21b6; }
+    .badge-done    { background:#d1fae5;color:#065f46; }
+    .badge-pipe    { background:#dbeafe;color:#1d4ed8; }
+    .card { background:#fff;border-radius:14px;padding:20px 22px;border:1px solid #ede9fe;box-shadow:0 1px 4px rgba(124,58,237,0.06); }
+    .table-header { background:#f5f3ff;font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:0.05em; }
+    .table-row { font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6; }
+    .table-row:last-child { border-bottom:none; }
+    .table-row:hover { background:#faf5ff; }
+    .mini-scroll::-webkit-scrollbar { width:4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background:#ddd6fe;border-radius:2px; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation:fadeIn 0.22s ease both; }
+    @media print { #promptBar{display:none!important} aside{display:none!important} }
+  </style>
+</head>
+<body class="bg-gray-50" style="margin:0;overflow:hidden">
+
+<!-- Prompt bar -->
+<div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(76,29,149,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;border-top:1px solid rgba(255,255,255,0.08)">
+  <span id="promptText"></span>
+  <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#8B5CF6,#7C3AED);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 16px rgba(139,92,246,0.45)"></a>
+</div>
+
+<div class="flex" style="height:100vh;overflow:hidden">
+
+  <!-- Sidebar -->
+  <aside class="flex flex-col flex-shrink-0 text-white" style="width:220px;background:#111827">
+
+    <!-- Logo -->
+    <div style="padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="font-size:22px">💼</span>
+        <span style="color:#f3f4f6;font-size:15px;font-weight:800;letter-spacing:-0.02em" id="sidebarTitle"></span>
+      </div>
+      <div style="color:#6b7280;font-size:10px;margin-top:3px;letter-spacing:0.05em;text-transform:uppercase" id="sidebarSub"></div>
+    </div>
+
+    <!-- Nav -->
+    <nav style="padding:10px 8px;flex:1">
+      <button class="nav-link" data-page="overview" onclick="navigateTo('overview')">
+        <span>📊</span><span data-nav="navOverview"></span>
+      </button>
+      <button class="nav-link" data-page="projects" onclick="navigateTo('projects')">
+        <span>🚀</span><span data-nav="navProjects"></span>
+      </button>
+      <button class="nav-link" data-page="time" onclick="navigateTo('time')">
+        <span>⏱️</span><span data-nav="navTime"></span>
+      </button>
+      <button class="nav-link" data-page="invoices" onclick="navigateTo('invoices')">
+        <span>🧾</span><span data-nav="navInvoices"></span>
+      </button>
+    </nav>
+
+    <!-- Lang toggle -->
+    <div id="langToggle" style="display:none;padding:12px 16px;border-top:1px solid rgba(255,255,255,0.07)">
+      <button id="langBtn" onclick="toggleLang()" style="width:100%;text-align:left;font-size:12px;color:#9ca3af;background:none;border:none;cursor:pointer;padding:0">English</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 mini-scroll" style="overflow-y:auto;padding-bottom:80px">
+    <div id="mainContent" style="padding:28px 32px 32px"></div>
+  </main>
+</div>
+
+<script>
+// ─── i18n ────────────────────────────────────────────────────────────────────
+var _s = {
+  en: {
+    sidebarTitle: 'Freelancer Hub',
+    sidebarSub: 'Business Dashboard',
+    navOverview: 'Overview',
+    navProjects: 'Projects',
+    navTime: 'Time Tracking',
+    navInvoices: 'Invoices',
+    currency: '$',
+    // Overview page
+    pageOverview: 'Overview',
+    kpiMonthlyIncome: 'Monthly Income',
+    kpiActiveProjects: 'Active Projects',
+    kpiHoursMonth: 'Hours This Month',
+    kpiUnpaidInvoices: 'Unpaid Invoices',
+    chartIncomeTitle: 'Monthly Income (12 months)',
+    chartIncomeByClient: 'Income by Client',
+    chartProjectsByStatus: 'Projects by Status',
+    vsLastMonth: 'vs last month',
+    projects_label: 'projects',
+    hours_label: 'hrs',
+    invoices_label: 'invoices',
+    // Projects page
+    pageProjects: 'Projects',
+    kpiTotalProjects: 'Total Projects',
+    kpiInProgress: 'In Progress',
+    kpiCompleted: 'Completed',
+    kpiPipeline: 'Pipeline',
+    tblProject: 'Project',
+    tblClient: 'Client',
+    tblStatus: 'Status',
+    tblBudget: 'Budget',
+    tblHours: 'Hours',
+    tblDeadline: 'Deadline',
+    chartRevenueByClient: 'Revenue by Client',
+    activeProjects: 'Active Projects',
+    statusInProgress: 'In Progress',
+    statusCompleted: 'Completed',
+    statusPipeline: 'Pipeline',
+    // Time page
+    pageTime: 'Time Tracking',
+    kpiHoursWeek: 'Hours This Week',
+    kpiBillable: 'Billable %',
+    kpiAvgDaily: 'Avg Daily Hours',
+    chartHoursByProject: 'Hours by Project (This Month)',
+    chartDailyHours: 'Daily Hours (Last 30 Days)',
+    tblDate: 'Date',
+    tblHoursCol: 'Hours',
+    tblBillable: 'Billable',
+    tblNote: 'Note',
+    timeLog: 'Time Log',
+    yes_label: 'Yes',
+    no_label: 'No',
+    // Invoices page
+    pageInvoices: 'Invoices',
+    kpiTotalInvoiced: 'Total Invoiced',
+    kpiPaid: 'Paid',
+    kpiUnpaid: 'Unpaid',
+    kpiOverdue: 'Overdue',
+    chartInvoiceStatus: 'Invoice Status',
+    tblInvoiceNum: 'Invoice #',
+    tblAmount: 'Amount',
+    tblDueDate: 'Due Date',
+    tblDays: 'Days',
+    invoiceList: 'Invoice List',
+    paid_label: 'Paid',
+    unpaid_label: 'Unpaid',
+    overdue_label: 'Overdue',
+    daysOverdue: 'days overdue',
+    daysLeft: 'days left',
+    // Months
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    // Prompt bar
+    promptText: 'Track your freelance business — income, projects, hours and invoices in one dashboard',
+    ctaLabel: 'Try SimpleDashboard',
+  },
+  ru: {
+    sidebarTitle: 'Фриланс Хаб',
+    sidebarSub: 'Бизнес-дашборд',
+    navOverview: 'Обзор',
+    navProjects: 'Проекты',
+    navTime: 'Учёт часов',
+    navInvoices: 'Счета',
+    currency: '₽',
+    // Overview
+    pageOverview: 'Обзор',
+    kpiMonthlyIncome: 'Доход за месяц',
+    kpiActiveProjects: 'Активные проекты',
+    kpiHoursMonth: 'Часов за месяц',
+    kpiUnpaidInvoices: 'Неоплаченных счетов',
+    chartIncomeTitle: 'Доход по месяцам (12 мес.)',
+    chartIncomeByClient: 'Доход по клиентам',
+    chartProjectsByStatus: 'Проекты по статусу',
+    vsLastMonth: 'к прошлому месяцу',
+    projects_label: 'проекта',
+    hours_label: 'ч',
+    invoices_label: 'счёта',
+    // Projects
+    pageProjects: 'Проекты',
+    kpiTotalProjects: 'Всего проектов',
+    kpiInProgress: 'В работе',
+    kpiCompleted: 'Завершены',
+    kpiPipeline: 'В воронке',
+    tblProject: 'Проект',
+    tblClient: 'Клиент',
+    tblStatus: 'Статус',
+    tblBudget: 'Бюджет',
+    tblHours: 'Часы',
+    tblDeadline: 'Дедлайн',
+    chartRevenueByClient: 'Выручка по клиентам',
+    activeProjects: 'Активные проекты',
+    statusInProgress: 'В работе',
+    statusCompleted: 'Завершён',
+    statusPipeline: 'Воронка',
+    // Time
+    pageTime: 'Учёт часов',
+    kpiHoursWeek: 'Часов на неделе',
+    kpiBillable: 'Оплачиваемые %',
+    kpiAvgDaily: 'Среднее в день',
+    chartHoursByProject: 'Часы по проектам (месяц)',
+    chartDailyHours: 'Часы по дням (30 дней)',
+    tblDate: 'Дата',
+    tblHoursCol: 'Часы',
+    tblBillable: 'Оплачивается',
+    tblNote: 'Примечание',
+    timeLog: 'Журнал времени',
+    yes_label: 'Да',
+    no_label: 'Нет',
+    // Invoices
+    pageInvoices: 'Счета',
+    kpiTotalInvoiced: 'Выставлено счетов',
+    kpiPaid: 'Оплачено',
+    kpiUnpaid: 'Не оплачено',
+    kpiOverdue: 'Просрочено',
+    chartInvoiceStatus: 'Статус счетов',
+    tblInvoiceNum: '№ счёта',
+    tblAmount: 'Сумма',
+    tblDueDate: 'Срок оплаты',
+    tblDays: 'Дней',
+    invoiceList: 'Список счетов',
+    paid_label: 'Оплачен',
+    unpaid_label: 'Не оплачен',
+    overdue_label: 'Просрочен',
+    daysOverdue: 'дней просрочки',
+    daysLeft: 'дней осталось',
+    // Months
+    months: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+    // Prompt bar
+    promptText: 'Управляй фриланс-бизнесом — доходы, проекты, часы и счета на одном экране',
+    ctaLabel: 'Попробовать SimpleDashboard',
+  }
+};
+
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var _stored = localStorage.getItem('demo_lang'); if (_stored === 'en' || _stored === 'ru') _lang = _stored; } catch(_e) {}
+}
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+function toggleLang() {
+  _lang = (_lang === 'ru') ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = _lang === 'ru' ? 'Русский' : 'English';
+  renderStaticStrings();
+  navigateTo(_currentPage);
+}
+
+// ─── JIT Data ────────────────────────────────────────────────────────────────
+var _data = (function() {
+  var rnd = function(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; };
+  var clients = ['Acme Corp', 'BlueWave Tech', 'GreenLeaf Studio', 'Nexus Digital', 'Orbital Media'];
+  var projectNames = ['Website Redesign', 'Mobile App MVP', 'SEO Audit', 'Brand Identity', 'E-commerce Build', 'API Integration', 'Landing Page'];
+  var taskNotes = ['Code review', 'Design mockups', 'Client meeting', 'Testing & QA', 'Documentation', 'Bug fixes', 'Feature dev'];
+
+  // Projects (6 items)
+  var projects = [];
+  var statuses = ['In Progress','In Progress','In Progress','Completed','Completed','Pipeline'];
+  for (var i = 0; i < 6; i++) {
+    var budget = rnd(20, 150) * 100;
+    var hours = rnd(12, 180);
+    var deadline = new Date(Date.now() + rnd(-30, 90) * 86400000);
+    projects.push({
+      name: projectNames[i],
+      client: clients[i % clients.length],
+      status: statuses[i],
+      budget: budget,
+      hours: hours,
+      deadline: deadline
+    });
+  }
+
+  // Monthly income (12 months)
+  var monthlyIncome = [];
+  var base = rnd(4000, 7000);
+  for (var m = 0; m < 12; m++) {
+    base = base * (1 + (Math.random() - 0.3) * 0.18);
+    monthlyIncome.push(Math.round(base));
+  }
+
+  // Client income distribution
+  var clientIncome = clients.map(function(c) { return rnd(3000, 18000); });
+
+  // Time logs (30 days)
+  var timeLogs = [];
+  var today = new Date();
+  for (var d = 29; d >= 0; d--) {
+    var date = new Date(today.getTime() - d * 86400000);
+    var isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    if (!isWeekend || Math.random() > 0.7) {
+      var hrs = isWeekend ? rnd(1, 4) : rnd(4, 9);
+      var billable = Math.random() > 0.25;
+      timeLogs.push({
+        date: date,
+        project: projects[rnd(0, 4)].name,
+        hours: hrs,
+        billable: billable,
+        note: taskNotes[rnd(0, taskNotes.length - 1)]
+      });
+    }
+  }
+
+  // Invoices (10 items)
+  var invoiceStatuses = ['Paid','Paid','Paid','Paid','Paid','Unpaid','Unpaid','Unpaid','Overdue','Overdue'];
+  var invoices = [];
+  for (var iv = 0; iv < 10; iv++) {
+    var amount = rnd(8, 80) * 100;
+    var dueOffset = invoiceStatuses[iv] === 'Paid' ? rnd(-60, -5) : invoiceStatuses[iv] === 'Overdue' ? rnd(-30, -1) : rnd(5, 45);
+    var dueDate = new Date(Date.now() + dueOffset * 86400000);
+    var paidDate = invoiceStatuses[iv] === 'Paid' ? new Date(dueDate.getTime() - rnd(1, 10) * 86400000) : null;
+    invoices.push({
+      num: 'INV-' + (2026100 + iv),
+      client: clients[iv % clients.length],
+      amount: amount,
+      status: invoiceStatuses[iv],
+      dueDate: dueDate,
+      daysOffset: dueOffset
+    });
+  }
+
+  var totalInvoiced = invoices.reduce(function(s, i) { return s + i.amount; }, 0);
+  var totalPaid = invoices.filter(function(i) { return i.status === 'Paid'; }).reduce(function(s, i) { return s + i.amount; }, 0);
+  var totalUnpaid = invoices.filter(function(i) { return i.status === 'Unpaid'; }).reduce(function(s, i) { return s + i.amount; }, 0);
+  var totalOverdue = invoices.filter(function(i) { return i.status === 'Overdue'; }).reduce(function(s, i) { return s + i.amount; }, 0);
+
+  var totalHoursMonth = timeLogs.slice(-22).reduce(function(s, l) { return s + l.hours; }, 0);
+  var billableHours = timeLogs.filter(function(l) { return l.billable; }).reduce(function(s, l) { return s + l.hours; }, 0);
+  var totalHoursAll = timeLogs.reduce(function(s, l) { return s + l.hours; }, 0);
+
+  return {
+    projects: projects,
+    monthlyIncome: monthlyIncome,
+    clientIncome: clientIncome,
+    clientNames: clients,
+    timeLogs: timeLogs,
+    invoices: invoices,
+    totalInvoiced: totalInvoiced,
+    totalPaid: totalPaid,
+    totalUnpaid: totalUnpaid,
+    totalOverdue: totalOverdue,
+    totalHoursMonth: totalHoursMonth,
+    billablePct: Math.round(billableHours / totalHoursAll * 100),
+    hoursThisWeek: timeLogs.slice(-5).reduce(function(s, l) { return s + l.hours; }, 0),
+    avgDailyHours: (totalHoursAll / timeLogs.length).toFixed(1),
+    currentMonthIncome: monthlyIncome[11],
+    prevMonthIncome: monthlyIncome[10]
+  };
+})();
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) {
+  var cur = tt('currency');
+  return cur + n.toLocaleString(_lang === 'ru' ? 'ru-RU' : 'en-US');
+}
+function fmtDate(d) {
+  return d.toLocaleDateString(_lang === 'ru' ? 'ru-RU' : 'en-US', {day:'2-digit',month:'short'});
+}
+function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+function trend(cur, prev) {
+  var d = cur - prev;
+  var p = prev ? Math.abs(Math.round(d / prev * 100)) : 0;
+  var color = d >= 0 ? '#10b981' : '#ef4444';
+  var arrow = d >= 0 ? '▲' : '▼';
+  return '<span style="color:' + color + ';font-size:12px;font-weight:600">' + arrow + ' ' + p + '% ' + tt('vsLastMonth') + '</span>';
+}
+function statusBadge(s) {
+  var map = {
+    'In Progress': ['badge-inprog', tt('statusInProgress')],
+    'Completed':   ['badge-done',   tt('statusCompleted')],
+    'Pipeline':    ['badge-pipe',   tt('statusPipeline')],
+    'Paid':        ['badge-paid',   tt('paid_label')],
+    'Unpaid':      ['badge-unpaid', tt('unpaid_label')],
+    'Overdue':     ['badge-overdue',tt('overdue_label')]
+  };
+  var m = map[s] || ['badge-pipe', s];
+  return '<span class="badge ' + m[0] + '">' + m[1] + '</span>';
+}
+
+// ─── Page Renderers ──────────────────────────────────────────────────────────
+var _currentPage = 'overview';
+var _charts = {};
+
+function destroyCharts() {
+  Object.keys(_charts).forEach(function(k) { try { _charts[k].destroy(); } catch(e) {} });
+  _charts = {};
+}
+
+// KPI card builder
+function kpiCard(label, value, sub) {
+  return '<div class="kpi-card"><div style="font-size:12px;font-weight:600;color:#8b5cf6;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">' + label + '</div><div style="font-size:26px;font-weight:800;color:#1f2937;line-height:1.1;margin-bottom:6px">' + value + '</div><div style="font-size:12px;color:#6b7280">' + (sub || '') + '</div></div>';
+}
+
+// ── Overview ─────────────────────────────────────────────────────────────────
+function renderOverview() {
+  var d = _data;
+  var inProg = d.projects.filter(function(p){ return p.status === 'In Progress'; }).length;
+  var unpaidCount = d.invoices.filter(function(i){ return i.status !== 'Paid'; }).length;
+  var incDiff = trend(d.currentMonthIncome, d.prevMonthIncome);
+
+  return '<div class="fade-in">' +
+    '<h1 style="font-size:22px;font-weight:800;color:#1f2937;margin-bottom:20px">' + tt('pageOverview') + '</h1>' +
+
+    // KPI row
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">' +
+      kpiCard(tt('kpiMonthlyIncome'), fmt(d.currentMonthIncome), incDiff) +
+      kpiCard(tt('kpiActiveProjects'), inProg + ' ' + tt('projects_label'), '') +
+      kpiCard(tt('kpiHoursMonth'), d.totalHoursMonth + ' ' + tt('hours_label'), '') +
+      kpiCard(tt('kpiUnpaidInvoices'), unpaidCount + ' ' + tt('invoices_label'), fmt(d.totalUnpaid + d.totalOverdue)) +
+    '</div>' +
+
+    // Charts row 1: line + doughnut
+    '<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartIncomeTitle') + '</h3><canvas id="chartIncomeLine" height="120"></canvas></div>' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartIncomeByClient') + '</h3><canvas id="chartIncomeDonut" height="120"></canvas></div>' +
+    '</div>' +
+
+    // Charts row 2: bar
+    '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartProjectsByStatus') + '</h3><canvas id="chartProjStatus" height="60"></canvas></div>' +
+  '</div>';
+}
+
+function chartsOverview() {
+  var months = tt('months');
+  var now = new Date();
+  var labels = [];
+  for (var i = 11; i >= 0; i--) {
+    var idx = (now.getMonth() - i + 12) % 12;
+    labels.push(months[idx]);
+  }
+
+  _charts.incomeLine = new Chart(document.getElementById('chartIncomeLine'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: tt('kpiMonthlyIncome'),
+        data: _data.monthlyIncome,
+        borderColor: '#8B5CF6',
+        backgroundColor: 'rgba(139,92,246,0.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#7C3AED',
+        pointRadius: 4
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, grid: { color: '#f3f4f6' } }, x: { grid: { display: false } } } }
+  });
+
+  _charts.incomeDonut = new Chart(document.getElementById('chartIncomeDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: _data.clientNames,
+      datasets: [{ data: _data.clientIncome, backgroundColor: ['#8B5CF6','#7C3AED','#A78BFA','#6D28D9','#C4B5FD'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+  });
+
+  var counts = {
+    'In Progress': _data.projects.filter(function(p){ return p.status === 'In Progress'; }).length,
+    'Completed': _data.projects.filter(function(p){ return p.status === 'Completed'; }).length,
+    'Pipeline': _data.projects.filter(function(p){ return p.status === 'Pipeline'; }).length
+  };
+  _charts.projStatus = new Chart(document.getElementById('chartProjStatus'), {
+    type: 'bar',
+    data: {
+      labels: [tt('statusInProgress'), tt('statusCompleted'), tt('statusPipeline')],
+      datasets: [{ data: [counts['In Progress'], counts['Completed'], counts['Pipeline']], backgroundColor: ['#8B5CF6','#10b981','#3b82f6'], borderRadius: 6, barThickness: 40 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } }, x: { grid: { display: false } } } }
+  });
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+function renderProjects() {
+  var d = _data;
+  var inProg = d.projects.filter(function(p){ return p.status === 'In Progress'; }).length;
+  var completed = d.projects.filter(function(p){ return p.status === 'Completed'; }).length;
+  var pipeline = d.projects.filter(function(p){ return p.status === 'Pipeline'; }).length;
+  var totalBudget = d.projects.reduce(function(s,p){ return s + p.budget; }, 0);
+
+  var rows = d.projects.map(function(p) {
+    return '<tr class="table-row">' +
+      '<td style="padding:10px 14px;font-weight:600;color:#1f2937">' + p.name + '</td>' +
+      '<td style="padding:10px 14px;color:#6b7280">' + p.client + '</td>' +
+      '<td style="padding:10px 14px">' + statusBadge(p.status) + '</td>' +
+      '<td style="padding:10px 14px;font-weight:600">' + fmt(p.budget) + '</td>' +
+      '<td style="padding:10px 14px;color:#6b7280">' + p.hours + ' ' + tt('hours_label') + '</td>' +
+      '<td style="padding:10px 14px;color:#6b7280">' + fmtDate(p.deadline) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="fade-in">' +
+    '<h1 style="font-size:22px;font-weight:800;color:#1f2937;margin-bottom:20px">' + tt('pageProjects') + '</h1>' +
+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">' +
+      kpiCard(tt('kpiTotalProjects'), d.projects.length, fmt(totalBudget)) +
+      kpiCard(tt('kpiInProgress'), inProg, '') +
+      kpiCard(tt('kpiCompleted'), completed, '') +
+      kpiCard(tt('kpiPipeline'), pipeline, '') +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-bottom:16px">' +
+      '<div class="card">' +
+        '<h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('activeProjects') + '</h3>' +
+        '<div style="overflow-x:auto">' +
+          '<table style="width:100%;border-collapse:collapse">' +
+            '<thead><tr class="table-header"><th style="padding:10px 14px;text-align:left">' + tt('tblProject') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblClient') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblStatus') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblBudget') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblHours') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblDeadline') + '</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartRevenueByClient') + '</h3><canvas id="chartClientRev"></canvas></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function chartsProjects() {
+  _charts.clientRev = new Chart(document.getElementById('chartClientRev'), {
+    type: 'bar',
+    data: {
+      labels: _data.clientNames,
+      datasets: [{ label: tt('chartRevenueByClient'), data: _data.clientIncome, backgroundColor: ['#8B5CF6','#7C3AED','#A78BFA','#6D28D9','#C4B5FD'], borderRadius: 6, barThickness: 22 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Time ─────────────────────────────────────────────────────────────────────
+function renderTime() {
+  var d = _data;
+
+  // Hours per project this month
+  var projHours = {};
+  d.timeLogs.slice(-22).forEach(function(l) {
+    projHours[l.project] = (projHours[l.project] || 0) + l.hours;
+  });
+  var projLabels = Object.keys(projHours);
+  var projVals = projLabels.map(function(k){ return projHours[k]; });
+
+  // Last 14 logs for table (most recent first)
+  var logRows = d.timeLogs.slice().reverse().slice(0, 14).map(function(l) {
+    return '<tr class="table-row">' +
+      '<td style="padding:9px 14px;color:#6b7280">' + fmtDate(l.date) + '</td>' +
+      '<td style="padding:9px 14px;font-weight:500;color:#1f2937">' + l.project + '</td>' +
+      '<td style="padding:9px 14px;font-weight:700;color:#7c3aed">' + l.hours + '</td>' +
+      '<td style="padding:9px 14px"><span class="badge ' + (l.billable ? 'badge-paid' : 'badge-unpaid') + '">' + (l.billable ? tt('yes_label') : tt('no_label')) + '</span></td>' +
+      '<td style="padding:9px 14px;color:#9ca3af;font-size:12px">' + l.note + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Daily hours data for chart (last 30 days)
+  var dailyLabels = d.timeLogs.map(function(l){ return fmtDate(l.date); });
+  var dailyVals = d.timeLogs.map(function(l){ return l.hours; });
+
+  return '<div class="fade-in">' +
+    '<h1 style="font-size:22px;font-weight:800;color:#1f2937;margin-bottom:20px">' + tt('pageTime') + '</h1>' +
+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">' +
+      kpiCard(tt('kpiHoursWeek'), d.hoursThisWeek + ' ' + tt('hours_label'), '') +
+      kpiCard(tt('kpiBillable'), d.billablePct + '%', '') +
+      kpiCard(tt('kpiAvgDaily'), d.avgDailyHours + ' ' + tt('hours_label'), '') +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartHoursByProject') + '</h3><canvas id="chartProjHours"></canvas></div>' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartDailyHours') + '</h3><canvas id="chartDailyHours"></canvas></div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('timeLog') + '</h3>' +
+      '<div style="overflow-x:auto">' +
+        '<table style="width:100%;border-collapse:collapse">' +
+          '<thead><tr class="table-header"><th style="padding:9px 14px;text-align:left">' + tt('tblDate') + '</th><th style="padding:9px 14px;text-align:left">' + tt('tblProject') + '</th><th style="padding:9px 14px;text-align:left">' + tt('tblHoursCol') + '</th><th style="padding:9px 14px;text-align:left">' + tt('tblBillable') + '</th><th style="padding:9px 14px;text-align:left">' + tt('tblNote') + '</th></tr></thead>' +
+          '<tbody>' + logRows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Store for use in chartsTime
+  window._timeChartData = { projLabels: projLabels, projVals: projVals, dailyLabels: dailyLabels, dailyVals: dailyVals };
+}
+
+function chartsTime() {
+  var td = window._timeChartData;
+  if (!td) return;
+  var purples = td.projLabels.map(function(_, i) {
+    var cols = ['#8B5CF6','#7C3AED','#A78BFA','#6D28D9','#C4B5FD','#DDD6FE'];
+    return cols[i % cols.length];
+  });
+  _charts.projHours = new Chart(document.getElementById('chartProjHours'), {
+    type: 'bar',
+    data: {
+      labels: td.projLabels,
+      datasets: [{ data: td.projVals, backgroundColor: purples, borderRadius: 6, barThickness: 28 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } } }
+  });
+  _charts.dailyHours = new Chart(document.getElementById('chartDailyHours'), {
+    type: 'line',
+    data: {
+      labels: td.dailyLabels,
+      datasets: [{ data: td.dailyVals, borderColor: '#8B5CF6', backgroundColor: 'rgba(139,92,246,0.08)', tension: 0.35, fill: true, pointRadius: 2, pointBackgroundColor: '#7C3AED' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 10 } } } } }
+  });
+}
+
+// ── Invoices ─────────────────────────────────────────────────────────────────
+function renderInvoices() {
+  var d = _data;
+  var paidCount = d.invoices.filter(function(i){ return i.status === 'Paid'; }).length;
+  var unpaidCount = d.invoices.filter(function(i){ return i.status === 'Unpaid'; }).length;
+  var overdueCount = d.invoices.filter(function(i){ return i.status === 'Overdue'; }).length;
+
+  var rows = d.invoices.map(function(iv) {
+    var daysLabel = '';
+    if (iv.status === 'Overdue') {
+      daysLabel = '<span style="color:#ef4444;font-weight:600">-' + Math.abs(iv.daysOffset) + ' ' + tt('daysOverdue') + '</span>';
+    } else if (iv.status === 'Unpaid') {
+      daysLabel = '<span style="color:#f59e0b;font-weight:600">+' + iv.daysOffset + ' ' + tt('daysLeft') + '</span>';
+    } else {
+      daysLabel = '<span style="color:#10b981">—</span>';
+    }
+    return '<tr class="table-row">' +
+      '<td style="padding:10px 14px;font-weight:700;color:#7c3aed;font-size:12px">' + iv.num + '</td>' +
+      '<td style="padding:10px 14px;color:#374151">' + iv.client + '</td>' +
+      '<td style="padding:10px 14px;font-weight:700;color:#1f2937">' + fmt(iv.amount) + '</td>' +
+      '<td style="padding:10px 14px">' + statusBadge(iv.status) + '</td>' +
+      '<td style="padding:10px 14px;color:#6b7280">' + fmtDate(iv.dueDate) + '</td>' +
+      '<td style="padding:10px 14px;font-size:12px">' + daysLabel + '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="fade-in">' +
+    '<h1 style="font-size:22px;font-weight:800;color:#1f2937;margin-bottom:20px">' + tt('pageInvoices') + '</h1>' +
+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">' +
+      kpiCard(tt('kpiTotalInvoiced'), fmt(d.totalInvoiced), '') +
+      kpiCard(tt('kpiPaid'), fmt(d.totalPaid), paidCount + ' ' + tt('invoices_label')) +
+      kpiCard(tt('kpiUnpaid'), fmt(d.totalUnpaid), unpaidCount + ' ' + tt('invoices_label')) +
+      kpiCard(tt('kpiOverdue'), fmt(d.totalOverdue), '<span style="color:#ef4444">' + overdueCount + ' ' + tt('invoices_label') + '</span>') +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px">' +
+      '<div class="card"><h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('chartInvoiceStatus') + '</h3><canvas id="chartInvStatus"></canvas></div>' +
+      '<div class="card">' +
+        '<h3 style="font-size:14px;font-weight:700;color:#374151;margin-bottom:14px">' + tt('invoiceList') + '</h3>' +
+        '<div style="overflow-x:auto">' +
+          '<table style="width:100%;border-collapse:collapse">' +
+            '<thead><tr class="table-header"><th style="padding:10px 14px;text-align:left">' + tt('tblInvoiceNum') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblClient') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblAmount') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblStatus') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblDueDate') + '</th><th style="padding:10px 14px;text-align:left">' + tt('tblDays') + '</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function chartsInvoices() {
+  var d = _data;
+  var paidA = d.invoices.filter(function(i){ return i.status === 'Paid'; }).reduce(function(s,i){ return s+i.amount; }, 0);
+  var unpaidA = d.invoices.filter(function(i){ return i.status === 'Unpaid'; }).reduce(function(s,i){ return s+i.amount; }, 0);
+  var overdueA = d.invoices.filter(function(i){ return i.status === 'Overdue'; }).reduce(function(s,i){ return s+i.amount; }, 0);
+  _charts.invStatus = new Chart(document.getElementById('chartInvStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: [tt('paid_label'), tt('unpaid_label'), tt('overdue_label')],
+      datasets: [{ data: [paidA, unpaidA, overdueA], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+  });
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+var _pageMap = {
+  overview: { render: renderOverview, charts: chartsOverview },
+  projects: { render: renderProjects, charts: chartsProjects },
+  time:     { render: renderTime,     charts: chartsTime     },
+  invoices: { render: renderInvoices, charts: chartsInvoices }
+};
+
+function navigateTo(page) {
+  if (!_pageMap[page]) page = 'overview';
+  _currentPage = page;
+
+  destroyCharts();
+  document.getElementById('mainContent').innerHTML = _pageMap[page].render();
+
+  // Update nav
+  document.querySelectorAll('.nav-link').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+
+  // Render charts after DOM settles
+  setTimeout(function() { _pageMap[page].charts(); }, 60);
+}
+
+// ─── Static strings ───────────────────────────────────────────────────────────
+function renderStaticStrings() {
+  document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+  document.getElementById('sidebarSub').textContent = tt('sidebarSub');
+  document.querySelectorAll('[data-nav]').forEach(function(el) { el.textContent = tt(el.dataset.nav); });
+  document.getElementById('promptText').textContent = tt('promptText');
+  document.getElementById('ctaBtn').textContent = tt('ctaLabel');
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  renderStaticStrings();
+
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = _lang === 'ru' ? 'Русский' : 'English';
+  }
+
+  navigateTo('overview');
+});
+</script>
+</body>
+</html>

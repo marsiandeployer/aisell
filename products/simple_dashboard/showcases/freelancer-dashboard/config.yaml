@@ -1,0 +1,80 @@
+showcase:
+  slug: freelancer-dashboard
+  product: simple_dashboard
+  type: spa
+
+  prompt: >-
+    Build a freelancer business dashboard: monthly income trend, active projects by status,
+    time tracker (hours by project), unpaid invoices list, pipeline of incoming deals.
+    4 pages: Overview (income + KPIs), Projects (status board + workload),
+    Time (hours logged by project/week), Invoices (list with status + totals).
+
+  prompt_title: "Build a freelancer dashboard with income tracking, project status, time log and invoice pipeline"
+
+  caption: "Freelancer Business Dashboard - Income, Projects, Time Tracking & Invoice Pipeline"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  data_generation: jit
+
+  pages:
+    - id: overview
+      title: "Overview"
+      icon: "📊"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Monthly Income, Active Projects, Hours This Month, Unpaid Invoices]
+        - type: line_chart
+          title: "Monthly Income (12 months)"
+        - type: doughnut_chart
+          title: "Income by Client"
+        - type: bar_chart
+          title: "Projects by Status"
+
+    - id: projects
+      title: "Projects"
+      icon: "🚀"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Total Projects, In Progress, Completed, Pipeline]
+        - type: table
+          title: "Active Projects"
+          columns: [Project, Client, Status, Budget, Hours, Deadline]
+        - type: horizontal_bar
+          title: "Revenue by Client"
+
+    - id: time
+      title: "Time"
+      icon: "⏱️"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics: [Hours This Week, Billable %, Avg Daily Hours]
+        - type: bar_chart
+          title: "Hours by Project (This Month)"
+        - type: line_chart
+          title: "Daily Hours (Last 30 Days)"
+        - type: table
+          title: "Time Log"
+          columns: [Date, Project, Hours, Billable, Note]
+
+    - id: invoices
+      title: "Invoices"
+      icon: "🧾"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Total Invoiced, Paid, Unpaid, Overdue]
+        - type: doughnut_chart
+          title: "Invoice Status"
+        - type: table
+          title: "Invoice List"
+          columns: [Invoice#, Client, Amount, Status, Due Date, Days]
+
+  design:
+    layout: sidebar_left
+    sidebar_color: "bg-gray-900"
+    accent_color: "violet/purple"

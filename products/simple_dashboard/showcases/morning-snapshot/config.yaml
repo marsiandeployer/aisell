@@ -1,0 +1,52 @@
+showcase:
+  slug: morning-snapshot
+  product: simple_dashboard
+  type: spa
+
+  prompt: >-
+    Build a morning briefing dashboard for a business owner: key metrics at a glance —
+    yesterday's revenue vs plan, new leads, conversion rate, today's top 5 tasks,
+    cash flow balance, and a 7-day revenue sparkline. Dark theme, compact single-screen layout.
+    2 pages: Morning Snapshot (the main briefing), Weekly Trends (7-day charts).
+
+  prompt_title: "Build a morning briefing dashboard for business owners — revenue, leads, tasks, cash flow in one screen"
+
+  caption: "Morning Briefing Dashboard - Daily KPIs, Lead Flow & Cash Position at a Glance"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  data_generation: jit
+
+  pages:
+    - id: morning
+      title: "Morning Snapshot"
+      icon: "☀️"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Yesterday Revenue, New Leads, Conversion Rate, Cash Balance]
+        - type: sparklines
+          title: "7-Day Revenue Trend"
+        - type: task_list
+          title: "Today's Top 5 Tasks"
+        - type: alerts
+          title: "Alerts & Notifications"
+
+    - id: weekly
+      title: "Weekly Trends"
+      icon: "📅"
+      components:
+        - type: line_chart
+          title: "Revenue (Last 7 Days)"
+        - type: bar_chart
+          title: "Leads by Day"
+        - type: kpi_cards
+          count: 3
+          metrics: [Week Total Revenue, Leads This Week, Avg Daily Revenue]
+
+  design:
+    layout: sidebar_left
+    sidebar_color: dark
+    accent_color: "blue/cyan"
+    theme: dark

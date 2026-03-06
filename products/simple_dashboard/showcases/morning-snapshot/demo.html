@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morning Briefing Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #0f172a; }
+    .card { background: rgba(30,41,59,0.8); border: 1px solid rgba(148,163,184,0.1); border-radius: 12px; }
+    .sidebar { background: #1e293b; border-right: 1px solid rgba(148,163,184,0.08); }
+    .nav-link { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: none; }
+    .nav-link:hover { background: rgba(148,163,184,0.08); color: #e2e8f0; }
+    .nav-link.active { background: rgba(56,189,248,0.12); color: #38bdf8; }
+    .kpi-card { background: rgba(30,41,59,0.8); border: 1px solid rgba(148,163,184,0.1); border-radius: 12px; padding: 16px; }
+    .trend-up { color: #34d399; }
+    .trend-down { color: #f87171; }
+    .mini-scroll::-webkit-scrollbar { width: 3px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 2px; }
+    .task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(148,163,184,0.07); }
+    .task-item:last-child { border-bottom: none; }
+    .alert-card { border-radius: 10px; padding: 10px 14px; display: flex; align-items: flex-start; gap: 10px; }
+    .alert-green { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
+    .alert-yellow { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); }
+    .alert-blue { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); }
+  </style>
+</head>
+<body style="margin:0;overflow:hidden;color:#e2e8f0">
+
+  <!-- Prompt bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:18px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(12,74,110,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(56,189,248,0.15);transition:transform 0.3s ease">
+    <span id="promptText"></span>
+    <a id="ctaBtn" style="flex-shrink:0;padding:11px 28px;background:linear-gradient(135deg,#0ea5e9,#2563EB);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(56,189,248,0.35);letter-spacing:0.01em" href="https://simpledashboard.wpmix.net" target="_blank"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <!-- Sidebar -->
+    <aside class="sidebar flex flex-col flex-shrink-0" style="width:210px">
+      <div style="padding:20px 16px 12px">
+        <div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:2px" id="sidebarTitle"></div>
+        <div style="font-size:11px;color:#475569">SimpleDashboard</div>
+      </div>
+
+      <nav style="flex:1;padding:0 8px;overflow:auto" class="mini-scroll" id="nav">
+        <button onclick="navigateTo('morning')" data-page="morning" data-nav="navMorning" data-icon="&#9728;&#65039;" class="nav-link"></button>
+        <button onclick="navigateTo('weekly')" data-page="weekly" data-nav="navWeekly" data-icon="&#128197;" class="nav-link"></button>
+      </nav>
+
+      <div style="padding:10px 8px;font-size:10px;color:#334155;border-top:1px solid rgba(148,163,184,0.07)">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 8px">
+          <span style="width:6px;height:6px;background:#34d399;border-radius:50%;flex-shrink:0"></span>
+          <span style="color:#475569">Live data</span>
+        </div>
+      </div>
+
+      <div id="langToggle" style="display:none;padding:8px 8px 12px;border-top:1px solid rgba(148,163,184,0.07)">
+        <button onclick="toggleLang()" class="nav-link" id="langBtn" style="font-size:11px"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 mini-scroll" style="overflow-y:auto;padding-bottom:80px;background:#0f172a" id="mainContent"></main>
+  </div>
+
+  <script>
+    // ===== i18n =====
+    var _s = {
+      en: {
+        sidebarTitle: 'Morning Brief',
+        navMorning: 'Morning Snapshot',
+        navWeekly: 'Weekly Trends',
+        revenue: 'Yesterday Revenue',
+        newLeads: 'New Leads',
+        conversion: 'Conversion Rate',
+        cashBalance: 'Cash Balance',
+        vsPlan: 'vs plan',
+        vsYesterday: 'vs prev day',
+        todayTasks: "Today's Top 5 Tasks",
+        alerts: 'Alerts',
+        sparklineTitle: '7-Day Revenue Trend',
+        weekRevenue: 'Week Total Revenue',
+        weekLeads: 'Leads This Week',
+        avgDaily: 'Avg Daily Revenue',
+        revenueChart: 'Revenue — Last 7 Days',
+        leadsChart: 'Leads by Day',
+        promptText: 'Build a morning briefing dashboard — see all your key metrics before the first coffee',
+        ctaLabel: 'Try SimpleDashboard',
+        task1: 'Review weekly sales report',
+        task2: 'Call top client about renewal',
+        task3: 'Approve Q2 marketing budget',
+        task4: 'Interview candidate — 3pm',
+        task5: 'Send invoice to Acme Corp',
+        alertGreen: 'Revenue +12% vs last week',
+        alertYellow: '3 invoices overdue (>14 days)',
+        alertBlue: 'Team meeting in 2 hours',
+        done: 'Done',
+        pending: 'Pending',
+        currency: '$',
+        dayLabels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        langBtn: 'Русский'
+      },
+      ru: {
+        sidebarTitle: 'Утренний брифинг',
+        navMorning: 'Снимок утра',
+        navWeekly: 'Недельные тренды',
+        revenue: 'Вчерашняя выручка',
+        newLeads: 'Новые лиды',
+        conversion: 'Конверсия',
+        cashBalance: 'Баланс кэша',
+        vsPlan: 'к плану',
+        vsYesterday: 'к пред. дню',
+        todayTasks: 'ТОП-5 задач на сегодня',
+        alerts: 'Уведомления',
+        sparklineTitle: 'Выручка за 7 дней',
+        weekRevenue: 'Выручка за неделю',
+        weekLeads: 'Лидов за неделю',
+        avgDaily: 'Средняя дневная выручка',
+        revenueChart: 'Выручка — последние 7 дней',
+        leadsChart: 'Лиды по дням',
+        promptText: 'Утренний дашборд руководителя — все ключевые метрики до первого кофе',
+        ctaLabel: 'Попробовать SimpleDashboard',
+        task1: 'Просмотреть отчёт по продажам за неделю',
+        task2: 'Позвонить ключевому клиенту',
+        task3: 'Утвердить маркетинговый бюджет Q2',
+        task4: 'Собеседование кандидата — 15:00',
+        task5: 'Выставить счёт ООО «Акме»',
+        alertGreen: 'Выручка +12% к прошлой неделе',
+        alertYellow: '3 счёта просрочены (>14 дней)',
+        alertBlue: 'Совещание команды через 2 часа',
+        done: 'Готово',
+        pending: 'В работе',
+        currency: '$',
+        dayLabels: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
+        langBtn: 'English'
+      }
+    };
+
+    var _lang = 'en';
+    var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+    if (_isRuBrowser) {
+      _lang = 'ru';
+      try { var _stored = localStorage.getItem('demo_lang_morning'); if (_stored === 'en' || _stored === 'ru') _lang = _stored; } catch(_e) {}
+    }
+
+    function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+
+    function toggleLang() {
+      _lang = _lang === 'ru' ? 'en' : 'ru';
+      try { localStorage.setItem('demo_lang_morning', _lang); } catch(_e) {}
+      document.getElementById('langBtn').textContent = tt('langBtn');
+      navigateTo(currentPage);
+    }
+
+    // ===== JIT Data Generation =====
+    function rnd(min, max) { return Math.round(min + Math.random() * (max - min)); }
+    function rndFloat(min, max, dec) { return parseFloat((min + Math.random() * (max - min)).toFixed(dec)); }
+
+    var _data = null;
+    function getData() {
+      if (_data) return _data;
+      var base = rnd(42000, 78000);
+      var plan = Math.round(base * rndFloat(0.88, 1.18, 2));
+      var prev = Math.round(base * rndFloat(0.82, 1.15, 2));
+      var leads = rnd(24, 67);
+      var conv = rndFloat(3.2, 8.9, 1);
+      var cash = rnd(180000, 560000);
+      var revenue7 = Array.from({length: 7}, function(_, i) {
+        return Math.round(base * rndFloat(0.7, 1.35, 2));
+      });
+      var leads7 = Array.from({length: 7}, function() { return rnd(12, 58); });
+      _data = {
+        revenue: base, plan: plan, prev: prev,
+        leads: leads, conv: conv, cash: cash,
+        revenue7: revenue7, leads7: leads7,
+        weekTotal: revenue7.reduce(function(a,b){ return a+b; }, 0),
+        leadsTotal: leads7.reduce(function(a,b){ return a+b; }, 0)
+      };
+      return _data;
+    }
+
+    function fmt(n) {
+      var loc = _lang === 'ru' ? 'ru-RU' : 'en-US';
+      return tt('currency') + n.toLocaleString(loc);
+    }
+
+    function pct(a, b) {
+      var diff = Math.round((a - b) / b * 100);
+      return (diff >= 0 ? '+' : '') + diff + '%';
+    }
+
+    // ===== Pages =====
+    var currentPage = 'morning';
+    var _charts = {};
+
+    function destroyCharts() {
+      Object.keys(_charts).forEach(function(k) {
+        try { _charts[k].destroy(); } catch(e) {}
+      });
+      _charts = {};
+    }
+
+    function navigateTo(page) {
+      currentPage = page;
+      destroyCharts();
+
+      document.querySelectorAll('.nav-link[data-page]').forEach(function(link) {
+        if (link.dataset.page === page) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+
+      var content = page === 'morning' ? renderMorning() : renderWeekly();
+      document.getElementById('mainContent').innerHTML = content;
+
+      setTimeout(function() {
+        if (page === 'morning') initMorningCharts();
+        if (page === 'weekly') initWeeklyCharts();
+      }, 40);
+    }
+
+    // ===== Morning Snapshot page =====
+    function renderMorning() {
+      var d = getData();
+      var revDiff = pct(d.revenue, d.plan);
+      var revTrend = d.revenue >= d.plan ? 'up' : 'down';
+      var prevDiff = pct(d.revenue, d.prev);
+      var prevTrend = d.revenue >= d.prev ? 'up' : 'down';
+      var cashDiff = pct(d.cash, 450000);
+      var cashTrend = d.cash >= 450000 ? 'up' : 'down';
+
+      var tasks = [
+        { done: true,  text: tt('task1') },
+        { done: true,  text: tt('task2') },
+        { done: false, text: tt('task3') },
+        { done: false, text: tt('task4') },
+        { done: false, text: tt('task5') }
+      ];
+
+      var tasksHtml = tasks.map(function(t) {
+        var checkColor = t.done ? '#34d399' : 'rgba(148,163,184,0.25)';
+        var checkIcon = t.done
+          ? '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="7" fill="#34d399"/><path d="M4 7l2.5 2.5 4-4" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" stroke="rgba(148,163,184,0.3)" stroke-width="1"/></svg>';
+        var textStyle = t.done ? 'text-decoration:line-through;color:#475569;font-size:12px' : 'color:#cbd5e1;font-size:12px';
+        return '<div class="task-item">' + checkIcon + '<span style="' + textStyle + '">' + t.text + '</span></div>';
+      }).join('');
+
+      return '<div style="padding:20px 22px 0">' +
+
+        // Header
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+          '<div>' +
+            '<h1 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 2px">&#9728;&#65039; ' + tt('navMorning') + '</h1>' +
+            '<div style="font-size:11px;color:#475569">' + new Date().toLocaleDateString(_lang === 'ru' ? 'ru-RU' : 'en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#334155;background:rgba(30,41,59,0.6);padding:5px 10px;border-radius:20px;border:1px solid rgba(148,163,184,0.08)">' +
+            '<span style="color:#34d399">&#9679;</span> Live' +
+          '</div>' +
+        '</div>' +
+
+        // KPI cards row
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">' +
+          kpiCard(tt('revenue'), fmt(d.revenue), revDiff, tt('vsPlan'), revTrend, '&#128200;') +
+          kpiCard(tt('newLeads'), d.leads, prevDiff, tt('vsYesterday'), prevTrend, '&#128101;') +
+          kpiCard(tt('conversion'), d.conv + '%', '+0.4%', tt('vsYesterday'), 'up', '&#127919;') +
+          kpiCard(tt('cashBalance'), fmt(d.cash), cashDiff, tt('vsPlan'), cashTrend, '&#128181;') +
+        '</div>' +
+
+        // Middle row: sparkline + tasks
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
+
+          // Sparkline
+          '<div class="card" style="padding:16px">' +
+            '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">' + tt('sparklineTitle') + '</div>' +
+            '<div style="position:relative;height:80px">' +
+              '<canvas id="sparklineChart" style="position:absolute;inset:0;width:100%;height:100%"></canvas>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;margin-top:10px">' +
+              '<span style="font-size:10px;color:#334155">' + tt('dayLabels')[0] + '</span>' +
+              '<span style="font-size:10px;color:#334155">' + tt('dayLabels')[6] + '</span>' +
+            '</div>' +
+          '</div>' +
+
+          // Tasks
+          '<div class="card" style="padding:16px">' +
+            '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">' + tt('todayTasks') + '</div>' +
+            tasksHtml +
+          '</div>' +
+
+        '</div>' +
+
+        // Alerts row
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
+          alertCard('green', '&#9989;', tt('alertGreen')) +
+          alertCard('yellow', '&#9888;&#65039;', tt('alertYellow')) +
+          alertCard('blue', '&#8505;&#65039;', tt('alertBlue')) +
+        '</div>' +
+
+      '</div>';
+    }
+
+    function kpiCard(label, value, trend, trendLabel, dir, icon) {
+      var trendColor = dir === 'up' ? '#34d399' : '#f87171';
+      var trendIcon = dir === 'up' ? '&#8593;' : '&#8595;';
+      return '<div class="kpi-card">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-size:11px;color:#64748b;font-weight:500">' + label + '</div>' +
+          '<div style="font-size:16px">' + icon + '</div>' +
+        '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#f1f5f9;line-height:1;margin-bottom:6px">' + value + '</div>' +
+        '<div style="font-size:11px;color:' + trendColor + '">' + trendIcon + ' ' + trend + ' <span style="color:#475569">' + trendLabel + '</span></div>' +
+      '</div>';
+    }
+
+    function alertCard(type, icon, text) {
+      return '<div class="alert-card alert-' + type + '">' +
+        '<span style="font-size:14px;flex-shrink:0;margin-top:1px">' + icon + '</span>' +
+        '<span style="font-size:12px;color:#cbd5e1;line-height:1.4">' + text + '</span>' +
+      '</div>';
+    }
+
+    function initMorningCharts() {
+      var d = getData();
+      var ctx = document.getElementById('sparklineChart');
+      if (!ctx) return;
+      _charts.sparkline = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: tt('dayLabels'),
+          datasets: [{
+            data: d.revenue7,
+            borderColor: '#38bdf8',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#38bdf8',
+            pointBorderColor: '#0f172a',
+            pointBorderWidth: 1.5,
+            fill: true,
+            backgroundColor: 'rgba(56,189,248,0.12)'
+          }]
+        },
+        options: {
+          animation: { duration: 400 },
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: {
+            backgroundColor: 'rgba(15,23,42,0.95)',
+            titleColor: '#94a3b8',
+            bodyColor: '#38bdf8',
+            borderColor: 'rgba(56,189,248,0.2)',
+            borderWidth: 1,
+            callbacks: {
+              label: function(ctx) { return ' ' + fmt(ctx.parsed.y); }
+            }
+          }},
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      });
+    }
+
+    // ===== Weekly Trends page =====
+    function renderWeekly() {
+      var d = getData();
+      var avgDaily = Math.round(d.weekTotal / 7);
+
+      return '<div style="padding:20px 22px 0">' +
+
+        // Header
+        '<div style="margin-bottom:16px">' +
+          '<h1 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 2px">&#128197; ' + tt('navWeekly') + '</h1>' +
+          '<div style="font-size:11px;color:#475569">' + new Date().toLocaleDateString(_lang === 'ru' ? 'ru-RU' : 'en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '</div>' +
+        '</div>' +
+
+        // KPI cards row (weekly)
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">' +
+          kpiCard(tt('weekRevenue'), fmt(d.weekTotal), pct(d.weekTotal, d.weekTotal * 0.91), tt('vsPlan'), 'up', '&#128200;') +
+          kpiCard(tt('weekLeads'), d.leadsTotal, '+' + rnd(5,18) + '%', tt('vsYesterday'), 'up', '&#128101;') +
+          kpiCard(tt('avgDaily'), fmt(avgDaily), pct(avgDaily, avgDaily * rndFloat(0.85, 1.1, 2)), tt('vsYesterday'), avgDaily > 50000 ? 'up' : 'down', '&#128202;') +
+        '</div>' +
+
+        // Charts row
+        '<div style="display:grid;grid-template-columns:3fr 2fr;gap:12px">' +
+
+          // Revenue line chart
+          '<div class="card" style="padding:16px">' +
+            '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.05em">' + tt('revenueChart') + '</div>' +
+            '<div style="position:relative;height:160px">' +
+              '<canvas id="weekRevenueChart" style="position:absolute;inset:0;width:100%;height:100%"></canvas>' +
+            '</div>' +
+          '</div>' +
+
+          // Leads bar chart
+          '<div class="card" style="padding:16px">' +
+            '<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.05em">' + tt('leadsChart') + '</div>' +
+            '<div style="position:relative;height:160px">' +
+              '<canvas id="weekLeadsChart" style="position:absolute;inset:0;width:100%;height:100%"></canvas>' +
+            '</div>' +
+          '</div>' +
+
+        '</div>' +
+
+      '</div>';
+    }
+
+    function initWeeklyCharts() {
+      var d = getData();
+      var gridColor = 'rgba(148,163,184,0.06)';
+      var tickColor = '#475569';
+      var tooltipDefaults = {
+        backgroundColor: 'rgba(15,23,42,0.95)',
+        titleColor: '#94a3b8',
+        bodyColor: '#e2e8f0',
+        borderColor: 'rgba(148,163,184,0.15)',
+        borderWidth: 1
+      };
+
+      var r1 = document.getElementById('weekRevenueChart');
+      var r2 = document.getElementById('weekLeadsChart');
+      if (!r1 || !r2) return;
+
+      _charts.weekRevenue = new Chart(r1, {
+        type: 'line',
+        data: {
+          labels: tt('dayLabels'),
+          datasets: [{
+            data: d.revenue7,
+            borderColor: '#38bdf8',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#38bdf8',
+            pointBorderColor: '#0f172a',
+            pointBorderWidth: 1.5,
+            fill: true,
+            backgroundColor: 'rgba(56,189,248,0.08)'
+          }]
+        },
+        options: {
+          animation: { duration: 400 },
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, tooltipDefaults, {
+              callbacks: {
+                label: function(ctx) { return ' ' + fmt(ctx.parsed.y); }
+              }
+            })
+          },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
+            y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 }, callback: function(v) { return tt('currency') + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v); } } }
+          }
+        }
+      });
+
+      _charts.weekLeads = new Chart(r2, {
+        type: 'bar',
+        data: {
+          labels: tt('dayLabels'),
+          datasets: [{
+            data: d.leads7,
+            backgroundColor: 'rgba(139,92,246,0.7)',
+            borderColor: '#8b5cf6',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          animation: { duration: 400 },
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: tooltipDefaults },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 10 } } },
+            y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // ===== Init =====
+    window.addEventListener('DOMContentLoaded', function() {
+      // Prompt bar
+      document.getElementById('promptText').textContent = tt('promptText');
+      document.getElementById('ctaBtn').textContent = tt('ctaLabel');
+
+      // Sidebar title
+      document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+
+      // Nav links
+      document.querySelectorAll('.nav-link[data-nav]').forEach(function(link) {
+        link.textContent = link.dataset.icon + ' ' + tt(link.dataset.nav);
+      });
+
+      // Lang toggle
+      if (_isRuBrowser) {
+        document.getElementById('langToggle').style.display = '';
+        document.getElementById('langBtn').textContent = tt('langBtn');
+      }
+
+      navigateTo('morning');
+    });
+  </script>
+</body>
+</html>

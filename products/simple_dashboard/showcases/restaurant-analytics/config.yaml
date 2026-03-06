@@ -1,0 +1,76 @@
+showcase:
+  slug: restaurant-analytics
+  product: simple_dashboard
+  type: spa
+
+  prompt: >-
+    Build a restaurant analytics dashboard: daily revenue trend (30 days),
+    top menu items by orders (horizontal bar chart), hourly traffic heatmap (6am-11pm),
+    food cost % by category, average check trend, revenue by category (doughnut).
+    4 navigation pages: Overview, Menu, Peak Hours, Finance.
+
+  prompt_title: "Build a restaurant analytics dashboard with daily revenue, top menu items, peak hours heatmap and food cost"
+
+  caption: "Restaurant Analytics Dashboard - Revenue, Menu Performance & Peak Hours Heatmap"
+
+demo:
+  format: single_page_application
+  navigation: hash_based
+  data_generation: jit
+
+  pages:
+    - id: overview
+      title: "Overview"
+      icon: "📈"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Daily Revenue, Orders Today, Avg Check, Tables Turned]
+        - type: line_chart
+          title: "Revenue (Last 30 Days)"
+        - type: horizontal_bar
+          title: "Top Menu Items"
+        - type: doughnut_chart
+          title: "Revenue by Category"
+
+    - id: menu
+      title: "Menu"
+      icon: "🍽️"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Total Items, Best Seller, Avg Margin %, Slow Movers]
+        - type: bar_chart
+          title: "Orders by Category"
+        - type: table
+          title: "Menu Performance (15 items)"
+          columns: [Item, Category, Orders, Revenue, Margin %]
+
+    - id: peak_hours
+      title: "Peak Hours"
+      icon: "⏰"
+      components:
+        - type: kpi_cards
+          count: 3
+          metrics: [Busiest Hour, Peak Day, Avg Wait Time]
+        - type: heatmap
+          title: "Traffic Heatmap (Hour × Day)"
+        - type: bar_chart
+          title: "Hourly Orders (Today)"
+
+    - id: finance
+      title: "Finance"
+      icon: "💰"
+      components:
+        - type: kpi_cards
+          count: 4
+          metrics: [Monthly Revenue, Food Cost %, Labor Cost %, Net Margin %]
+        - type: line_chart
+          title: "Monthly Revenue vs Costs"
+        - type: bar_chart
+          title: "Cost Breakdown by Category"
+
+  design:
+    layout: sidebar_left
+    sidebar_color: "bg-gray-900"
+    accent_color: "amber/orange"

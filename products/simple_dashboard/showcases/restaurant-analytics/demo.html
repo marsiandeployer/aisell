@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Analytics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .mini-scroll::-webkit-scrollbar { width: 4px; }
+    .mini-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+    .heatmap-cell { transition: background 0.2s; border-radius: 4px; }
+    .nav-link.active { background: rgba(251,146,60,0.25); color: #fb923c; }
+    .kpi-card { transition: box-shadow 0.2s; }
+    .kpi-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  </style>
+</head>
+<body class="bg-gray-100" style="margin:0;overflow:hidden">
+
+  <!-- Prompt bar -->
+  <div id="promptBar" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:24px;padding:16px 40px;background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,58,138,0.97));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:#fff;font-size:18px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.1)">
+    <span id="promptText"></span>
+    <a id="ctaBtn" href="https://simpledashboard.wpmix.net" style="flex-shrink:0;padding:12px 28px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 16px rgba(59,130,246,0.5)"></a>
+  </div>
+
+  <div class="flex" style="height:100vh">
+    <!-- Sidebar -->
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:#111827">
+      <div class="p-4 pb-2 border-b border-gray-700">
+        <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
+        <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
+      </div>
+      <nav class="space-y-0.5 flex-1 px-2 mt-2 overflow-auto mini-scroll" id="nav">
+        <button onclick="navigateTo('overview')" data-page="overview" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm flex items-center gap-2"></button>
+        <button onclick="navigateTo('menu')" data-page="menu" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm flex items-center gap-2"></button>
+        <button onclick="navigateTo('peak_hours')" data-page="peak_hours" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm flex items-center gap-2"></button>
+        <button onclick="navigateTo('finance')" data-page="finance" class="nav-link w-full text-left px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm flex items-center gap-2"></button>
+      </nav>
+      <div id="langToggle" style="display:none" class="px-2 py-3 border-t border-gray-700">
+        <button onclick="toggleLang()" class="w-full text-left px-3 py-2 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition text-xs" id="langBtn"></button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto mini-scroll bg-gradient-to-br from-amber-50 to-orange-50" id="mainContent" style="padding-bottom:80px"></main>
+  </div>
+
+<script>
+// ===== i18n =====
+var _s = {
+  en: {
+    sidebarTitle: '🍽️ Restaurant Analytics',
+    sidebarSubtitle: 'Demo Dashboard',
+    navOverview: 'Overview',
+    navMenu: 'Menu',
+    navPeakHours: 'Peak Hours',
+    navFinance: 'Finance',
+    iconOverview: '📈',
+    iconMenu: '🍽️',
+    iconPeakHours: '⏰',
+    iconFinance: '💰',
+
+    // Overview
+    kpiDailyRevenue: 'Daily Revenue',
+    kpiOrdersToday: 'Orders Today',
+    kpiAvgCheck: 'Avg Check',
+    kpiTablesTurned: 'Tables Turned',
+    chartRevenue30: 'Revenue — Last 30 Days',
+    chartTopItems: 'Top Menu Items by Orders',
+    chartRevenueCat: 'Revenue by Category',
+
+    // Menu
+    kpiTotalItems: 'Total Items',
+    kpiBestSeller: 'Best Seller',
+    kpiAvgMargin: 'Avg Margin %',
+    kpiSlowMovers: 'Slow Movers',
+    chartOrdersByCat: 'Orders by Category',
+    tableTitle: 'Menu Performance',
+    colItem: 'Item',
+    colCategory: 'Category',
+    colOrders: 'Orders',
+    colRevenue: 'Revenue',
+    colMargin: 'Margin %',
+
+    // Peak Hours
+    kpiBusiestHour: 'Busiest Hour',
+    kpiPeakDay: 'Peak Day',
+    kpiAvgWait: 'Avg Wait Time',
+    heatmapTitle: 'Traffic Heatmap (Hour × Day)',
+    chartHourlyOrders: 'Hourly Orders (Today)',
+    labelOrders: 'Orders',
+
+    // Finance
+    kpiMonthRevenue: 'Monthly Revenue',
+    kpiFoodCost: 'Food Cost %',
+    kpiLaborCost: 'Labor Cost %',
+    kpiNetMargin: 'Net Margin %',
+    chartRevVsCosts: 'Monthly Revenue vs Costs',
+    chartCostBreakdown: 'Cost Breakdown by Category',
+    labelRevenue: 'Revenue',
+    labelFoodCostL: 'Food Cost',
+    labelLaborCostL: 'Labor Cost',
+    labelOtherCost: 'Other Cost',
+
+    // Days & months
+    days: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+
+    // Categories
+    catCoffee: 'Coffee',
+    catFood: 'Food',
+    catDesserts: 'Desserts',
+    catAlcohol: 'Alcohol',
+    catOther: 'Other',
+
+    // Misc
+    vsYesterday: 'vs yesterday',
+    min: 'min',
+    trend: 'trend',
+    promptText: 'Build your restaurant analytics dashboard with AI',
+    ctaLabel: 'Try SimpleDashboard',
+    currency: '$',
+  },
+  ru: {
+    sidebarTitle: '🍽️ Ресторанная аналитика',
+    sidebarSubtitle: 'Демо-дашборд',
+    navOverview: 'Обзор',
+    navMenu: 'Меню',
+    navPeakHours: 'Пиковые часы',
+    navFinance: 'Финансы',
+    iconOverview: '📈',
+    iconMenu: '🍽️',
+    iconPeakHours: '⏰',
+    iconFinance: '💰',
+
+    kpiDailyRevenue: 'Выручка за день',
+    kpiOrdersToday: 'Заказы сегодня',
+    kpiAvgCheck: 'Средний чек',
+    kpiTablesTurned: 'Посадок за день',
+    chartRevenue30: 'Выручка — последние 30 дней',
+    chartTopItems: 'Топ позиций меню по заказам',
+    chartRevenueCat: 'Выручка по категориям',
+
+    kpiTotalItems: 'Позиций в меню',
+    kpiBestSeller: 'Хит продаж',
+    kpiAvgMargin: 'Средняя маржа %',
+    kpiSlowMovers: 'Медленные позиции',
+    chartOrdersByCat: 'Заказы по категориям',
+    tableTitle: 'Эффективность меню',
+    colItem: 'Позиция',
+    colCategory: 'Категория',
+    colOrders: 'Заказы',
+    colRevenue: 'Выручка',
+    colMargin: 'Маржа %',
+
+    kpiBusiestHour: 'Пиковый час',
+    kpiPeakDay: 'Пиковый день',
+    kpiAvgWait: 'Среднее ожидание',
+    heatmapTitle: 'Тепловая карта (Час × День)',
+    chartHourlyOrders: 'Заказы по часам (сегодня)',
+    labelOrders: 'Заказы',
+
+    kpiMonthRevenue: 'Выручка за месяц',
+    kpiFoodCost: 'Себестоимость %',
+    kpiLaborCost: 'ФОТ %',
+    kpiNetMargin: 'Чистая маржа %',
+    chartRevVsCosts: 'Выручка vs Затраты (по месяцам)',
+    chartCostBreakdown: 'Разбивка затрат по категориям',
+    labelRevenue: 'Выручка',
+    labelFoodCostL: 'Себестоимость',
+    labelLaborCostL: 'ФОТ',
+    labelOtherCost: 'Прочее',
+
+    days: ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],
+    months: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+
+    catCoffee: 'Кофе',
+    catFood: 'Еда',
+    catDesserts: 'Десерты',
+    catAlcohol: 'Алкоголь',
+    catOther: 'Прочее',
+
+    vsYesterday: 'vs вчера',
+    min: 'мин',
+    trend: 'тренд',
+    promptText: 'Создайте свой ресторанный дашборд с AI',
+    ctaLabel: 'Попробовать SimpleDashboard',
+    currency: '$',
+  }
+};
+
+var _lang = 'en';
+var _isRuBrowser = (navigator.language || '').toLowerCase().startsWith('ru');
+if (_isRuBrowser) {
+  _lang = 'ru';
+  try { var stored = localStorage.getItem('demo_lang'); if (stored === 'en' || stored === 'ru') _lang = stored; } catch(_e) {}
+}
+function tt(key) { return (_s[_lang] && _s[_lang][key]) || _s.en[key] || key; }
+function toggleLang() {
+  _lang = _lang === 'ru' ? 'en' : 'ru';
+  try { localStorage.setItem('demo_lang', _lang); } catch(_e) {}
+  document.getElementById('langBtn').textContent = _lang === 'ru' ? 'Русский' : 'English';
+  renderSidebar();
+  navigateTo(currentPage);
+}
+
+// ===== JIT data generators =====
+function rnd(min, max) { return min + Math.random() * (max - min); }
+function rndInt(min, max) { return Math.round(rnd(min, max)); }
+
+function gen30DayRevenue() {
+  var base = 3800, arr = [];
+  for (var i = 0; i < 30; i++) {
+    var dow = i % 7;
+    var weekendBoost = (dow === 5 || dow === 6) ? 1.35 : 1.0;
+    arr.push(Math.round(base * weekendBoost * rnd(0.82, 1.18)));
+  }
+  return arr;
+}
+
+function gen30DayLabels() {
+  var months = tt('months').split ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] : tt('months');
+  // use array directly
+  months = (_s[_lang] || _s.en).months;
+  var labels = [], now = new Date();
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date(now); d.setDate(d.getDate() - i);
+    labels.push(d.getDate() + ' ' + months[d.getMonth()]);
+  }
+  return labels;
+}
+
+var MENU_ITEMS_EN = [
+  {name:'Margherita Pizza',cat:'Food'}, {name:'Espresso',cat:'Coffee'}, {name:'Cappuccino',cat:'Coffee'},
+  {name:'Caesar Salad',cat:'Food'}, {name:'Tiramisu',cat:'Desserts'}, {name:'Craft Beer',cat:'Alcohol'},
+  {name:'Club Sandwich',cat:'Food'}, {name:'Latte',cat:'Coffee'}, {name:'Cheesecake',cat:'Desserts'},
+  {name:'Burger',cat:'Food'}, {name:'Wine (glass)',cat:'Alcohol'}, {name:'Pancakes',cat:'Desserts'},
+  {name:'Americano',cat:'Coffee'}, {name:'Greek Salad',cat:'Food'}, {name:'Mojito',cat:'Alcohol'}
+];
+var MENU_ITEMS_RU = [ // cyrillic-ok
+  {name:'\u041f\u0438\u0446\u0446\u0430 \u041c\u0430\u0440\u0433\u0430\u0440\u0438\u0442\u0430',cat:'\u0415\u0434\u0430'}, {name:'\u042d\u0441\u043f\u0440\u0435\u0441\u0441\u043e',cat:'\u041a\u043e\u0444\u0435'}, {name:'\u041a\u0430\u043f\u0443\u0447\u0438\u043d\u043e',cat:'\u041a\u043e\u0444\u0435'},
+  {name:'\u0421\u0430\u043b\u0430\u0442 \u0426\u0435\u0437\u0430\u0440\u044c',cat:'\u0415\u0434\u0430'}, {name:'\u0422\u0438\u0440\u0430\u043c\u0438\u0441\u0443',cat:'\u0414\u0435\u0441\u0435\u0440\u0442\u044b'}, {name:'\u041a\u0440\u0430\u0444\u0442\u043e\u0432\u043e\u0435 \u043f\u0438\u0432\u043e',cat:'\u0410\u043b\u043a\u043e\u0433\u043e\u043b\u044c'},
+  {name:'\u041a\u043b\u0430\u0431-\u0441\u044d\u043d\u0434\u0432\u0438\u0447',cat:'\u0415\u0434\u0430'}, {name:'\u041b\u0430\u0442\u0442\u0435',cat:'\u041a\u043e\u0444\u0435'}, {name:'\u0427\u0438\u0437\u043a\u0435\u0439\u043a',cat:'\u0414\u0435\u0441\u0435\u0440\u0442\u044b'},
+  {name:'\u0411\u0443\u0440\u0433\u0435\u0440',cat:'\u0415\u0434\u0430'}, {name:'\u0412\u0438\u043d\u043e (\u0431\u043e\u043a\u0430\u043b)',cat:'\u0410\u043b\u043a\u043e\u0433\u043e\u043b\u044c'}, {name:'\u0411\u043b\u0438\u043d\u044b',cat:'\u0414\u0435\u0441\u0435\u0440\u0442\u044b'},
+  {name:'\u0410\u043c\u0435\u0440\u0438\u043a\u0430\u043d\u043e',cat:'\u041a\u043e\u0444\u0435'}, {name:'\u0413\u0440\u0435\u0447\u0435\u0441\u043a\u0438\u0439 \u0441\u0430\u043b\u0430\u0442',cat:'\u0415\u0434\u0430'}, {name:'\u041c\u043e\u0445\u0438\u0442\u043e',cat:'\u0410\u043b\u043a\u043e\u0433\u043e\u043b\u044c'}
+];
+var PRICES = [14, 3.5, 5, 11, 8, 7, 12, 5.5, 9, 13, 8, 7, 3, 10, 9];
+var COSTS  = [0.34, 0.22, 0.25, 0.30, 0.38, 0.45, 0.32, 0.26, 0.40, 0.35, 0.48, 0.36, 0.20, 0.29, 0.42];
+
+function genMenuData() {
+  var items = _lang === 'ru' ? MENU_ITEMS_RU : MENU_ITEMS_EN;
+  return items.map(function(item, i) {
+    var orders = rndInt(40, 280);
+    var price = PRICES[i];
+    var costPct = COSTS[i] + rnd(-0.04, 0.04);
+    var margin = Math.round((1 - costPct) * 100);
+    return { name: item.name, cat: item.cat, orders: orders, revenue: Math.round(orders * price), margin: margin };
+  });
+}
+
+function genHeatmap() {
+  // rows = hours 6..23, cols = Mon..Sun
+  var data = [];
+  for (var h = 6; h <= 23; h++) {
+    var row = [];
+    for (var d = 0; d < 7; d++) {
+      var base = 0;
+      // lunch peak 12-14, dinner peak 18-21
+      if (h >= 12 && h <= 14) base = rnd(55, 90);
+      else if (h >= 18 && h <= 21) base = rnd(65, 100);
+      else if (h >= 9 && h <= 11) base = rnd(20, 50);
+      else if (h >= 15 && h <= 17) base = rnd(15, 40);
+      else base = rnd(3, 18);
+      // weekend boost
+      if (d >= 5) base *= rnd(1.2, 1.45);
+      row.push(Math.round(Math.min(base, 100)));
+    }
+    data.push(row);
+  }
+  return data;
+}
+
+function genHourlyOrders() {
+  var arr = [];
+  for (var h = 6; h <= 23; h++) {
+    var v = 0;
+    if (h >= 12 && h <= 14) v = rndInt(40, 80);
+    else if (h >= 18 && h <= 21) v = rndInt(55, 90);
+    else if (h >= 9 && h <= 11) v = rndInt(15, 40);
+    else v = rndInt(2, 18);
+    arr.push(v);
+  }
+  return arr;
+}
+
+function gen12MonthRevenue() {
+  var base = 85000, arr = [];
+  for (var i = 0; i < 12; i++) {
+    arr.push(Math.round(base * rnd(0.85, 1.15)));
+    base *= 1.02;
+  }
+  return arr;
+}
+
+function heatmapColor(v) {
+  if (v < 15) return '#fff7ed';
+  if (v < 30) return '#fed7aa';
+  if (v < 50) return '#fb923c';
+  if (v < 70) return '#ea580c';
+  return '#9a3412';
+}
+function heatmapTextColor(v) { return v >= 50 ? '#fff' : '#374151'; }
+
+// ===== KPI card builder =====
+function kpiCard(label, value, trend, isGood) {
+  var arrow = isGood ? '↑' : '↓';
+  var trendColor = isGood ? 'text-green-600' : 'text-red-500';
+  return '<div class="kpi-card bg-white rounded-xl shadow p-4 flex flex-col gap-1">'
+    + '<div class="text-xs text-gray-500 font-medium uppercase tracking-wide">' + label + '</div>'
+    + '<div class="text-2xl font-bold text-gray-900">' + value + '</div>'
+    + '<div class="text-xs ' + trendColor + ' font-semibold">' + arrow + ' ' + trend + ' <span class="text-gray-400 font-normal">' + tt('vsYesterday') + '</span></div>'
+    + '</div>';
+}
+
+// ===== Page renderers =====
+function pageOverview() {
+  var rev30 = gen30DayRevenue();
+  var todayRev = rev30[rev30.length - 1];
+  var yestRev = rev30[rev30.length - 2];
+  var orders = rndInt(62, 98);
+  var yOrders = rndInt(55, 95);
+  var avgCheck = Math.round(todayRev / orders);
+  var tables = rndInt(28, 44);
+  var cur = tt('currency');
+
+  var cats = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catColors = ['#92400e','#f59e0b','#fb7185','#dc2626','#6b7280'];
+
+  var menuData = genMenuData().sort(function(a,b){return b.orders-a.orders;}).slice(0,8);
+  var labels30 = gen30DayLabels();
+
+  return '<div class="p-5">'
+    + '<h2 class="text-xl font-bold text-gray-800 mb-4">' + tt('iconOverview') + ' ' + tt('navOverview') + '</h2>'
+    + '<div class="grid grid-cols-4 gap-3 mb-5">'
+    + kpiCard(tt('kpiDailyRevenue'), cur + todayRev.toLocaleString(), cur + Math.abs(todayRev - yestRev), todayRev >= yestRev)
+    + kpiCard(tt('kpiOrdersToday'), orders, Math.abs(orders - yOrders), orders >= yOrders)
+    + kpiCard(tt('kpiAvgCheck'), cur + avgCheck, cur + rndInt(1,5), Math.random() > 0.35)
+    + kpiCard(tt('kpiTablesTurned'), tables, rndInt(1,4), Math.random() > 0.4)
+    + '</div>'
+    + '<div class="grid grid-cols-3 gap-4">'
+    + '<div class="col-span-2 bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartRevenue30') + '</div><canvas id="revChart" height="110"></canvas></div>'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartRevenueCat') + '</div><canvas id="catChart" height="160"></canvas></div>'
+    + '<div class="col-span-3 bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartTopItems') + '</div><canvas id="topItemsChart" height="80"></canvas></div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderOverviewCharts() {
+  var rev30 = gen30DayRevenue();
+  var labels30 = gen30DayLabels();
+  new Chart(document.getElementById('revChart'), {
+    type: 'line',
+    data: {
+      labels: labels30,
+      datasets: [{
+        label: tt('labelRevenue'),
+        data: rev30,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.10)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 2
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 8, font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } } }
+  });
+
+  var cats = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catVals = [rndInt(28,38), rndInt(24,34), rndInt(12,20), rndInt(8,14), rndInt(3,7)];
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: cats,
+      datasets: [{ data: catVals, backgroundColor: ['#92400e','#f59e0b','#fb7185','#dc2626','#6b7280'], borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } } }
+  });
+
+  var menuData = genMenuData().sort(function(a,b){return b.orders-a.orders;}).slice(0,8);
+  new Chart(document.getElementById('topItemsChart'), {
+    type: 'bar',
+    data: {
+      labels: menuData.map(function(d){ return d.name; }),
+      datasets: [{ label: tt('labelOrders'), data: menuData.map(function(d){ return d.orders; }), backgroundColor: '#f59e0b', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } }
+    }
+  });
+}
+
+function pageMenu() {
+  var menuData = genMenuData();
+  var sorted = menuData.slice().sort(function(a,b){return b.orders-a.orders;});
+  var bestSeller = sorted[0].name;
+  var slowMovers = menuData.filter(function(d){ return d.orders < 70; }).length;
+  var avgMargin = Math.round(menuData.reduce(function(s,d){return s+d.margin;},0)/menuData.length);
+  var cur = tt('currency');
+
+  var cats = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catItems_en = ['Coffee','Food','Desserts','Alcohol','Other'];
+  var catCounts = catItems_en.map(function(cat){
+    return menuData.filter(function(d){ return d.cat === cat || (_lang==='ru' && d.cat === {Coffee:'Кофе',Food:'Еда',Desserts:'Десерты',Alcohol:'Алкоголь',Other:'Прочее'}[cat]); })
+      .reduce(function(s,d){return s+d.orders;},0);
+  });
+
+  var rows = sorted.map(function(d) {
+    return '<tr class="border-b border-gray-100 hover:bg-amber-50">'
+      + '<td class="py-2 px-3 text-sm font-medium text-gray-800">' + d.name + '</td>'
+      + '<td class="py-2 px-3 text-xs text-gray-500">' + d.cat + '</td>'
+      + '<td class="py-2 px-3 text-sm text-gray-700">' + d.orders + '</td>'
+      + '<td class="py-2 px-3 text-sm text-gray-700">' + cur + d.revenue.toLocaleString() + '</td>'
+      + '<td class="py-2 px-3 text-sm font-semibold ' + (d.margin >= 65 ? 'text-green-600' : d.margin >= 50 ? 'text-amber-600' : 'text-red-500') + '">' + d.margin + '%</td>'
+      + '</tr>';
+  }).join('');
+
+  return '<div class="p-5">'
+    + '<h2 class="text-xl font-bold text-gray-800 mb-4">' + tt('iconMenu') + ' ' + tt('navMenu') + '</h2>'
+    + '<div class="grid grid-cols-4 gap-3 mb-5">'
+    + kpiCard(tt('kpiTotalItems'), menuData.length, '0', true)
+    + kpiCard(tt('kpiBestSeller'), bestSeller.split(' ').slice(0,2).join(' '), '', true)
+    + kpiCard(tt('kpiAvgMargin'), avgMargin + '%', rndInt(1,3) + '%', Math.random() > 0.4)
+    + kpiCard(tt('kpiSlowMovers'), slowMovers, rndInt(0,2), slowMovers <= 3)
+    + '</div>'
+    + '<div class="grid grid-cols-3 gap-4">'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartOrdersByCat') + '</div><canvas id="catBarChart" height="180"></canvas></div>'
+    + '<div class="col-span-2 bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-2">' + tt('tableTitle') + '</div>'
+    + '<div class="overflow-auto" style="max-height:260px"><table class="w-full"><thead><tr class="bg-gray-50 text-xs text-gray-500 uppercase">'
+    + '<th class="py-2 px-3 text-left">' + tt('colItem') + '</th><th class="py-2 px-3 text-left">' + tt('colCategory') + '</th>'
+    + '<th class="py-2 px-3 text-left">' + tt('colOrders') + '</th><th class="py-2 px-3 text-left">' + tt('colRevenue') + '</th>'
+    + '<th class="py-2 px-3 text-left">' + tt('colMargin') + '</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table></div></div>'
+    + '</div></div>';
+}
+
+function renderMenuCharts() {
+  var cats = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catColors = ['#92400e','#f59e0b','#fb7185','#dc2626','#6b7280'];
+  var catVals = cats.map(function(){ return rndInt(60,250); });
+  new Chart(document.getElementById('catBarChart'), {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [{ label: tt('labelOrders'), data: catVals, backgroundColor: catColors, borderRadius: 5 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } } }
+  });
+}
+
+function pagePeakHours() {
+  var hmap = genHeatmap();
+  var hours = [];
+  for (var h = 6; h <= 23; h++) { hours.push(h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm'); }
+  var days = (_s[_lang] || _s.en).days;
+
+  // find busiest slot
+  var maxV = 0, maxH = 12, maxD = 4;
+  hmap.forEach(function(row, hi) { row.forEach(function(v, di) { if(v > maxV){ maxV=v; maxH=hi+6; maxD=di; } }); });
+  var busiestHourStr = (maxH < 12 ? maxH+'am' : maxH===12?'12pm':(maxH-12)+'pm') + '–' + ((maxH+1) < 12 ? (maxH+1)+'am' : (maxH+1)===12?'12pm':((maxH+1)-12)+'pm');
+
+  var heatmapRows = hmap.map(function(row, hi) {
+    var cells = row.map(function(v, di) {
+      var bg = heatmapColor(v);
+      var fg = heatmapTextColor(v);
+      return '<td class="heatmap-cell" style="background:' + bg + ';color:' + fg + ';width:42px;height:28px;text-align:center;font-size:11px;font-weight:600;border:1px solid rgba(0,0,0,0.05)">' + v + '</td>';
+    }).join('');
+    return '<tr><td style="font-size:11px;color:#6b7280;padding-right:8px;white-space:nowrap">' + hours[hi] + '</td>' + cells + '</tr>';
+  }).join('');
+
+  var headCells = days.map(function(d){ return '<th style="font-size:11px;color:#6b7280;font-weight:600;width:42px;text-align:center;padding-bottom:4px">' + d + '</th>'; }).join('');
+
+  return '<div class="p-5">'
+    + '<h2 class="text-xl font-bold text-gray-800 mb-4">' + tt('iconPeakHours') + ' ' + tt('navPeakHours') + '</h2>'
+    + '<div class="grid grid-cols-3 gap-3 mb-5">'
+    + kpiCard(tt('kpiBusiestHour'), busiestHourStr, '', true)
+    + kpiCard(tt('kpiPeakDay'), days[maxD], '', true)
+    + kpiCard(tt('kpiAvgWait'), rndInt(7,18) + ' ' + tt('min'), rndInt(1,3) + ' ' + tt('min'), false)
+    + '</div>'
+    + '<div class="grid grid-cols-2 gap-4">'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('heatmapTitle') + '</div>'
+    + '<div class="overflow-auto"><table><thead><tr><th></th>' + headCells + '</tr></thead><tbody>' + heatmapRows + '</tbody></table></div></div>'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartHourlyOrders') + '</div><canvas id="hourlyChart" height="220"></canvas></div>'
+    + '</div></div>';
+}
+
+function renderPeakCharts() {
+  var hourlyOrders = genHourlyOrders();
+  var hours = [];
+  for (var h = 6; h <= 23; h++) { hours.push(h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm'); }
+  var colors = hourlyOrders.map(function(v){ return v >= 55 ? '#dc2626' : v >= 40 ? '#f59e0b' : '#fcd34d'; });
+  new Chart(document.getElementById('hourlyChart'), {
+    type: 'bar',
+    data: {
+      labels: hours,
+      datasets: [{ label: tt('labelOrders'), data: hourlyOrders, backgroundColor: colors, borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } } }
+  });
+}
+
+function pageFinance() {
+  var months = (_s[_lang] || _s.en).months;
+  var rev12 = gen12MonthRevenue();
+  var monthlyRev = rev12[rev12.length - 1];
+  var foodCostPct = rndInt(28, 35);
+  var laborPct = rndInt(22, 28);
+  var netMargin = 100 - foodCostPct - laborPct - rndInt(8, 12);
+  var cur = tt('currency');
+
+  var catLabels = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catCosts = catLabels.map(function(){ return rndInt(18, 42); });
+
+  return '<div class="p-5">'
+    + '<h2 class="text-xl font-bold text-gray-800 mb-4">' + tt('iconFinance') + ' ' + tt('navFinance') + '</h2>'
+    + '<div class="grid grid-cols-4 gap-3 mb-5">'
+    + kpiCard(tt('kpiMonthRevenue'), cur + monthlyRev.toLocaleString(), cur + rndInt(2000,8000).toLocaleString(), true)
+    + kpiCard(tt('kpiFoodCost'), foodCostPct + '%', rndInt(1,3) + '%', false)
+    + kpiCard(tt('kpiLaborCost'), laborPct + '%', rndInt(0,2) + '%', Math.random() > 0.5)
+    + kpiCard(tt('kpiNetMargin'), netMargin + '%', rndInt(1,2) + '%', Math.random() > 0.4)
+    + '</div>'
+    + '<div class="grid grid-cols-2 gap-4">'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartRevVsCosts') + '</div><canvas id="revCostChart" height="180"></canvas></div>'
+    + '<div class="bg-white rounded-xl shadow p-4"><div class="text-sm font-semibold text-gray-700 mb-3">' + tt('chartCostBreakdown') + '</div><canvas id="costBreakdownChart" height="180"></canvas></div>'
+    + '</div></div>';
+}
+
+function renderFinanceCharts() {
+  var months = (_s[_lang] || _s.en).months;
+  var rev12 = gen12MonthRevenue();
+  var food12 = rev12.map(function(v){ return Math.round(v * rnd(0.28, 0.35)); });
+  var labor12 = rev12.map(function(v){ return Math.round(v * rnd(0.22, 0.28)); });
+  var other12 = rev12.map(function(v){ return Math.round(v * rnd(0.08, 0.12)); });
+
+  new Chart(document.getElementById('revCostChart'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label: tt('labelRevenue'), data: rev12, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', tension: 0.3, fill: true, pointRadius: 3 },
+        { label: tt('labelFoodCostL'), data: food12, borderColor: '#dc2626', backgroundColor: 'transparent', tension: 0.3, borderDash: [4,3], pointRadius: 2 },
+        { label: tt('labelLaborCostL'), data: labor12, borderColor: '#7c3aed', backgroundColor: 'transparent', tension: 0.3, borderDash: [4,3], pointRadius: 2 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } }, scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } } }
+  });
+
+  var catLabels = [tt('catCoffee'), tt('catFood'), tt('catDesserts'), tt('catAlcohol'), tt('catOther')];
+  var catCosts = catLabels.map(function(){ return rndInt(18, 42); });
+  new Chart(document.getElementById('costBreakdownChart'), {
+    type: 'bar',
+    data: {
+      labels: catLabels,
+      datasets: [{ label: tt('labelFoodCostL') + ' %', data: catCosts, backgroundColor: ['#92400e','#f59e0b','#fb7185','#dc2626','#6b7280'], borderRadius: 5 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 }, callback: function(v){ return v+'%'; } } } } }
+  });
+}
+
+// ===== SPA router =====
+var currentPage = 'overview';
+var PAGES = {
+  overview:   { render: pageOverview,   charts: renderOverviewCharts },
+  menu:       { render: pageMenu,       charts: renderMenuCharts },
+  peak_hours: { render: pagePeakHours,  charts: renderPeakCharts },
+  finance:    { render: pageFinance,    charts: renderFinanceCharts }
+};
+
+function navigateTo(page) {
+  if (!PAGES[page]) page = 'overview';
+  currentPage = page;
+  document.getElementById('mainContent').innerHTML = PAGES[page].render();
+  document.querySelectorAll('.nav-link').forEach(function(el) {
+    if (el.dataset.page === page) { el.classList.add('active'); }
+    else { el.classList.remove('active'); }
+  });
+  setTimeout(function() { PAGES[page].charts(); }, 50);
+}
+
+function renderSidebar() {
+  document.getElementById('sidebarTitle').textContent = tt('sidebarTitle');
+  document.getElementById('sidebarSubtitle').textContent = tt('sidebarSubtitle');
+  var navDefs = [
+    { page: 'overview',   icon: 'iconOverview',   label: 'navOverview' },
+    { page: 'menu',       icon: 'iconMenu',        label: 'navMenu' },
+    { page: 'peak_hours', icon: 'iconPeakHours',   label: 'navPeakHours' },
+    { page: 'finance',    icon: 'iconFinance',     label: 'navFinance' }
+  ];
+  document.querySelectorAll('.nav-link').forEach(function(el, i) {
+    if (navDefs[i]) {
+      el.innerHTML = '<span>' + tt(navDefs[i].icon) + '</span><span>' + tt(navDefs[i].label) + '</span>';
+      el.dataset.page = navDefs[i].page;
+    }
+  });
+}
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', function() {
+  renderSidebar();
+
+  if (_isRuBrowser) {
+    document.getElementById('langToggle').style.display = '';
+    document.getElementById('langBtn').textContent = _lang === 'ru' ? 'Русский' : 'English';
+  }
+
+  document.getElementById('promptText').textContent = tt('promptText');
+  document.getElementById('ctaBtn').textContent = tt('ctaLabel');
+
+  navigateTo('overview');
+});
+</script>
+</body>
+</html>
