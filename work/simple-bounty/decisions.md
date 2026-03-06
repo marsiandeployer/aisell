@@ -32,3 +32,26 @@
 - Manual check → OK
 
 -->
+
+## Task 1: Product infrastructure
+
+**Status:** Done
+**Commit:** 4656869
+**Agent:** infra-setup
+**Summary:** Created full infrastructure for SimpleBounty product following the Product-as-Configuration model. Start script, PM2 entry, nginx vhost, and product.yaml all follow SimpleDashboard patterns. Fixed a bash quoting issue where apostrophe in "I'll" broke the start script — replaced with "I will".
+**Deviations:** Нет. product.yaml is gitignored per existing project convention (same as all other products), so it lives on disk only. product.yaml was expanded with all required fields (habab, chrome_store, seo, showcases, system_prompt) to satisfy the pre-commit product YAML linter that validates ALL on-disk product.yaml files.
+
+**Reviews:**
+
+*Round 1:*
+- infrastructure-reviewer: OK → [logs/working/task-1/infrastructure-reviewer-round1.json]
+- code-reviewer: OK → [logs/working/task-1/code-reviewer-round1.json]
+- security-auditor: OK → [logs/working/task-1/security-auditor-round1.json]
+
+**Verification:**
+- `pm2 status simplebounty-web` → online
+- `curl -s -o /dev/null -w "%{http_code}" http://localhost:8097` → 200
+- `nginx -t` → syntax is ok, test is successful
+- `curl -s -o /dev/null -w "%{http_code}" http://localhost:8094` → 200 (no regression)
+- All pre-commit hooks pass (54 template tests, 10 security checks, product YAML linter)
+
