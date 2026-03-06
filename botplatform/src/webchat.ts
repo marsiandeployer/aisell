@@ -757,6 +757,23 @@ function getAuthSdkJs(): string {
       },
       del: function(collection, id) {
         return fetch('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { method: 'DELETE', headers: authHeaders() }).then(function(r) { return r.json(); });
+      },
+      list: function(collection) { return SD.data.get(collection); },
+      create: function(collection, item) { return SD.data.post(collection, item); },
+      update: function(collection, id, item) { return SD.data.put(collection, id, item); },
+      patch: function(collection, id, item) { return SD.data.put(collection, id, item); },
+      delete: function(collection, id) { return SD.data.del(collection, id); },
+      getOne: function(collection, id) {
+        return fetch('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { headers: authHeaders() }).then(function(r) { return r.ok ? r.json() : Promise.resolve(null); });
+      },
+      upsert: function(collection, keyField, data) {
+        return SD.data.get(collection).then(function(items) {
+          var keyValue = data[keyField];
+          if (keyValue === undefined) return SD.data.post(collection, data);
+          var found = items.find(function(item) { return item[keyField] === keyValue; });
+          if (found) return SD.data.put(collection, found.id, data);
+          return SD.data.post(collection, data);
+        });
       }
     },
     admin: {
@@ -765,6 +782,26 @@ function getAuthSdkJs(): string {
       },
       revokeAccess: function(email) {
         return fetch(AUTH_API + '/api/auth/admin/access', { method: 'DELETE', headers: authHeaders(), body: JSON.stringify({ email: email, dashboardId: dashboardId }) }).then(function(r) { return r.json(); });
+      },
+      getMembers: function() {
+        return SD.data.get('members').then(function(members) {
+          return members.map(function(m) {
+            if (m.email === (SD.getUser() && SD.getUser().email) && SD.isOwner()) {
+              return Object.assign({}, m, { isOwner: true });
+            }
+            return m;
+          });
+        });
+      },
+      removeMember: function(email) {
+        if (!SD.isOwner()) throw new Error('SD.admin methods require owner access');
+        return SD.data.get('members').then(function(members) {
+          var found = members.find(function(m) { return m.email === email; });
+          var delPromise = found ? SD.data.del('members', found.id) : Promise.resolve();
+          return delPromise.then(function() {
+            return SD.admin.revokeAccess(email);
+          });
+        });
       }
     }
   };
@@ -4240,6 +4277,11 @@ async function main(): Promise<void> {
       };
 
       if (req.method === 'GET') {
+        if (itemId) {
+          const item = readCollection().find((i: any) => i.id === itemId) ?? null;
+          res.json(item);
+          return;
+        }
         res.json(readCollection());
         return;
       }
