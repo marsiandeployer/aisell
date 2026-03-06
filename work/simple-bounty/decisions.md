@@ -95,3 +95,25 @@
 - `npm test` → 54 passed (pre-commit hooks)
 - All pre-commit hooks pass (54 template tests, 8 TS checks, 10 security checks)
 
+## Task 3: Escrow API
+
+**Status:** Done
+**Commit:** cd25d37
+**Agent:** escrow-dev
+**Summary:** Added escrow logic to bounty-api.ts with per-campaign escrow files (escrow_{campaignId}.json), deposit/balance endpoints, and debit function implementing atomic read-modify-write with post-write rollback (Decision 7). Approve endpoint integrates escrow debit with 402/409 error handling. Exported BountyRouter type for Task 4 auto-approve integration. Unit tests cover all 9 TDD Anchor cases plus 3 extra edge cases (48 assertions total).
+**Deviations:** Нет.
+
+**Reviews:**
+
+*Round 1:*
+- code-reviewer: 3 findings (all accepted/low) → [logs/working/task-3/code-reviewer-round1.json]
+- security-auditor: OK (no issues) → [logs/working/task-3/security-auditor-round1.json]
+- test-reviewer: OK (full coverage verified) → [logs/working/task-3/test-reviewer-round1.json]
+
+**Verification:**
+- `node tests/test_bounty_unit.js` → 48 passed, 0 failed
+- `node tests/test_bounty_campaigns.js` → 48 passed, 0 failed (no regressions)
+- `node tests/test_sdk_methods.js` → 85 passed, 0 failed (no regressions)
+- curl deposit 100 → balance=100; deposit -1 → 400; approve at balance=0 → 402
+- All pre-commit hooks pass (54 template tests, 4 TS checks, 10 security checks)
+
