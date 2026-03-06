@@ -33,7 +33,7 @@
     @media print { .no-print { display: none !important; } }
 
     /* Sidebar nav */
-    #sidebar { width: 200px; flex-shrink: 0; background: #1e293b; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    #sidebar { width: 200px; flex-shrink: 0; background: linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; transition: all 0.15s; text-align: left; margin-bottom: 2px; }
     .nav-btn:hover { background: rgba(255,255,255,0.07); color: #e2e8f0; }
     .nav-btn.active { background: #3B82F6; color: #fff; }
@@ -45,7 +45,15 @@
     .settings-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; display: block; }
     .color-swatch { width: 32px; height: 32px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: border-color 0.15s; }
     .color-swatch.selected { border-color: #1e293b; }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
 </head>
 <body class="bg-gray-100" style="margin:0;overflow:hidden">
 
@@ -752,7 +760,7 @@ pages.settings = function() {
   html += '</div>';
   // Save button
   html += '<div style="padding:0 20px 20px;display:flex;gap:10px">';
-  html += '<button onclick="saveSettingsToast()" style="padding:9px 24px;background:#1e293b;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Сохранить' : 'Save Settings') + '</button>';
+  html += '<button onclick="saveSettingsToast()" style="padding:9px 24px;background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Сохранить' : 'Save Settings') + '</button>';
   html += '<button onclick="navigateTo(\'create\')" style="padding:9px 20px;background:#f1f5f9;color:#64748b;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">' + (_lang === 'ru' ? 'Отмена' : 'Cancel') + '</button>';
   html += '</div>';
   html += '</div>';

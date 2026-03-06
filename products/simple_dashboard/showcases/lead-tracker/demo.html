@@ -17,7 +17,15 @@
     .filter-btn { padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;cursor:pointer;transition:all 0.15s; }
     .filter-btn.active { background:#2563EB;color:#fff;border-color:#2563EB; }
     .filter-btn:hover:not(.active) { background:#f3f4f6;color:#374151; }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
 </head>
 <body class="bg-gray-100" style="margin:0;overflow:hidden">
 
@@ -29,7 +37,7 @@
 
   <div class="flex" style="height:100vh">
     <!-- Sidebar -->
-    <aside class="flex flex-col flex-shrink-0 text-white" style="width:200px;background:#1e293b">
+    <aside class="flex flex-col flex-shrink-0 text-white" style="width:200px;background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
       <!-- Logo -->
       <div class="px-4 pt-5 pb-4 border-b border-slate-700">
         <div class="text-base font-bold flex items-center gap-2">

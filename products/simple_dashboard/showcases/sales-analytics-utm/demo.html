@@ -19,7 +19,15 @@
       opacity: 1;
       transform: translateY(0);
     }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
 </head>
 <body class="bg-gray-100" style="margin:0;overflow:hidden">
   <!-- Prompt bar (fixed, semi-transparent, over content) -->
@@ -29,7 +37,7 @@
   </div>
   <div class="flex h-screen">
     <!-- Sidebar -->
-    <aside class="w-64 bg-gray-900 text-white p-4 flex flex-col">
+    <aside class="w-64  text-white p-4 flex flex-col" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
       <div class="text-xl font-bold mb-8">&#128202; Dashboard</div>
       <nav class="space-y-2 flex-1" id="nav">
         <a href="#overview" class="nav-link block px-4 py-2 rounded hover:bg-gray-700 transition" data-page="overview"></a>

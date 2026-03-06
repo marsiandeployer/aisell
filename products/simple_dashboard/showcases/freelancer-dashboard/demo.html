@@ -29,7 +29,15 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
     .fade-in { animation:fadeIn 0.22s ease both; }
     @media print { #promptBar{display:none!important} aside{display:none!important} }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
 </head>
 <body class="bg-gray-50" style="margin:0;overflow:hidden">
 
@@ -42,7 +50,7 @@
 <div class="flex" style="height:100vh;overflow:hidden">
 
   <!-- Sidebar -->
-  <aside class="flex flex-col flex-shrink-0 text-white" style="width:220px;background:#111827">
+  <aside class="flex flex-col flex-shrink-0 text-white" style="width:220px;background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
 
     <!-- Logo -->
     <div style="padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.07)">

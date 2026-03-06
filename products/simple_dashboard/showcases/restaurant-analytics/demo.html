@@ -14,7 +14,15 @@
     .nav-link.active { background: rgba(251,146,60,0.25); color: #fb923c; }
     .kpi-card { transition: box-shadow 0.2s; }
     .kpi-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .bg-gray-50, .bg-gray-100, .bg-gray-200 { background: transparent !important; }
+    .bg-amber-50, .bg-orange-50, .bg-blue-50, .bg-purple-50, .bg-green-50 { background: transparent !important; }
+    .bg-white { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.35) !important; }
+    .kpi-card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .card { background: rgba(255,255,255,0.62) !important; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+      </style>
 </head>
 <body class="bg-gray-100" style="margin:0;overflow:hidden">
 
@@ -26,7 +34,7 @@
 
   <div class="flex" style="height:100vh">
     <!-- Sidebar -->
-    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:#111827">
+    <aside class="w-56 text-white flex flex-col flex-shrink-0" style="background:linear-gradient(rgba(17,24,39,0.85),rgba(17,24,39,0.92)),url('dashboard-bg.jpg') center/cover no-repeat">
       <div class="p-4 pb-2 border-b border-gray-700">
         <div class="text-base font-bold mb-0.5" id="sidebarTitle"></div>
         <div class="text-xs text-gray-400" id="sidebarSubtitle"></div>
@@ -43,7 +51,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-auto mini-scroll bg-gradient-to-br from-amber-50 to-orange-50" id="mainContent" style="padding-bottom:80px"></main>
+    <main class="flex-1 overflow-auto mini-scroll " id="mainContent" style="padding-bottom:80px"></main>
   </div>
 
 <script>

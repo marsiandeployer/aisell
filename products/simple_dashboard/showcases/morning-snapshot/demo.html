@@ -9,7 +9,7 @@
   <style>
     body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #0f172a; }
     .card { background: rgba(30,41,59,0.8); border: 1px solid rgba(148,163,184,0.1); border-radius: 12px; }
-    .sidebar { background: #1e293b; border-right: 1px solid rgba(148,163,184,0.08); }
+    .sidebar { background: linear-gradient(rgba(15,23,42,0.88),rgba(15,23,42,0.92)),url('dashboard-bg.jpg') center/cover no-repeat; border-right: 1px solid rgba(148,163,184,0.08); }
     .nav-link { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; color: #94a3b8; font-size: 13px; font-weight: 500; transition: all 0.15s; cursor: pointer; border: none; background: none; }
     .nav-link:hover { background: rgba(148,163,184,0.08); color: #e2e8f0; }
     .nav-link.active { background: rgba(56,189,248,0.12); color: #38bdf8; }
@@ -24,7 +24,12 @@
     .alert-green { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
     .alert-yellow { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); }
     .alert-blue { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); }
-  </style>
+  
+    /* === Background Image (AI-generated) === */
+    #mainContent { background: url('dashboard-bg.jpg') center/cover no-repeat fixed !important; }
+    .card { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .kpi-card { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+      </style>
 </head>
 <body style="margin:0;overflow:hidden;color:#e2e8f0">
 
@@ -60,7 +65,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 mini-scroll" style="overflow-y:auto;padding-bottom:80px;background:#0f172a" id="mainContent"></main>
+    <main class="flex-1 mini-scroll" style="overflow-y:auto;padding-bottom:80px;" id="mainContent"></main>
   </div>
 
   <script>
