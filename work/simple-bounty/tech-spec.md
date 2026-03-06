@@ -1,6 +1,6 @@
 ---
 created: 2026-03-06
-status: draft
+status: approved
 branch: feature/simple-bounty
 size: L
 ---
