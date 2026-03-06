@@ -20,6 +20,7 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import type { Context } from 'telegraf';
 import { NoxonBot, loadConfig, loadChatSettings, saveChatSettings } from './bot';
+import { createBountyRouter } from './bounty-api';
 
 type WebUser = {
   userId: number; // Used as chatId in embedded bot engine.
@@ -4994,6 +4995,11 @@ async function main(): Promise<void> {
   app.get('/health', (_req, res) => {
     res.json({ ok: true, ts: nowIso(), title: getWebchatTitle() });
   });
+
+  // CHANGE: Mount bounty API router for SimpleBounty product
+  // WHY: Bounty CRUD endpoints isolated in bounty-api.ts to avoid webchat.ts bloat
+  // REF: Task 2 — Campaigns & Tasks API
+  app.use('/api/bounty', createBountyRouter({ workspacesRoot: WORKSPACES_ROOT, requireSessionApi }));
 
   // CHANGE: Serve user files from d{userid}.wpmix.net subdomain
   // WHY: User request "открывай так же по d{userid}.wpmix.net папку юзера"
