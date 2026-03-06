@@ -16,6 +16,7 @@ export interface TranslationStrings {
   'start.crm': string;
   'start.simple_site': string;
   'start.simple_dashboard': string;
+  'start.simple_bounty': string;
 
   // Help command
   'help.title': string;
@@ -161,6 +162,7 @@ const translations: Record<Language, TranslationStrings> = {
     'start.crm': '👋 Привет! Я помогу создать CRM-систему для вашего бизнеса.\n\n🎯 AI CRM Constructor - это CRM, которая подстраивается под ваши бизнес-процессы.\n\n✅ Без лишних функций - только то, что нужно именно вам\n✅ Быстрое внедрение - 1-2 недели\n✅ Полный контроль - исходный код принадлежит вам\n\n💡 Опишите мне ваш бизнес и процессы, и я помогу создать идеальную CRM:\n\n📝 Расскажите:\n• Чем занимается ваш бизнес?\n• Какие основные этапы работы с клиентом?\n• Что нужно учитывать (клиенты, заказы, проекты)?\n• Какие интеграции нужны (Telegram, email, платежи)?',
     'start.simple_site': '🌐 Привет! Я SimpleSite - ваш AI-помощник для создания лендингов и сайтов.\n\n💡 Просто опишите, что вам нужно:\n• "Лендинг салона красоты с формой записи"\n• "Меню ресторана с ценами"\n• "Портфолио фотографа с формой обратной связи"\n\n🎨 Я создам красивую страницу с:\n• Современным адаптивным дизайном\n• AI-генерированными фоновыми изображениями\n• Формами заявки/контактов\n• Мгновенным превью\n\n✨ Какой сайт вы хотите создать?',
     'start.simple_dashboard': '📊 Привет! Я SimpleDashboard - ваш AI-помощник для создания бизнес-дашбордов.\n\n📁 Загрузите ваши данные:\n• Excel файл (.xlsx, .xls)\n• CSV файл\n• Ссылка на Google Sheets\n\n💡 Или опишите, какой дашборд вам нужен:\n• "Дашборд продаж с графиком выручки по месяцам"\n• "Маркетинговая аналитика с воронкой конверсий"\n• "Учёт склада с оповещениями о низких остатках"\n\n📈 Я создам профессиональные дашборды с:\n• Интерактивными графиками (линейные, столбчатые, круговые)\n• KPI-карточками с трендами\n• Таблицами данных с фильтрами\n\n📚 Примеры и промпты: {showcases_link}\n\n✨ Какую аналитику вы хотите видеть?',
+    'start.simple_bounty': '🎯 Привет! Я SimpleBounty - ваш AI-помощник для создания bounty-кампаний.\n\n💡 Расскажите, что нужно сделать:\n• Название кампании\n• Описание и цель\n• Задания с наградами в поинтах\n\n📋 Я помогу:\n• Создать кампанию с заданиями\n• Настроить награды за каждое задание\n• Пополнить эскроу поинтами\n• Опубликовать страницу для участников\n\n✨ Какую кампанию вы хотите создать?',
 
     // Help command
     'help.title': '🤖 Noxon Bot - Справка',
@@ -304,6 +306,7 @@ const translations: Record<Language, TranslationStrings> = {
     'start.crm': '👋 Hello! I will help you create a CRM system for your business.\n\n🎯 AI CRM Constructor - a CRM that adapts to your business processes.\n\n✅ No unnecessary features - only what you need\n✅ Fast implementation - 1-2 weeks\n✅ Full control - you own the source code\n\n💡 Describe your business and processes, and I will help create the perfect CRM:\n\n📝 Tell me:\n• What does your business do?\n• What are the main stages of customer interaction?\n• What needs to be tracked (customers, orders, projects)?\n• What integrations are needed (Telegram, email, payments)?',
     'start.simple_site': '🌐 Hello! I\'m SimpleSite - your AI assistant for creating landing pages and websites.\n\n💡 Just describe what you need:\n• "Hair salon landing page with booking form"\n• "Restaurant menu with prices"\n• "Photographer portfolio with contact form"\n\n🎨 I\'ll create a beautiful page with:\n• Modern responsive design\n• AI-generated background images\n• Contact/booking forms\n• Instant preview\n\n✨ What website would you like to create?',
     'start.simple_dashboard': '📊 Hello! I\'m SimpleDashboard - your AI assistant for building business dashboards.\n\n📁 Upload your data:\n• Excel file (.xlsx, .xls)\n• CSV file\n• Google Sheets link\n\n💡 Or describe what dashboard you need:\n• "Sales dashboard with monthly revenue chart"\n• "Marketing analytics with conversion funnel"\n• "Inventory tracking with low stock alerts"\n\n📈 I\'ll create professional dashboards with:\n• Interactive charts (line, bar, pie)\n• KPI cards with trends\n• Data tables with filters\n\n📚 Examples and prompts: {showcases_link}\n\n✨ What analytics would you like to see?',
+    'start.simple_bounty': '🎯 Hello! I\'m SimpleBounty - your AI assistant for creating bounty campaigns.\n\n💡 Tell me what you need:\n• Campaign name\n• Description and goal\n• Tasks with point rewards\n\n📋 I will help you:\n• Create a campaign with tasks\n• Set up rewards for each task\n• Fund the escrow with points\n• Publish a page for participants\n\n✨ What campaign would you like to create?',
 
     // Help command
     'help.title': '🤖 Noxon Bot - Help',

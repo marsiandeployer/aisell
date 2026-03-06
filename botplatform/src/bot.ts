@@ -1260,6 +1260,10 @@ export class NoxonBot {
       });
       return;
     }
+    if (productType === 'simple_bounty') {
+      await this.replyTr(ctx, 'start.simple_bounty');
+      return;
+    }
 
     // CHANGE: Проверяем включен ли onboarding
     // WHY: Клиентские боты (codebox и т.д.) не должны продавать сервис

@@ -1,2 +1,34 @@
-# SimpleBounty workspace placeholder
-# Content will be added in Task 6
+# SimpleBounty — Participant Guide
+
+## What is this page
+
+This is a bounty campaign page. The campaign creator published tasks with point rewards. Complete tasks, submit proof, and earn points.
+
+## How to participate
+
+1. Sign in with Google to access the campaign.
+2. Browse the list of tasks — each shows a description and the point reward.
+3. Choose a task and submit your proof: either a text description or a URL (must start with `http://` or `https://`).
+4. One submission per task. You cannot resubmit after sending proof.
+
+## Submission statuses
+
+| Status | Meaning |
+|--------|---------|
+| **pending** | Your submission is waiting for review by the campaign creator. |
+| **approved** | The creator approved your work. Points have been credited to your balance. |
+| **rejected** | The creator did not accept your submission. No points awarded. |
+
+## Auto-approve
+
+If the creator has not reviewed your submission within 48 hours and the campaign escrow has sufficient balance, your submission is automatically approved when you check your status. Open the page and view your submission to trigger the check.
+
+## Leaderboard
+
+The leaderboard shows the top 10 participants ranked by total earned points across all tasks in this campaign. It updates each time a submission is approved.
+
+## Tips
+
+- Read task descriptions carefully before submitting.
+- For URL proof, make sure the link is publicly accessible.
+- Check back after 48 hours if your submission is still pending — auto-approve may activate.
