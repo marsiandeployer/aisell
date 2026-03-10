@@ -28,8 +28,7 @@ Key files and directories in the BankLend repository:
 
 | Path | Purpose |
 |------|---------|
-| `frontend/src/constants/config.ts` | APP_CONFIG: walletConnectProjectId, chain settings, branding |
-| `frontend/src/constants/config.ts` | POOL_ADDRESS_FALLBACK: hardcoded pool contract address |
+| `frontend/src/constants/config.ts` | APP_CONFIG (walletConnectProjectId, chain settings, branding) + POOL_ADDRESS_FALLBACK (pool contract address) |
 | `frontend/src/hooks/useCollaterals.ts` | Reads on-chain: getSupportedCollaterals() -> collateralConfigs() -> ERC20 symbol/decimals -> Chainlink prices |
 | `frontend/src/hooks/usePoolState.ts` | TVL, borrows, APY, poolAddress (from Storage or POOL_ADDRESS_FALLBACK) |
 | `frontend/src/hooks/useAdmin.ts` | Admin operations: setRates, setCollateral, adminWithdraw, adminDeposit, updateStorageConfig |
