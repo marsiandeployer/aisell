@@ -1,0 +1,19 @@
+slug: lending
+caption: "DeFi Lending & Borrowing"
+product: simple_crypto
+prompt: "Deploy a DeFi lending platform where users can borrow against collateral"
+tags: [crypto, defi, lending, borrowing, bsc]
+bilingual: false
+
+repo_url: "https://github.com/marsiandeployer/BankLend"
+demo_url: "https://lenda.wpmix.net/"
+landing_url: "https://onout.org/lenda/"
+description: "White-label DeFi lending/borrowing platform on BSC — Aave-like, own smart contracts"
+price: ""
+purchase_url: ""
+
+deployment:
+  type: server-manual
+  config_approach: rebuild
+  config_files:
+    - "frontend/src/constants/config.ts"
