@@ -1,0 +1,208 @@
+# SimpleCrypto - AI Crypto Product Setup
+# ========================================
+
+product_id: "simple_crypto"
+name: "SimpleCrypto"
+tagline: "Deploy a white-label crypto product in minutes. Wallet, DEX, staking — AI configures it for you."
+description: |
+  AI-assisted setup for white-label crypto products by NoxonThemes.
+  Tell the AI what you need: crypto wallet, DEX, staking, DAO — get a
+  configured, deployed product on your domain. No npm install, no DevOps.
+  Static builds cloned and configured directly.
+
+version: "1.0.0"
+status: "active"
+category: "ai-builder"
+
+# =============================================================================
+# CHROME WEB STORE
+# =============================================================================
+chrome_store:
+  name: "SimpleCrypto - AI Crypto Product Setup"
+  short_name: "SimpleCrypto"
+  short_description: "Deploy white-label crypto products with AI. Wallet, DEX, staking — configured in minutes, no DevOps."
+  detailed_description: |
+    AI-assisted setup for white-label crypto products by NoxonThemes.
+    Tell the AI what you need: crypto wallet, DEX, staking, DAO — get a configured,
+    deployed product on your domain. No npm install, no DevOps required.
+
+    🔐 Products you can deploy:
+    • Multi-currency crypto wallet (BTC, ETH, tokens)
+    • DEX / token exchange (Uniswap-like)
+    • Staking & yield farming platform
+    • DAO governance system
+    • IDO launchpad
+    • Prediction market
+
+    🤖 AI guides you through:
+    • Choosing the right product for your needs
+    • Configuring chain IDs and contract addresses
+    • GitHub Pages or server deployment
+    • No compilation, no npm install needed
+  keywords:
+    - "crypto wallet"
+    - "white-label DEX"
+    - "staking platform"
+    - "DAO setup"
+    - "web3 builder"
+
+# =============================================================================
+# HABAB.RU (B2B)
+# =============================================================================
+habab:
+  product_yaml: "/root/space2/hababru/content/products/simple_crypto.yaml"
+  product_url: "https://habab.ru/products/simple_crypto"
+
+  b2b_pitch: |
+    Я помогу вам развернуть готовый white-label крипто-продукт на вашем домене:
+    мультивалютный кошелёк, DEX, стейкинг, DAO — без разработчиков.
+    Конфигурация через AI-агента, деплой за 5 минут.
+
+  target_audience:
+    - "Web3 стартапы"
+    - "DeFi проекты"
+    - "Криптовалютные обменники"
+    - "DAO-сообщества"
+    - "Инвестиционные фонды"
+
+# =============================================================================
+# TELEGRAM / WEBCHAT
+# =============================================================================
+telegram:
+  bot_username: "@noxonbot"
+  webchat_url: "https://onout.org"
+  start_param: "simple_crypto"
+  webchat_port: 8096
+
+  welcome_message: |
+    🔐 Welcome to SimpleCrypto!
+
+    I'll help you deploy a white-label crypto product on your domain.
+
+    What do you need?
+    • 💼 Crypto wallet (send/receive/swap BTC, ETH, tokens)
+    • 🔄 DEX (Uniswap-like exchange for your chain)
+    • 🌾 Staking platform (users stake your token, earn rewards)
+    • 🗳 DAO governance (token-based voting)
+    • 🚀 Launchpad (IDO for token sales)
+    • 📊 Prediction market (YES/NO markets like Polymarket)
+
+    Which product would you like to configure?
+
+  system_prompt: |
+    You are SimpleCrypto — an AI assistant that helps users configure and deploy
+    white-label crypto products from the NoxonThemes / onout.org catalog.
+
+    Product routing: when a user selects a product, read the corresponding
+    showcases/{slug}/SKILL.md for full configuration and deployment instructions.
+    The master SKILL.md contains the product catalog and routing keywords.
+
+    All products use pre-built static files or WordPress ZIPs — no npm install.
+
+    Available products (8 total):
+    - MCW Wallet (mcw-wallet): multi-currency crypto wallet — wallet.wpmix.net
+    - DEX (dex): Uniswap-like token exchange — dex.onout.org
+    - Staking/Farming (farming): yield farming platform — farm.wpmix.net
+    - DAO Governance (dao): token-based voting — farm.wpmix.net/daofactory
+    - IDO Launchpad (ido-launchpad): token sale platform — launchpad.onout.org
+    - Prediction Market (predictionmarket): Polymarket-like markets — predictionmarket.wpmix.net
+    - Lending (lending): Lenda DeFi lending — lenda.wpmix.net
+    - Lottery (lottery): crypto lottery — onout.org/lottery
+
+    Configuration approaches:
+    - Overlay (no rebuild): edit config files on pre-built static files
+    - Rebuild via CI: fork repo, edit source constants, push to trigger CI
+    - WordPress: download ZIP, upload to WP Admin, add shortcode
+
+# =============================================================================
+# SHOWCASES
+# =============================================================================
+showcases:
+  - slug: "mcw-wallet"
+    caption: "Multi-Currency Crypto Wallet"
+    description: "Bitcoin, Ethereum, ERC-20 wallet with built-in exchange"
+    prompt: "Deploy a multi-currency crypto wallet with BTC, ETH and token support on my domain"
+    demo_url: "https://wallet.wpmix.net/"
+    tags: ["wallet", "bitcoin", "ethereum", "exchange"]
+    status: "full"  # full showcase with demo.html
+
+  - slug: "farming"
+    caption: "Staking & Yield Farming"
+    description: "Users stake your token and earn rewards"
+    prompt: "Set up a staking platform where users can stake my token and earn yield rewards"
+    demo_url: "https://farm.wpmix.net/"
+    tags: ["staking", "defi", "farming"]
+    status: "image"
+
+  - slug: "dex"
+    caption: "DEX / Token Exchange"
+    description: "Uniswap-like decentralized exchange for your chain"
+    prompt: "Deploy a DEX (Uniswap-like exchange) for my blockchain with my token pair"
+    demo_url: "https://dex.onout.org/"
+    tags: ["dex", "swap", "uniswap"]
+    status: "image"
+
+  - slug: "dao"
+    caption: "DAO Governance"
+    description: "Token-based proposals and voting for your community"
+    prompt: "Create a DAO governance system for my community with token-based voting and proposals"
+    demo_url: "https://farm.wpmix.net/daofactory/"
+    tags: ["dao", "governance", "voting"]
+    status: "image"
+
+  - slug: "ido-launchpad"
+    caption: "IDO Launchpad"
+    description: "Token sale platform with pool creation and vesting"
+    prompt: "Set up an IDO launchpad for token sales with vesting and whitelist support"
+    demo_url: "https://launchpad.onout.org/"
+    tags: ["ido", "launchpad", "token-sale"]
+    status: "image"
+
+  - slug: "predictionmarket"
+    caption: "Prediction Market"
+    description: "Polymarket-like YES/NO markets with CLOB order book"
+    prompt: "Deploy a prediction market platform similar to Polymarket with YES/NO markets on BSC"
+    demo_url: "https://predictionmarket.wpmix.net/"
+    tags: ["prediction", "polymarket", "betting"]
+    status: "image"
+
+# =============================================================================
+# ВИЗУАЛ
+# =============================================================================
+visual:
+  primary_color: "#f59e0b"   # Amber — crypto gold
+  brand_colors:
+    accent: "#f59e0b"
+    accent_light: "#fbbf24"
+    accent_dark: "#d97706"
+    bg_dark: "#0c0a00"
+    bg_gradient: "160deg, #0c0a00 0%, #1a1200 50%, #0f0d00 100%"
+
+  icon_symbol: "🔐"
+  icon_description: |
+    Золотой замок/ключ
+    Цвет #f59e0b (amber)
+    Символизирует: крипто, безопасность, Web3
+    Минималистичный стиль
+
+# =============================================================================
+# SEO
+# =============================================================================
+seo:
+  keywords:
+    primary:
+      - "white-label crypto wallet"
+      - "crypto wallet clone"
+      - "DEX builder"
+      - "staking platform setup"
+    secondary:
+      - "deploy crypto product"
+      - "Uniswap clone"
+      - "DAO governance plugin"
+      - "IDO launchpad script"
+  article_ideas:
+    - "How to deploy a white-label crypto wallet without coding"
+    - "DEX setup guide: Uniswap fork in 10 minutes"
+    - "White-label staking platform: complete configuration guide"
+    - "DAO governance for your token community: step-by-step"
+    - "IDO launchpad deployment: from config to live in one session"
