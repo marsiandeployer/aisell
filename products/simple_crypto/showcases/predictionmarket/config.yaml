@@ -9,7 +9,7 @@ bilingual: false
 
 repo_url: "https://github.com/marsiandeployer/PolyFactory"
 demo_url: "https://polyfactory.wpmix.net/"
-landing_url: ""
+landing_url: "https://onout.org/predictionmarket/"
 description: "Prediction market platform with CLOB orderbook — vanilla JS frontend, no build step"
 price: ""
 purchase_url: ""
