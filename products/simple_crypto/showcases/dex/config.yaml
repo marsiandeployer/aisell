@@ -1,0 +1,18 @@
+slug: dex
+caption: "DEX — Token Exchange"
+product: simple_crypto
+prompt: "Deploy a Uniswap-like DEX for token swapping on my EVM chain"
+tags: [crypto, defi, dex, swap, uniswap]
+bilingual: false
+repo_url: "https://github.com/noxonsu/definance"
+demo_url: "https://dex.onout.org/"
+landing_url: "https://onout.org/dex/"
+description: "White-label Uniswap-like decentralized exchange — WordPress plugin"
+price: "$935"
+purchase_url: "https://codecanyon.net/item/definance/..."
+deployment:
+  type: wordpress-plugin
+  config_approach: rebuild
+  config_files:
+    - "unifactory/src/constants/index.ts"
+    - "networks.json"

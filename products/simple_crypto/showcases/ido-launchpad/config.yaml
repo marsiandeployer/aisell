@@ -1,0 +1,18 @@
+slug: ido-launchpad
+caption: "IDO Launchpad"
+product: simple_crypto
+prompt: "Deploy an IDO launchpad where projects launch token sales and investors participate"
+tags: [crypto, defi, ido, launchpad, token-sale]
+bilingual: false
+repo_url: "https://github.com/noxonsu/launchpad"
+demo_url: "https://launchpad.onout.org/"
+landing_url: "https://onout.org/launchpad/"
+description: "White-label IDO launchpad platform — GitHub Pages + WordPress plugin"
+price: "$952"
+purchase_url: "https://codecanyon.net/item/idofactory/..."
+deployment:
+  type: github-pages
+  config_approach: rebuild
+  config_files:
+    - "src/config.ts"
+    - "src/utils/chains.ts"

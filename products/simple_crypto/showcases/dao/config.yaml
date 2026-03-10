@@ -1,0 +1,18 @@
+slug: dao
+caption: "DAO Governance"
+product: simple_crypto
+prompt: "Deploy a DAO governance platform where token holders create proposals and vote"
+tags: [crypto, defi, dao, governance, voting]
+bilingual: false
+repo_url: "https://github.com/noxonsu/DAOwidget"
+demo_url: "https://farm.wpmix.net/daofactory/"
+landing_url: "https://onout.org/dao/"
+description: "White-label DAO governance platform — WordPress plugin"
+price: "$600"
+purchase_url: "https://codecanyon.net/item/dao-factory/..."
+deployment:
+  type: wordpress-plugin
+  config_approach: rebuild
+  config_files:
+    - "src/constants/networks.ts"
+    - "src/constants/contracts.ts"
