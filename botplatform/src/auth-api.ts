@@ -149,7 +149,7 @@ app.use(express.json({ limit: '16kb' }));
 // QUOTE(tech-spec): "CORS restricted to origins matching ^https://d\d+\.wpmix\.net$"
 // REF: Decision 6
 
-const DASHBOARD_ORIGIN_RE = /^https:\/\/d\d+\.wpmix\.net$/;
+const DASHBOARD_ORIGIN_RE = /^https:\/\/(d\d+\.wpmix\.net|cryptoforks\.wpmix\.net)$/;
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;

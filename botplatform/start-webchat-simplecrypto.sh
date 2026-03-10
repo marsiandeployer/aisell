@@ -24,7 +24,7 @@ export DISABLE_PAYMENT_FLOW="true"
 
 # English interface
 export BOT_LANGUAGE="${BOT_LANGUAGE:-en}"
-export ENABLE_GOOGLE_AUTH="${ENABLE_GOOGLE_AUTH:-false}"
+export ENABLE_GOOGLE_AUTH="${ENABLE_GOOGLE_AUTH:-true}"
 
 # SimpleCrypto specific settings
 export PRODUCT_TYPE="${PRODUCT_TYPE:-simple_crypto}"

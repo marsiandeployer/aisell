@@ -3962,7 +3962,7 @@ async function main(): Promise<void> {
   // REF: tech-spec Task 8, user-spec AC
 
   /** Allowed CORS origin pattern for dashboard subdomains */
-  const CORS_DASHBOARD_ORIGIN_RE = new RegExp('^https?://d\\d+\\.(wpmix\\.net|habab\\.ru)$');
+  const CORS_DASHBOARD_ORIGIN_RE = new RegExp('^https?://(d\\d+\\.(wpmix\\.net|habab\\.ru)|cryptoforks\\.wpmix\\.net)$');
 
   /**
    * Apply CORS headers for dashboard-origin requests.
