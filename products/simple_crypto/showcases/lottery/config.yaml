@@ -1,0 +1,21 @@
+slug: "lottery"
+caption: "Crypto Lottery"
+product: "simple_crypto"
+
+prompt: "Deploy a blockchain lottery where users buy tickets and win crypto prizes"
+
+tags: [crypto, defi, lottery, tickets, gambling]
+bilingual: false
+
+repo_url: "https://github.com/noxonsu/LotteryFactory"
+demo_url: "https://appsource.github.io/lottery/"
+landing_url: "https://onout.org/lottery/"
+description: "Blockchain lottery widget — PancakeSwap Lottery V2 fork, WordPress plugin + standalone"
+price: ""
+purchase_url: ""
+
+deployment:
+  type: "github-pages"
+  config_approach: "overlay"
+  config_files:
+    - "frontend/public/index.html (window.SO_LotteryConfig)"

@@ -1,0 +1,21 @@
+slug: "farming"
+caption: "Staking & Yield Farming"
+product: "simple_crypto"
+
+prompt: "Set up a staking platform where users stake tokens and earn yield rewards"
+
+tags: [crypto, defi, staking, farming, yield]
+bilingual: false
+
+repo_url: "https://github.com/noxonsu/farmfactory"
+demo_url: "https://farm.wpmix.net/"
+landing_url: "https://onout.org/farming/"
+description: "White-label staking and yield farming platform — WordPress plugin + standalone HTML widget"
+price: "$899"
+purchase_url: "https://codecanyon.net/item/farmfactory/"
+
+deployment:
+  type: "wordpress-plugin"
+  config_approach: "overlay"
+  config_files:
+    - "widget div data-attributes (data-network-name, data-farm-address, etc.)"
