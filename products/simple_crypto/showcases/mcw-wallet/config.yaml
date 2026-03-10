@@ -6,12 +6,23 @@ product: "simple_crypto"
 prompt: "Create a white-label BNB Chain crypto wallet for my DeFi project called MoonPay with purple branding"
 prompt_ru: "Создай white-label криптокошелёк на BNB Chain для моего DeFi проекта MoonPay с фиолетовым брендингом"
 
-tags: ["wallet", "bnb-chain", "defi", "white-label", "mcw"]
+tags: ["wallet", "bnb-chain", "defi", "white-label", "mcw", "crypto", "p2p-swap"]
 
-description: |
-  White-label crypto wallet based on MultiCurrencyWallet (MCW).
-  BNB Chain + Ethereum, custom brand color, commission fee.
-  Generated config files: erc20tokens.js + variables.css + deploy instructions.
+description: "White-label P2P atomic swap crypto wallet — BTC, ETH, BNB and 10+ EVM chains. Overlay config: no rebuild needed."
+
+repo_url: "https://github.com/swaponline/MultiCurrencyWallet"
+demo_url: "https://wallet.wpmix.net/"
+landing_url: "https://onout.org/wallet/"
+price: "$993"
+purchase_url: "https://codecanyon.net/item/multicurrency-crypto-wallet-and-exchange/23532064"
+
+deployment:
+  type: "github-pages"
+  config_approach: "overlay"
+  config_files:
+    - "erc20tokens.js"
+    - "variables.css"
+    - "customStyles.css"
 
 jit_data_generation: false
 bilingual: true
