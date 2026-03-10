@@ -8,7 +8,7 @@
     "dev": "tsx watch src/bot.ts",
     "build": "tsc",
     "webchat": "tsx src/webchat.ts",
-    "test": "node tests/test_ts_syntax.js && node tests/test_rendered_client_js.js && node tests/test_folder_structure.js && node tests/test_claude_md_templates.js",
+    "test": "node tests/test_ts_syntax.js && node tests/test_rendered_client_js.js && node tests/test_folder_structure.js && node tests/test_claude_md_templates.js && node tests/test_skill_structure.js && node tests/test_skill_routing.js",
     "test:syntax": "node tests/test_ts_syntax.js",
     "test:html": "node tests/test_rendered_client_js.js"
   },
