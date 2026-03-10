@@ -4963,6 +4963,8 @@ export class NoxonBot {
       // WHY: Skills are stored globally in /root/.claude/skills/ and need to be writable
       // NOTE: This only affects bots with USE_BWRAP=1 (web instances, isolated environments)
       '--bind', '/root/.claude', '/root/.claude',
+      // WHY: Products (SKILL.md + showcases) must be readable inside sandbox via absolute paths
+      '--ro-bind-try', '/root/aisell/products', '/root/aisell/products',
       ...extraRoBinds.flatMap((bind) => ['--ro-bind-try', bind.src, bind.dest]),
 
       // Workspace bind.
