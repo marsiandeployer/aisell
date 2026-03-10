@@ -446,10 +446,11 @@ function getProductSkillMdPath(): string {
 // WHY: SKILL.md is a standalone skill for independent deployments. CLAUDE.md in the workspace
 // should be minimal — just user-specific data + path to SKILL.md. No duplication of 26KB content.
 // CHANGE: Use CLAUDE.md.workspace template instead of copying full SKILL.md.
-// Called once when the workspace folder is first created by webchat auth handlers.
+// Called on every login — overwrites CLAUDE.md to match the current product.
+// WHY: user may have registered on a different product (e.g. SimpleDashboard) and now
+// logged into SimpleCrypto — they must get the correct product instructions.
 function maybeWriteWorkspaceClaude(userFolder: string, userId: number): void {
   const claudePath = path.join(userFolder, 'CLAUDE.md');
-  if (fs.existsSync(claudePath)) return;
   const productType = String(process.env.PRODUCT_TYPE || '').trim().toLowerCase();
   if (!productType) return;
   // Prefer CLAUDE.md.workspace template; fall back to SKILL.md for products without one.
