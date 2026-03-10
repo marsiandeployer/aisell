@@ -42,6 +42,23 @@ function extractStringValues(obj: unknown, minLen: number): string[] {
   return [];
 }
 
+/** Returns true if a string looks like a real secret (not a path, date, URL, email, etc.) */
+function looksLikeSecret(s: string): boolean {
+  // Skip filesystem paths
+  if (/^\/[a-z]/.test(s)) return false;
+  // Skip ISO dates and timestamps
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return false;
+  // Skip plain filenames (no secret entropy)
+  if (/^[\w.-]+\.(php|tsx?|json|html|py|sh|md)$/.test(s)) return false;
+  // Skip email addresses
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return false;
+  // Skip plain HTTPS URLs (keep tokens embedded in URLs — they contain '?' or '=')
+  if (/^https?:\/\/[^?=]+$/.test(s)) return false;
+  // Skip short org/project names without high-entropy content
+  if (s.length < 30 && /^[a-zA-Z0-9 '._/-]+$/.test(s)) return false;
+  return true;
+}
+
 function refreshSensitiveCredCache(): void {
   if (Date.now() - SENSITIVE_CRED_CACHE.loadedAt < CRED_CACHE_TTL_MS) return;
   SENSITIVE_CRED_CACHE.loadedAt = Date.now();
@@ -51,7 +68,7 @@ function refreshSensitiveCredCache(): void {
     try { collected.push(...extractStringValues(JSON.parse(fs.readFileSync(f.trim(), 'utf8')), MIN_CRED_LEN)); }
     catch { /* file missing or not JSON */ }
   }
-  SENSITIVE_CRED_CACHE.values = [...new Set(collected)];
+  SENSITIVE_CRED_CACHE.values = [...new Set(collected)].filter(looksLikeSecret);
 }
 
 function readGlobalCodexModel(): string | null {
@@ -790,10 +807,12 @@ export class NoxonBot {
   // REF: User request "сделай чтоб можно было запускать 2 задачи параллельно"
   private activeTasks: Map<string, ActiveTask>;
   private queuedTasks: Map<number, QueuedTask[]>;
-  // CHANGE: Кэш последних сообщений для каждого чата
+  // CHANGE: Кэш последних сообщений для каждого чата/топика
   // WHY: Telegram Bot API не позволяет получать историю напрямую
   // REF: User request "в контекст загружай 5 сообщений до"
-  private messageCache: Map<number, MessageHistory[]>;
+  // CHANGE: Ключ — строка "chatId" или "chatId:threadId" (для форум-топиков в группах)
+  // WHY: Чтобы каждый топик имел свой независимый контекст
+  private messageCache: Map<string, MessageHistory[]>;
   private readonly allowedUsernames: Set<string>;
   private readonly allowedUserIds: Set<number>;
   private readonly openaiClient: OpenAI | null;
@@ -1380,7 +1399,8 @@ export class NoxonBot {
 
     if (!shouldUpload) {
       // Проверяем последние сообщения на просьбу о файле
-      const history = this.getMessageHistory(ctx.chat.id, false);
+      const fileCheckThreadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+      const history = this.getMessageHistory(ctx.chat.id, false, fileCheckThreadId);
       const recentMessages = history.slice(-3);
       const hasFileRequest = recentMessages.some(msg =>
         msg.text?.toLowerCase().includes('прислать файл') ||
@@ -1440,16 +1460,18 @@ export class NoxonBot {
     }
 
     const chatId = ctx.chat.id;
-    const cache = this.messageCache.get(chatId);
+    const threadId = ctx.message && 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+    const cacheKey = this.getCacheKey(chatId, threadId);
+    const cache = this.messageCache.get(cacheKey);
     const previousCount = cache?.length || 0;
 
-    // Очищаем историю для этого чата
-    this.messageCache.delete(chatId);
+    // Очищаем историю для этого чата/топика
+    this.messageCache.delete(cacheKey);
     this.saveHistoryToFile();
 
     await this.replyTr(ctx, 'conversation.reset', { count: previousCount.toString() });
 
-    console.log(`🆕 История сброшена для чата ${chatId} (было ${previousCount} сообщений)`);
+    console.log(`🆕 История сброшена для чата ${chatId}${threadId ? ` (топик ${threadId})` : ''} (было ${previousCount} сообщений)`);
   }
 
   /**
@@ -1618,8 +1640,9 @@ export class NoxonBot {
       // Удаляем директорию рекурсивно
       fs.rmSync(workingDir, { recursive: true, force: true });
 
-      // Очищаем кэш сообщений для этого чата
-      this.messageCache.delete(chatId);
+      // Очищаем кэш сообщений для этого чата/топика
+      const restartThreadId = ctx.message && 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+      this.messageCache.delete(this.getCacheKey(chatId, restartThreadId));
       this.saveHistoryToFile();
 
       // CHANGE: Для личных чатов предлагаем запустить onboarding заново
@@ -1737,12 +1760,14 @@ export class NoxonBot {
     }
 
     const chatId = ctx.chat.id;
+    const threadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+    const cacheKey = this.getCacheKey(chatId, threadId);
 
-    // Получаем или создаем кэш для чата
-    let cache = this.messageCache.get(chatId);
+    // Получаем или создаем кэш для чата/топика
+    let cache = this.messageCache.get(cacheKey);
     if (!cache) {
       cache = [];
-      this.messageCache.set(chatId, cache);
+      this.messageCache.set(cacheKey, cache);
     }
 
     // Создаем запись о сообщении
@@ -2087,7 +2112,8 @@ export class NoxonBot {
         // WHY: User request "в историю должны попадать и ответы самого бота в том числе распознавания голосовух"
         // REF: User request
         if (ctx.chat) {
-          this.cacheBotResponse(ctx.chat.id, `🎤 Расшифровка от ${authorName}: ${transcript}`);
+          const voiceThreadId = ctx.message && 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+          this.cacheBotResponse(this.getCacheKey(ctx.chat.id, voiceThreadId), `🎤 Расшифровка от ${authorName}: ${transcript}`);
         }
       } catch (error) {
         console.error('Ошибка отправки расшифровки в чат:', error);
@@ -2138,16 +2164,20 @@ export class NoxonBot {
     try {
       fs.mkdirSync(this.historyDirPath, { recursive: true });
 
-      // Collect all (chatId → filePath) pairs from both locations
-      const chatEntries: Array<{ chatId: number; filePath: string }> = [];
+      // Collect all (chatId, threadId → filePath) pairs from both locations
+      // CHANGE: threadId поддерживает форум-топики (файлы вида "-100xxx_t42.json")
+      const chatEntries: Array<{ chatId: number; threadId?: number; filePath: string }> = [];
 
       // Group chats from historyDirPath
       const groupFiles = fs.readdirSync(this.historyDirPath).filter(f => f.endsWith('.json'));
       for (const f of groupFiles) {
-        const id = parseInt(path.basename(f, '.json'), 10);
-        if (!isNaN(id) && id < 0) {
-          chatEntries.push({ chatId: id, filePath: path.join(this.historyDirPath, f) });
-        }
+        const base = path.basename(f, '.json');
+        // Match "-100123456" (plain group) or "-100123456_t42" (forum topic)
+        const m = base.match(/^(-\d+)(?:_t(\d+))?$/);
+        if (!m) continue;
+        const id = parseInt(m[1], 10);
+        const threadId = m[2] ? parseInt(m[2], 10) : undefined;
+        chatEntries.push({ chatId: id, threadId, filePath: path.join(this.historyDirPath, f) });
       }
 
       // Personal chats from ${WORKSPACES_ROOT}/user_*/.history.json
@@ -2180,7 +2210,7 @@ export class NoxonBot {
       }
 
       let totalMessages = 0;
-      for (const { chatId, filePath: chatFilePath } of chatEntries) {
+      for (const { chatId, threadId, filePath: chatFilePath } of chatEntries) {
 
         try {
           const data = fs.readFileSync(chatFilePath, 'utf-8');
@@ -2199,7 +2229,8 @@ export class NoxonBot {
             const parsed = parseMessageHistoryFromJson(item);
             if (parsed) historyItems.push(parsed);
           }
-          this.messageCache.set(chatId, historyItems);
+          const cacheKey = this.getCacheKey(chatId, threadId);
+          this.messageCache.set(cacheKey, historyItems);
           totalMessages += historyItems.length;
         } catch (error) {
           console.error(`❌ Ошибка загрузки истории чата ${chatId}:`, error);
@@ -2215,10 +2246,31 @@ export class NoxonBot {
     }
   }
 
+  // CHANGE: Ключ кэша: "chatId" или "chatId:threadId" для форум-топиков
+  // WHY: Группы с Topics режимом должны иметь отдельный контекст на каждый топик
+  private getCacheKey(chatId: number, threadId?: number): string {
+    // Только группы (chatId < 0) могут иметь топики
+    if (chatId < 0 && threadId) {
+      return `${chatId}:${threadId}`;
+    }
+    return `${chatId}`;
+  }
+
+  private parseCacheKey(key: string): { chatId: number; threadId?: number } {
+    const colonIdx = key.indexOf(':');
+    if (colonIdx === -1) {
+      return { chatId: parseInt(key, 10) };
+    }
+    return {
+      chatId: parseInt(key.slice(0, colonIdx), 10),
+      threadId: parseInt(key.slice(colonIdx + 1), 10),
+    };
+  }
+
   // CHANGE: Возвращает путь к файлу истории для данного chatId
   // WHY: Личные чаты хранятся внутри папки проекта юзера — одно место для всего
   // REF: User request "сделай чтоб было одно место а не три"
-  private getHistoryFilePath(chatId: number): string {
+  private getHistoryFilePath(chatId: number, threadId?: number): string {
     if (chatId > 0) {
       // Personal chat → prefer inside user project dir (when it already exists).
       const userDir = `${WORKSPACES_ROOT}/user_${chatId}`;
@@ -2244,10 +2296,13 @@ export class NoxonBot {
       return path.join(ensured, '.history.json');
     }
     // Group chat → shared history dir
+    // CHANGE: Для форум-топиков добавляем суффикс _t{threadId}
+    // WHY: Каждый топик должен иметь отдельный файл истории
     if (!fs.existsSync(this.historyDirPath)) {
       fs.mkdirSync(this.historyDirPath, { recursive: true });
     }
-    return path.join(this.historyDirPath, `${chatId}.json`);
+    const suffix = threadId ? `_t${threadId}` : '';
+    return path.join(this.historyDirPath, `${chatId}${suffix}.json`);
   }
 
   private saveHistoryToFile(): void {
@@ -2259,8 +2314,9 @@ export class NoxonBot {
         fs.mkdirSync(this.historyDirPath, { recursive: true });
       }
 
-      for (const [chatId, messages] of this.messageCache.entries()) {
-        const chatFilePath = this.getHistoryFilePath(chatId);
+      for (const [key, messages] of this.messageCache.entries()) {
+        const { chatId, threadId } = this.parseCacheKey(key);
+        const chatFilePath = this.getHistoryFilePath(chatId, threadId);
         // Atomic write to avoid partially-written JSON reads (tests + admin tooling).
         const tmpPath = `${chatFilePath}.tmp.${process.pid}.${Date.now()}`;
         fs.writeFileSync(tmpPath, JSON.stringify(messages, null, 2), 'utf-8');
@@ -2464,8 +2520,8 @@ export class NoxonBot {
    * WHY: User request "надо чтоб хранилось 20"
    * REF: User request
    */
-  private getMessageHistory(chatId: number, includeCurrentMessage = false): MessageHistory[] {
-    const cache = this.messageCache.get(chatId);
+  private getMessageHistory(chatId: number, includeCurrentMessage = false, threadId?: number): MessageHistory[] {
+    const cache = this.messageCache.get(this.getCacheKey(chatId, threadId));
     if (!cache || cache.length === 0) {
       return [];
     }
@@ -2518,18 +2574,30 @@ export class NoxonBot {
    * CHANGE: Добавлен системный промпт с контекстом работы
    * WHY: Claude должен понимать что он в командном чате и отличать релевантные сообщения
    */
-  private formatMessageHistory(history: MessageHistory[]): string {
+  private formatMessageHistory(history: MessageHistory[], threadId?: number): string {
     if (history.length === 0) {
       return '';
     }
 
     // CHANGE: Системный промпт о роли и контексте
     // WHY: Claude должен понимать что он веб-разработчик в командном чате
+    // CHANGE: threadId передаётся чтобы отличать тред от общего чата
+    // WHY: В треде ВСЕ сообщения релевантны, не нужно фильтровать
     let formatted = '\n\n=== СИСТЕМНЫЙ КОНТЕКСТ ===\n';
     formatted += 'Ты - веб-разработчик, состоишь в чате команды разработки.\n';
-    formatted += 'Ниже показаны последние 20 сообщений из общего группового чата.\n';
-    formatted += 'ВАЖНО: Не все сообщения относятся к твоей задаче - может быть флуд, обсуждения других задач.\n';
-    formatted += 'Анализируй контекст и выделяй только релевантные сообщения для текущего запроса.\n\n';
+    if (threadId) {
+      formatted += `Ниже показаны последние 20 сообщений из текущего топика (тред #${threadId}).\n`;
+      formatted += 'Все сообщения относятся к этому топику — используй весь контекст.\n';
+    } else {
+      formatted += 'Ниже показаны последние 20 сообщений из общего группового чата.\n';
+      formatted += 'ВАЖНО: Не все сообщения относятся к твоей задаче - может быть флуд, обсуждения других задач.\n';
+      formatted += 'Анализируй контекст и выделяй только релевантные сообщения для текущего запроса.\n';
+    }
+    formatted += '\n';
+    formatted += 'ФОРМАТИРОВАНИЕ ОТВЕТОВ:\n';
+    formatted += '- НЕ используй markdown-форматирование в своих ответах: нет **жирного**, нет *курсива*, нет ### заголовков, нет --- разделителей.\n';
+    formatted += '- Ссылки пиши просто текстом (https://...), без []() обёртки — иначе в Telegram они не кликабельны.\n';
+    formatted += '- Структуру передавай через обычные переносы строк и дефисы, не через markdown.\n\n';
     formatted += 'СПЕЦИАЛЬНЫЕ КОМАНДЫ:\n';
     formatted += '- Если видишь вопрос "своими словами" или "понял что надо?" - опиши своими словами понимание задачи.\n';
     formatted += '  Не выполняй задачу, а объясни что ты понял, чтобы подтвердить правильность понимания.\n\n';
@@ -3940,9 +4008,10 @@ export class NoxonBot {
       return;
     }
     const chatId = ctx.chat.id;
+    const threadId = 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
     const providerName = this.getProviderDisplayName(provider);
 
-    console.log(`🤖 [${new Date().toISOString()}] Запуск ${providerName} CLI от chat ${chatId}: ${prompt.slice(0, 50)}...`);
+    console.log(`🤖 [${new Date().toISOString()}] Запуск ${providerName} CLI от chat ${chatId}${threadId ? ` (топик ${threadId})` : ''}: ${prompt.slice(0, 50)}...`);
 
     // CHANGE: Определяем рабочую директорию для чата
     // WHY: Группы должны работать в своих директориях (или /root/{chat_id} по умолчанию)
@@ -4013,8 +4082,8 @@ export class NoxonBot {
 
     // CHANGE: Включена обработка истории
     // WHY: Claude должен видеть контекст предыдущих сообщений
-    const history = this.getMessageHistory(chatId, includeCurrentHistory);
-    const historyText = this.formatMessageHistory(history);
+    const history = this.getMessageHistory(chatId, includeCurrentHistory, threadId);
+    const historyText = this.formatMessageHistory(history, threadId);
 
     let fullPrompt = historyText ? `${historyText}ТЕКУЩИЙ ЗАПРОС:\n${prompt}` : prompt;
 
@@ -5697,11 +5766,13 @@ export class NoxonBot {
     // Отправляем (максимум 5 сообщений)
     // CHANGE: Убрана повторная санитизация - текст уже обработан sanitizeForTelegram выше
     // WHY: Двойная обработка создает новый пустой Map плейсхолдеров, оставляя __URLPH0__ в тексте
+    const sendThreadId = ctx.message && 'message_thread_id' in ctx.message ? ctx.message.message_thread_id : undefined;
+    const sendCacheKey = this.getCacheKey(ctx.chat.id, sendThreadId);
     for (const message of messages.slice(0, 5)) {
       await ctx.reply(message);
       // CHANGE: Кэшируем ответы бота
       // WHY: Бот должен видеть свои предыдущие ответы в контексте
-      this.cacheBotResponse(ctx.chat.id, message);
+      this.cacheBotResponse(sendCacheKey, message);
     }
   }
 
@@ -5710,13 +5781,13 @@ export class NoxonBot {
    * CHANGE: Кэширование ответов бота
    * WHY: Бот должен видеть свои предыдущие ответы в контексте
    */
-  private cacheBotResponse(chatId: number, text: string): void {
+  private cacheBotResponse(cacheKey: string, text: string): void {
     // CHANGE: Убрана санитизация - текст уже обработан sanitizeForTelegram перед вызовом
     // WHY: Повторная санитизация создает новые плейсхолдеры поверх старых
-    let cache = this.messageCache.get(chatId);
+    let cache = this.messageCache.get(cacheKey);
     if (!cache) {
       cache = [];
-      this.messageCache.set(chatId, cache);
+      this.messageCache.set(cacheKey, cache);
     }
 
     const historyItem: MessageHistory = {
