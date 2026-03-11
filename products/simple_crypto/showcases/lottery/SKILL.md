@@ -56,6 +56,42 @@ Overlay config, no rebuild needed. Edit `window.SO_LotteryConfig` in `frontend/p
 
 The `rewardsBreakdown` passed to `startLottery()` must match `winPercents` values multiplied by 100, summing to 10000.
 
+## Contract Deployment — Managed Deploy Flow
+
+When user doesn't have a deployed contract, offer to deploy on their behalf:
+
+### Step 1 — Show deploy address
+Tell the user their wallet address (it's stored per-user in the system):
+> "To deploy the contract I need gas. Your deploy wallet is: `{USER_ETH_ADDRESS}`
+> Please send a small amount of BNB to this address so I can deploy the contract."
+
+- **BNB Testnet**: Direct to faucet (free) — https://testnet.bnbchain.org/faucet-smart or https://faucet.quicknode.com/binance-smart-chain/bnb-testnet
+- **BNB Mainnet**: Ask to send ~0.01 BNB (~$5) to cover deploy gas
+
+### Step 2 — Wait for confirmation
+Ask user to confirm once they've sent the funds:
+> "Let me know when you've sent BNB and I'll deploy the contract right away."
+
+### Step 3 — Deploy
+Run the deploy script:
+```bash
+# Get user's private key from DB and deploy
+PGPASSWORD=L9JD3Sa3sCgvSBpRE3g3VJMF psql -h 10.10.10.2 -U dashboard_auth -d dashboard_auth \
+  -c "SELECT private_key FROM users WHERE email='{USER_EMAIL}';" -t -A
+```
+Then use the private key with ethers.js to deploy `PancakeSwapLottery.json` bytecode:
+```bash
+node showcases/lottery/deploy.js \
+  --privateKey {PRIVATE_KEY} \
+  --rpc {RPC_URL} \
+  --chainId {CHAIN_ID}
+```
+
+### Step 4 — Update config
+After deploy, put the contract address into `window.SO_LotteryConfig.contract` in user's `index.html`.
+
+**Note:** The user's ETH address is their system wallet (generated on first login). It's the same address shown on their `/profile` page.
+
 ## Interview Protocol
 
 Ask the user before generating config:

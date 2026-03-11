@@ -2005,15 +2005,15 @@ export class NoxonBot {
    * WHY: Файлы из /root/space2/image-share/uploads/ доступны через https://i.wpmix.net/image/
    * REF: User request "вставляй ссылку https://i.wpmix.net/image/(ИМЯФАЙЛА)"
    */
-  private getPublicUrl(filePath: string): string {
-    // Извлекаем путь относительно uploads/
-    const uploadsIndex = filePath.indexOf('image-share/uploads/');
-    if (uploadsIndex === -1) {
-      return filePath; // Возвращаем локальный путь, если не в uploads
+  private getPublicUrl(filePath: string): string | null {
+    // Используем строгую проверку по префиксу (не indexOf) чтобы избежать path traversal
+    const UPLOADS_PREFIX = '/root/space2/image-share/uploads/';
+    if (!filePath.startsWith(UPLOADS_PREFIX)) {
+      return null; // Нет публичного URL для этого пути
     }
 
     // Получаем путь после uploads/ (включая подпапку типа photo/video/etc)
-    const relativePath = filePath.substring(uploadsIndex + 'image-share/uploads/'.length);
+    const relativePath = filePath.substring(UPLOADS_PREFIX.length);
 
     // Формируем публичный URL
     return `https://i.wpmix.net/image/${relativePath}`;
@@ -2575,15 +2575,11 @@ export class NoxonBot {
    * WHY: Claude должен понимать что он в командном чате и отличать релевантные сообщения
    */
   private formatMessageHistory(history: MessageHistory[], threadId?: number): string {
-    if (history.length === 0) {
-      return '';
-    }
-
-    // CHANGE: Системный промпт о роли и контексте
+    // CHANGE: Системный промпт о роли и контексте (всегда, не только когда есть история)
     // WHY: Claude должен понимать что он веб-разработчик в командном чате
     // CHANGE: threadId передаётся чтобы отличать тред от общего чата
     // WHY: В треде ВСЕ сообщения релевантны, не нужно фильтровать
-    let formatted = '\n\n=== СИСТЕМНЫЙ КОНТЕКСТ ===\n';
+    let formatted = '\n\n=== КОНТЕКСТ ЗАПРОСА ===\n';
     formatted += 'Ты - веб-разработчик, состоишь в чате команды разработки.\n';
     if (threadId) {
       formatted += `Ниже показаны последние 20 сообщений из текущего топика (тред #${threadId}).\n`;
@@ -2594,22 +2590,25 @@ export class NoxonBot {
       formatted += 'Анализируй контекст и выделяй только релевантные сообщения для текущего запроса.\n';
     }
     formatted += '\n';
-    formatted += 'ФОРМАТИРОВАНИЕ ОТВЕТОВ:\n';
-    formatted += '- НЕ используй markdown-форматирование в своих ответах: нет **жирного**, нет *курсива*, нет ### заголовков, нет --- разделителей.\n';
-    formatted += '- Ссылки пиши просто текстом (https://...), без []() обёртки — иначе в Telegram они не кликабельны.\n';
-    formatted += '- Структуру передавай через обычные переносы строк и дефисы, не через markdown.\n\n';
+    formatted += 'ФОРМАТ ОТВЕТА В TELEGRAM:\n';
+    formatted += '- В обычных ответах в Telegram пиши plain text, без декоративного Markdown/MarkdownV2.\n';
+    formatted += '- Не используй **жирный**, *курсив*, ### заголовки, таблицы, markdown-ссылки вида [текст](url).\n';
+    formatted += '- URL пиши целиком: https://example.com — так они кликабельны в Telegram.\n';
+    formatted += '- Если нужно сгенерировать markdown для файла, GitHub issue или PR — генерируй markdown только внутри этого артефакта.\n\n';
     formatted += 'СПЕЦИАЛЬНЫЕ КОМАНДЫ:\n';
     formatted += '- Если видишь вопрос "своими словами" или "понял что надо?" - опиши своими словами понимание задачи.\n';
     formatted += '  Не выполняй задачу, а объясни что ты понял, чтобы подтвердить правильность понимания.\n\n';
     formatted += 'РАБОТА С ИЗОБРАЖЕНИЯМИ И МЕДИА:\n';
-    formatted += '- Для изображений/видео/документов указаны ДВА пути:\n';
-    formatted += '  1. Локальный путь (например: /root/space2/image-share/uploads/photo/file.png)\n';
-    formatted += '  2. Публичная ссылка (например: https://i.wpmix.net/image/photo/file.png)\n';
-    formatted += '- ВСЕГДА используй ПУБЛИЧНЫЕ ССЫЛКИ (https://i.wpmix.net/...) для:\n';
-    formatted += '  * GitHub issues и PR (markdown формат: ![alt](https://i.wpmix.net/...))\n';
-    formatted += '  * Любых внешних ссылок и документации\n';
-    formatted += '- Локальные пути используй ТОЛЬКО для чтения файлов через Read tool\n';
+    formatted += '- Для медиафайлов указан локальный путь, и — если файл в uploads — публичная ссылка.\n';
+    formatted += '- Если публичная ссылка есть (https://i.wpmix.net/...): используй её для GitHub issues/PR (markdown: ![alt](url)).\n';
+    formatted += '- Если публичной ссылки нет — файл вне uploads, используй только локальный путь через Read tool.\n';
+    formatted += '- Никогда не придумывай публичную ссылку, если она не указана в сообщении.\n';
     formatted += '=========================\n\n';
+
+    if (history.length === 0) {
+      formatted += '--- ИСТОРИЯ ПРЕДЫДУЩИХ СООБЩЕНИЙ: пуста ---\n\n';
+      return formatted;
+    }
 
     formatted += '--- ИСТОРИЯ ПРЕДЫДУЩИХ СООБЩЕНИЙ ---\n';
 
@@ -2624,13 +2623,13 @@ export class NoxonBot {
         const publicUrl = this.getPublicUrl(msg.photoPath);
         const label = msg.photoName ? `${msg.photoName} → ${msg.photoPath}` : msg.photoPath;
         formatted += `  📷 [Фото: ${label}${msg.caption ? ` | ${msg.caption}` : ''}]\n`;
-        formatted += `     Публичная ссылка: ${publicUrl}\n`;
+        if (publicUrl) formatted += `     Публичная ссылка: ${publicUrl}\n`;
       }
       if (msg.hasVideo && msg.videoPath) {
         const publicUrl = this.getPublicUrl(msg.videoPath);
         const label = msg.videoName ? `${msg.videoName} → ${msg.videoPath}` : msg.videoPath;
         formatted += `  🎥 [Видео: ${label}${msg.caption ? ` | ${msg.caption}` : ''}]\n`;
-        formatted += `     Публичная ссылка: ${publicUrl}\n`;
+        if (publicUrl) formatted += `     Публичная ссылка: ${publicUrl}\n`;
       }
       if (msg.hasAudio && msg.audioPath) {
         const publicUrl = this.getPublicUrl(msg.audioPath);
@@ -2638,7 +2637,7 @@ export class NoxonBot {
         const mimeLabel = msg.audioMimeType ? ` | MIME: ${msg.audioMimeType}` : '';
         const durationLabel = msg.audioDurationSeconds ? ` | Длительность: ${msg.audioDurationSeconds}с` : '';
         formatted += `  🎧 [Аудио: ${label}${mimeLabel}${durationLabel}${msg.caption ? ` | ${msg.caption}` : ''}]\n`;
-        formatted += `     Публичная ссылка: ${publicUrl}\n`;
+        if (publicUrl) formatted += `     Публичная ссылка: ${publicUrl}\n`;
         if (msg.audioTranscript) {
           const transcriptPreview = this.truncateText(msg.audioTranscript, MAX_AUDIO_TRANSCRIPT_PREVIEW);
           formatted += `    🗣️ Расшифровка: ${transcriptPreview}\n`;
@@ -2649,7 +2648,7 @@ export class NoxonBot {
         const label = msg.documentName ? `${msg.documentName} → ${msg.documentPath}` : msg.documentPath;
         const mimeLabel = msg.documentMimeType ? ` | MIME: ${msg.documentMimeType}` : '';
         formatted += `  📄 [Документ: ${label}${mimeLabel}${msg.caption ? ` | ${msg.caption}` : ''}]\n`;
-        formatted += `     Публичная ссылка: ${publicUrl}\n`;
+        if (publicUrl) formatted += `     Публичная ссылка: ${publicUrl}\n`;
       }
     });
 
@@ -4085,7 +4084,7 @@ export class NoxonBot {
     const history = this.getMessageHistory(chatId, includeCurrentHistory, threadId);
     const historyText = this.formatMessageHistory(history, threadId);
 
-    let fullPrompt = historyText ? `${historyText}ТЕКУЩИЙ ЗАПРОС:\n${prompt}` : prompt;
+    let fullPrompt = `${historyText}ТЕКУЩИЙ ЗАПРОС:\n${prompt}`;
 
     // CHANGE: Inject OWNER_ADDRESS into prompt for SimpleDashboard auth-enabled dashboards
     // WHY: SKILL.md instructs Claude to use OWNER_ADDRESS from context

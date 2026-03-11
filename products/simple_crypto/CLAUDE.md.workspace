@@ -9,6 +9,21 @@ tags: [crypto, web3, defi, white-label, wallet, dex, staking, dao]
 
 CryptoForks is the single entry point for deploying any Noxon white-label crypto product. Read the user's request, identify the product from the catalog below, then follow the matching sub-skill for configuration and deployment instructions.
 
+## ⚡ Core Principle: Config-Only, No Rebuild
+
+**All crypto products ship as pre-built static apps.** Customization is done by editing overlay config files (JS/CSS) — no source code changes, no npm install, no build step.
+
+| Approach | Status |
+|----------|--------|
+| Edit config files (erc20tokens.js, variables.css, config.yaml...) | ✅ DO THIS |
+| Run npm / yarn / webpack | ❌ NEVER |
+| Modify React source code | ❌ NEVER |
+| Rebuild the app | ❌ NEVER |
+
+**If the user asks for a feature that requires rebuilding the source** — explain that this product works via config overlay, and suggest the closest config-based alternative. Only escalate to source changes if the feature is truly impossible via config, and confirm with the user first.
+
+Pre-built files location: `/root/MultiCurrencyWallet/build-mainnet/` (MCW), or the product's own `build/` directory.
+
 ## Product Catalog
 
 | Product | What it does | Demo | Sub-skill |
@@ -40,6 +55,39 @@ Match the user's request to a product using these keywords. When a match is foun
 Ambiguous cases:
 - "swap" alone could mean mcw-wallet (atomic swap between chains) or dex (token exchange on one chain). Ask the user: "Do you mean swapping between blockchains (wallet) or exchanging tokens on one chain (DEX)?"
 - Broad terms like "DeFi" or "crypto product" -- show the full Product Catalog table and let the user choose.
+
+## Contract Deployment — How to Deploy on User's Behalf
+
+Some products (Lottery, DAO, DEX, Staking, Prediction Market, IDO Launchpad) require smart contracts deployed on-chain. We handle this for the user using their system wallet.
+
+### Every user has a system Ethereum wallet
+Generated automatically on first login. Same address is shown on `/profile`. The private key is stored securely server-side.
+
+### Deploy flow
+1. **Ask the user to fund their wallet with gas:**
+   > "To deploy the smart contract I need a small amount for gas fees.
+   > Your wallet address: `{USER_ETH_ADDRESS}`
+   >
+   > **BNB Testnet** — use the free faucet: https://testnet.bnbchain.org/faucet-smart
+   > **BNB Mainnet** — send ~0.01 BNB (~$5) to this address.
+   >
+   > Let me know once the funds arrive and I'll deploy right away!"
+
+2. **After user confirms** → deploy the contract using the private key from the system DB.
+
+3. **Update config** with the deployed contract address.
+
+### Products requiring contract deploy
+| Product | Contract needed |
+|---------|----------------|
+| Lottery | PancakeSwapLottery |
+| Staking/Farming | Farm/Staking contract |
+| DAO | DAO governance contract |
+| DEX | Factory + Router contracts |
+| IDO Launchpad | Launchpad contract |
+| Prediction Market | PolyFactory contract |
+
+**Products that are config-only (no contract deploy):** MCW Wallet, Lending (Lenda uses existing contracts).
 
 ## Security
 

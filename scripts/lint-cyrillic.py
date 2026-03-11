@@ -21,6 +21,7 @@ IGNORE_FILES = [
     "bot.ts",                    # TODO: refactor bot.ts to use i18n, then remove from ignore
     "webchat.ts",               # TODO: refactor webchat.ts to use i18n, then remove from ignore
     "take_banner_screenshot.js", # banner text is intentionally in Russian
+    "tasks.html",                # sprint report — intentionally in Russian
 ]
 # Directories to skip
 IGNORE_DIRS = {"node_modules", "out", "dist", ".git", "tests", "test", "__tests__"}
